@@ -81,9 +81,7 @@ class TestAddCarrierGene:
         gene_lists = (tmp_path / "gene_lists.tsv").read_text(encoding="utf-8")
         assert "NEWGENE\tcarrier" in gene_lists
 
-    def test_existing_gene_not_duplicated(
-        self, mock_engine, test_db, test_config, tmp_path
-    ):
+    def test_duplicate_gene_rejected(self, mock_engine, test_db, test_config, tmp_path):
         _make_carrier_metadata(tmp_path)
         _make_gene_lists(tmp_path)
         mcp = FastMCP("test")
