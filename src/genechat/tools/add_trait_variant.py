@@ -2,7 +2,8 @@
 
 import csv
 import re
-from pathlib import Path
+
+from genechat.tools._seed_utils import CURATED_DIR, ensure_gene_in_gene_lists
 
 VALID_CATEGORIES = {
     "nutrigenomics",
@@ -21,31 +22,6 @@ VALID_CATEGORIES = {
 VALID_EVIDENCE_LEVELS = {"strong", "moderate", "preliminary"}
 
 RSID_PATTERN = re.compile(r"^rs\d+$")
-
-REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
-CURATED_DIR = REPO_ROOT / "data" / "seed" / "curated"
-
-
-def _ensure_gene_in_gene_lists(gene: str, category: str) -> str | None:
-    """Ensure gene is in gene_lists.tsv with the given category. Returns error string or None."""
-    gene_lists_path = CURATED_DIR / "gene_lists.tsv"
-    if not gene_lists_path.exists():
-        return f"gene_lists.tsv not found at {gene_lists_path}"
-
-    # Check if gene already present
-    with open(gene_lists_path, encoding="utf-8") as f:
-        for line in f:
-            if line.startswith("#") or not line.strip():
-                continue
-            parts = line.strip().split("\t")
-            if len(parts) >= 1 and parts[0] == gene:
-                return None  # Already present
-
-    # Append gene
-    with open(gene_lists_path, "a", encoding="utf-8") as f:
-        f.write(f"{gene}\t{category}\n")
-
-    return None
 
 
 def register(mcp, engine, db, config):
@@ -99,6 +75,14 @@ def register(mcp, engine, db, config):
                 f"Must be one of: {', '.join(sorted(VALID_EVIDENCE_LEVELS))}."
             )
 
+        # Validate allele fields are non-empty
+        if not ref.strip():
+            return "Reference allele (ref) cannot be empty."
+        if not alt.strip():
+            return "Alternate allele (alt) cannot be empty."
+        if not effect_allele.strip():
+            return "Effect allele cannot be empty."
+
         # Validate effect_allele
         if effect_allele not in (ref, alt):
             return (
@@ -134,7 +118,7 @@ def register(mcp, engine, db, config):
 
         # Ensure gene is in gene_lists.tsv
         try:
-            err = _ensure_gene_in_gene_lists(gene, "trait")
+            err = ensure_gene_in_gene_lists(gene, "trait", CURATED_DIR)
             if err:
                 return f"Error updating gene_lists.tsv: {err}"
         except OSError as e:

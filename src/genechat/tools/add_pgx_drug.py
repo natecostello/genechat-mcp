@@ -1,33 +1,8 @@
 """Add a new pharmacogenomics drug-gene pair to the seed data."""
 
 import csv
-from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
-CURATED_DIR = REPO_ROOT / "data" / "seed" / "curated"
-SEED_DIR = REPO_ROOT / "data" / "seed"
-
-
-def _ensure_gene_in_gene_lists(gene: str, category: str) -> str | None:
-    """Ensure gene is in gene_lists.tsv with the given category. Returns error string or None."""
-    gene_lists_path = CURATED_DIR / "gene_lists.tsv"
-    if not gene_lists_path.exists():
-        return f"gene_lists.tsv not found at {gene_lists_path}"
-
-    # Check if gene already present
-    with open(gene_lists_path, encoding="utf-8") as f:
-        for line in f:
-            if line.startswith("#") or not line.strip():
-                continue
-            parts = line.strip().split("\t")
-            if len(parts) >= 1 and parts[0] == gene:
-                return None  # Already present
-
-    # Append gene
-    with open(gene_lists_path, "a", encoding="utf-8") as f:
-        f.write(f"{gene}\t{category}\n")
-
-    return None
+from genechat.tools._seed_utils import CURATED_DIR, SEED_DIR, ensure_gene_in_gene_lists
 
 
 def register(mcp, engine, db, config):
@@ -87,7 +62,7 @@ def register(mcp, engine, db, config):
 
         # Ensure gene is in gene_lists.tsv
         try:
-            err = _ensure_gene_in_gene_lists(gene, "pgx")
+            err = ensure_gene_in_gene_lists(gene, "pgx", CURATED_DIR)
             if err:
                 return f"Error updating gene_lists.tsv: {err}"
         except OSError as e:
