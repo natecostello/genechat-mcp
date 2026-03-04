@@ -86,7 +86,10 @@ See docs/spec-template.md for the coverage table format.
 
 ## Workflow
 
-<!-- Describe the steps Claude Code should follow when working on this project. -->
+All changes follow the process in [CONTRIBUTING.md](CONTRIBUTING.md):
+issue, brainstorm (`/brainstorming`), plan (`/writing-plans`), execute
+(`/executing-plans`), verify (`/verification-before-completion`), review
+(`/requesting-code-review`), finalize (`/finishing-a-development-branch`), PR.
 
 ## Writing Standards
 
