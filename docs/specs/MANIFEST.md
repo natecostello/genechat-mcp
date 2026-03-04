@@ -20,6 +20,7 @@ rather than navigating the manifest manually.
 
 | Subsystem | Spec Path | Summary |
 |---|---|---|
+| GeneChat | `src/genechat/SPEC.md` | MCP server: VCF parsing, variant lookup, genomic tools |
 | Skills | `.claude/skills/SPEC.md` | Reusable agent instructions as Markdown with YAML frontmatter |
 
 ## Cross-Cutting Concerns

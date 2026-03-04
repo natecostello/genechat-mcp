@@ -9,7 +9,15 @@ On first use in a fresh clone, initialize project memory:
    Specific facts, edge cases, and session-specific context that doesn't belong
    in CLAUDE.md (which covers general workflow and standards).
    ```
-2. Configure Claude Code's auto-memory to redirect here. Write the following to the auto-memory file at `~/.claude/projects/*/memory/MEMORY.md` (the exact path depends on your project hash — check `~/.claude/projects/` for the directory matching this project):
+2. Find your Claude Code auto-memory directory. The path includes a hash
+   derived from your project's absolute path:
+   ```bash
+   ls ~/.claude/projects/
+   # Look for the directory matching your clone path, e.g.:
+   #   -Users-yourname-genechat-mcp
+   ```
+   Write the following to `~/.claude/projects/<your-dir>/memory/MEMORY.md`
+   (create the `memory/` subdirectory if it doesn't exist):
    ```markdown
    # Auto Memory Redirect
 

@@ -135,6 +135,16 @@ All open-source, publicly available:
 
 GeneChat is an informational tool, not a medical device. It is not a substitute for professional genetic counseling or medical advice. Always discuss genetic findings with a qualified healthcare provider before making health decisions.
 
+## Development
+
+Contributors use [Nix](https://nixos.org/download/) + [direnv](https://direnv.net/) for a reproducible dev environment. See [CONTRIBUTING.md](CONTRIBUTING.md) for the full workflow.
+
+```bash
+direnv allow   # loads flake.nix → python3, uv, ruff
+uv sync        # install Python dependencies
+uv run pytest  # run tests
+```
+
 ## License
 
 MIT

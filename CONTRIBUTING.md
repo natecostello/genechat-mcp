@@ -81,7 +81,7 @@ These skills ship with the repo in `.claude/skills/`. They are loaded automatica
 
 ## Project-Specific Guidelines
 
-- **Dependencies.** If you add a dependency, update `flake.nix` (Nix), the Homebrew instructions in `README.md`, and any dependency checks in `.envrc.d/setup.sh`.
+- **Dependencies.** If you add a dependency, update `flake.nix` (Nix), the Prerequisites section in `README.md`, and any dependency checks in `.envrc.d/setup.sh`.
 - **Documentation.** If your change affects usage, output, or setup, update `README.md` to match.
 - **Subsystem specs.** When a directory grows to 3+ files or contains important invariants, use `/codify-subsystem` to create a SPEC.md. See the Architecture section of CLAUDE.md.
 

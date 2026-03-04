@@ -65,7 +65,10 @@ Skills are tested via the TDD methodology defined in `writing-skills/SKILL.md`:
 pressure scenarios run against subagents with and without the skill loaded.
 
 ```bash
-# No automated test suite — skills are validated via subagent pressure testing
+# Automated invariant checks (INV-1, INV-2, INV-3)
+bash scripts/lint-skills.sh
+
+# Behavioral testing via subagent pressure tests
 # See writing-skills/testing-skills-with-subagents.md for the process
 ```
 
@@ -73,9 +76,9 @@ pressure scenarios run against subagents with and without the skill loaded.
 
 | Spec Item | Test | Description |
 |---|---|---|
-| INV-1 | Manual: verify frontmatter parses | Each new skill is checked during `/writing-skills` process |
-| INV-2 | Manual: grep for duplicate names | Check `grep -r '^name:' .claude/skills/*/SKILL.md` for duplicates |
-| INV-3 | Manual: verify gitignore entry | Part of `/codify-subsystem` and PR review checklist |
+| INV-1 | `scripts/lint-skills.sh` | Verifies YAML frontmatter with `name` + `description` fields |
+| INV-2 | `scripts/lint-skills.sh` | Checks for duplicate `name` values across all SKILL.md files |
+| INV-3 | `scripts/lint-skills.sh` | Verifies each tracked skill directory has a negated `.gitignore` entry |
 | INV-4 | Manual: check UPSTREAM-superpowers.md | Review during upstream sync |
 | FAIL-1 | Subagent test: skill discovery | Pressure test from `writing-skills/testing-skills-with-subagents.md` |
 | FAIL-2 | Subagent test: keyword specificity | Pressure test with ambiguous task description |

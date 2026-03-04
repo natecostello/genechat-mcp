@@ -38,6 +38,7 @@ Closes #
 - [ ] `/requesting-code-review`
 - [ ] `/finishing-a-development-branch` (auto-triggered)
 - [ ] `/using-git-worktrees`
+- [ ] `/test-driven-development`
 - [ ] `/systematic-debugging`
 - [ ] `/writing-skills` (for skill contributions)
 - [ ] `/writing-clearly-and-concisely`

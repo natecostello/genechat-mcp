@@ -22,9 +22,6 @@
               uv
               ruff
             ];
-            shellHook = ''
-              true
-            '';
           };
         });
     };
