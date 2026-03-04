@@ -99,7 +99,9 @@ export GENECHAT_VCF=/path/to/your/annotated.vcf.gz
 
 ### 6. Connect to Claude
 
-Add to your Claude Desktop or Claude Code MCP config:
+Add to your Claude Desktop or Claude Code MCP config.
+
+**With config file:**
 
 ```json
 {
@@ -109,6 +111,22 @@ Add to your Claude Desktop or Claude Code MCP config:
       "args": ["run", "--directory", "/path/to/genechat-mcp", "genechat"],
       "env": {
         "GENECHAT_CONFIG": "/path/to/genechat-mcp/config.toml"
+      }
+    }
+  }
+}
+```
+
+**Or with `GENECHAT_VCF` only** (no config file needed):
+
+```json
+{
+  "mcpServers": {
+    "genechat": {
+      "command": "uv",
+      "args": ["run", "--directory", "/path/to/genechat-mcp", "genechat"],
+      "env": {
+        "GENECHAT_VCF": "/path/to/your/annotated.vcf.gz"
       }
     }
   }
