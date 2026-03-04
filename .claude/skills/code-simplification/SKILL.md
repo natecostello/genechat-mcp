@@ -91,7 +91,7 @@ FOR each simplification opportunity:
      - Continue to next
 
   4. IF tests FAIL:
-     - ANALYZE the failure (see @failure-analysis.md):
+     - ANALYZE the failure (see @references/failure-analysis.md):
        • Brittle test? → Flag for test improvement
        • Hidden coupling? → Flag as refactor opportunity
        • Inconsistency revealed? → Attempt expanded fix
@@ -236,5 +236,5 @@ If final verification fails after all simplifications:
 
 ## References
 
-- @patterns-by-language.md - Language-specific pattern refinements
-- @failure-analysis.md - How to analyze test failures for deeper issues
+- @references/patterns-by-language.md - Language-specific pattern refinements
+- @references/failure-analysis.md - How to analyze test failures for deeper issues
