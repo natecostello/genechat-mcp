@@ -1,55 +1,56 @@
 # Trait variant metadata (coordinates fetched from Ensembl)
 # Source: Published GWAS, curated references with PubMed IDs
-# Columns: rsid, gene, trait_category, trait, effect_allele, effect_description, evidence_level, pmid
-rsid	gene	trait_category	trait	effect_allele	effect_description	evidence_level	pmid
+# ref/alt are GRCh38+ strand alleles. Verified against dbSNP/test VCF where possible.
+# Columns: rsid, gene, trait_category, trait, ref, alt, effect_allele, effect_description, evidence_level, pmid
+rsid	gene	trait_category	trait	ref	alt	effect_allele	effect_description	evidence_level	pmid
 # === Nutrigenomics ===
-rs9939609	FTO	nutrigenomics	Obesity susceptibility	A	Each A allele increases BMI by ~0.35 kg/m2 and obesity risk by ~1.2x	strong	17434869
-rs4988235	MCM6	nutrigenomics	Lactose tolerance	A	A allele (T on coding strand) confers lactase persistence in Europeans	strong	11788828
-rs174547	FADS1	nutrigenomics	Omega-3/6 metabolism	C	C allele associated with lower desaturase activity and altered fatty acid levels	strong	21829377
-rs1801133	MTHFR	nutrigenomics	Folate metabolism (C677T)	A	A allele (677T) reduces enzyme activity ~35% per allele; homozygous ~70% reduction	strong	8630491
-rs1801131	MTHFR	nutrigenomics	Folate metabolism (A1298C)	G	G allele (1298C) mildly reduces MTHFR activity; compound heterozygosity with C677T increases risk	moderate	10444342
-rs5082	APOA2	nutrigenomics	Saturated fat sensitivity	A	AA homozygotes have higher BMI on high saturated fat diets	moderate	19131637
-rs713598	TAS2R38	nutrigenomics	Bitter taste perception	C	Part of PAV haplotype conferring strong bitter taste sensitivity	strong	12595690
-rs4654748	NBPF3	nutrigenomics	Vitamin B6 levels	C	C allele associated with lower plasma vitamin B6 levels	moderate	19744961
+rs9939609	FTO	nutrigenomics	Obesity susceptibility	T	A	A	Each A allele increases BMI by ~0.35 kg/m2 and obesity risk by ~1.2x	strong	17434869
+rs4988235	MCM6	nutrigenomics	Lactose tolerance	G	A	A	A allele (T on coding strand) confers lactase persistence in Europeans	strong	11788828
+rs174547	FADS1	nutrigenomics	Omega-3/6 metabolism	T	C	C	C allele associated with lower desaturase activity and altered fatty acid levels	strong	21829377
+rs1801133	MTHFR	nutrigenomics	Folate metabolism (C677T)	G	A	A	A allele (677T) reduces enzyme activity ~35% per allele; homozygous ~70% reduction	strong	8630491
+rs1801131	MTHFR	nutrigenomics	Folate metabolism (A1298C)	T	G	G	G allele (1298C) mildly reduces MTHFR activity; compound heterozygosity with C677T increases risk	moderate	10444342
+rs5082	APOA2	nutrigenomics	Saturated fat sensitivity	G	A	A	AA homozygotes have higher BMI on high saturated fat diets	moderate	19131637
+rs713598	TAS2R38	nutrigenomics	Bitter taste perception	G	C	C	Part of PAV haplotype conferring strong bitter taste sensitivity	strong	12595690
+rs4654748	NBPF3	nutrigenomics	Vitamin B6 levels	C	T	C	C allele associated with lower plasma vitamin B6 levels	moderate	19744961
 # === Exercise ===
-rs1815739	ACTN3	exercise	Sprint/power muscle fiber	T	T allele (577X) causes alpha-actinin-3 deficiency; CC genotype favors sprint/power	strong	12879365
-rs1800012	COL1A1	exercise	Tendon/ligament injury risk	T	T allele associated with reduced risk of cruciate ligament rupture	moderate	18191882
-rs12722	COL5A1	exercise	Ligament flexibility	C	C allele associated with increased ligament and tendon injury risk	moderate	19584899
-rs8192678	PPARGC1A	exercise	Endurance capacity	A	A allele (Gly482Ser) associated with reduced aerobic capacity	moderate	14613869
-rs1800795	IL6	exercise	Exercise recovery/inflammation	C	C allele associated with higher IL-6 levels and increased inflammation response	moderate	9831340
-rs1800629	TNF	exercise	Inflammation response	A	A allele associated with higher TNF-alpha production and inflammation	moderate	8833553
-rs4253778	PPARA	exercise	Endurance vs power	C	C allele (intron 7 G>C) associated with endurance athlete status	moderate	15166659
+rs1815739	ACTN3	exercise	Sprint/power muscle fiber	C	T	T	T allele (577X) causes alpha-actinin-3 deficiency; CC genotype favors sprint/power	strong	12879365
+rs1800012	COL1A1	exercise	Tendon/ligament injury risk	G	T	T	T allele associated with reduced risk of cruciate ligament rupture	moderate	18191882
+rs12722	COL5A1	exercise	Ligament flexibility	C	T	C	C allele associated with increased ligament and tendon injury risk	moderate	19584899
+rs8192678	PPARGC1A	exercise	Endurance capacity	G	A	A	A allele (Gly482Ser) associated with reduced aerobic capacity	moderate	14613869
+rs1800795	IL6	exercise	Exercise recovery/inflammation	G	C	C	C allele associated with higher IL-6 levels and increased inflammation response	moderate	9831340
+rs1800629	TNF	exercise	Inflammation response	G	A	A	A allele associated with higher TNF-alpha production and inflammation	moderate	8833553
+rs4253778	PPARA	exercise	Endurance vs power	G	C	C	C allele (intron 7 G>C) associated with endurance athlete status	moderate	15166659
 # === Metabolism ===
-rs762551	CYP1A2	metabolism	Caffeine metabolism	C	C allele = slow caffeine metabolizer; AC/CC genotypes at higher cardiovascular risk with high coffee intake	strong	16522833
-rs1229984	ADH1B	metabolism	Alcohol metabolism	C	C allele (His48Arg) causes rapid alcohol to acetaldehyde conversion; protective against alcoholism	strong	19584899
-rs671	ALDH2	metabolism	Alcohol flush reaction	A	A allele causes alcohol flush reaction and acetaldehyde accumulation; very common in East Asians	strong	20855893
+rs762551	CYP1A2	metabolism	Caffeine metabolism	A	C	C	C allele = slow caffeine metabolizer; AC/CC genotypes at higher cardiovascular risk with high coffee intake	strong	16522833
+rs1229984	ADH1B	metabolism	Alcohol metabolism	T	C	C	C allele (His48Arg) causes rapid alcohol to acetaldehyde conversion; protective against alcoholism	strong	19584899
+rs671	ALDH2	metabolism	Alcohol flush reaction	G	A	A	A allele causes alcohol flush reaction and acetaldehyde accumulation; very common in East Asians	strong	20855893
 # === Cardiovascular ===
-rs6025	F5	cardiovascular	Factor V Leiden thrombophilia	T	T allele (Arg506Gln) causes activated protein C resistance; 3-8x increased VTE risk heterozygous	strong	7989264
-rs1799963	F2	cardiovascular	Prothrombin thrombophilia	A	A allele (20210G>A) increases prothrombin levels; 2-3x increased VTE risk	strong	8679209
-rs429358	APOE	cardiovascular	APOE e4 allele (part 1)	C	Part of APOE e4 haplotype. e4 carriers have increased LDL and Alzheimer risk	strong	8346443
-rs7412	APOE	cardiovascular	APOE e2 allele (part 2)	T	Part of APOE e2 haplotype. e2/e2 associated with type III hyperlipoproteinemia	strong	8346443
+rs6025	F5	cardiovascular	Factor V Leiden thrombophilia	C	T	T	T allele (Arg506Gln) causes activated protein C resistance; 3-8x increased VTE risk heterozygous	strong	7989264
+rs1799963	F2	cardiovascular	Prothrombin thrombophilia	G	A	A	A allele (20210G>A) increases prothrombin levels; 2-3x increased VTE risk	strong	8679209
+rs429358	APOE	cardiovascular	APOE e4 allele (part 1)	T	C	C	Part of APOE e4 haplotype. e4 carriers have increased LDL and Alzheimer risk	strong	8346443
+rs7412	APOE	cardiovascular	APOE e2 allele (part 2)	C	T	T	Part of APOE e2 haplotype. e2/e2 associated with type III hyperlipoproteinemia	strong	8346443
 # === Other ===
-rs1800562	HFE	other	Hereditary hemochromatosis (C282Y)	A	A allele (C282Y) most common HFE mutation; homozygous = high iron overload risk	strong	8696333
-rs1799945	HFE	other	Hereditary hemochromatosis (H63D)	G	G allele (H63D) mildly increases iron absorption; compound heterozygote C282Y/H63D increases risk	strong	8696333
-rs3064744	UGT1A1	other	Gilbert syndrome	TAn	(TA)7 repeat (*28) reduces UGT1A1 expression; causes benign unconjugated hyperbilirubinemia	strong	7481376
+rs1800562	HFE	other	Hereditary hemochromatosis (C282Y)	G	A	A	A allele (C282Y) most common HFE mutation; homozygous = high iron overload risk	strong	8696333
+rs1799945	HFE	other	Hereditary hemochromatosis (H63D)	C	G	G	G allele (H63D) mildly increases iron absorption; compound heterozygote C282Y/H63D increases risk	strong	8696333
+rs3064744	UGT1A1	other	Gilbert syndrome	.	.	TAn	(TA)7 repeat (*28) reduces UGT1A1 expression; causes benign unconjugated hyperbilirubinemia	strong	7481376
 # === Sleep ===
-rs1801260	CLOCK	sleep	Evening chronotype	G	G allele (3111T>C) associated with evening preference and delayed sleep phase	moderate	9545397
-rs73598374	ADA	sleep	Deep sleep efficiency	T	T allele associated with increased slow-wave sleep and deeper sleep	moderate	15800623
-rs4753426	MTNR1B	sleep	Melatonin receptor sensitivity	C	C allele associated with later chronotype and altered melatonin signaling	moderate	22065738
+rs1801260	CLOCK	sleep	Evening chronotype	A	G	G	G allele (3111T>C) associated with evening preference and delayed sleep phase	moderate	9545397
+rs73598374	ADA	sleep	Deep sleep efficiency	C	T	T	T allele associated with increased slow-wave sleep and deeper sleep	moderate	15800623
+rs4753426	MTNR1B	sleep	Melatonin receptor sensitivity	T	C	C	C allele associated with later chronotype and altered melatonin signaling	moderate	22065738
 # === Skin ===
-rs1805007	MC1R	skin	Red hair / fair skin	T	T allele (Arg151Cys) one of the most penetrant red hair variants; increased melanoma risk	strong	8528268
-rs16891982	SLC45A2	skin	Skin pigmentation	C	C allele (Leu374Phe) strongly associated with lighter skin in Europeans	strong	17570750
-rs12913832	HERC2	skin	Eye color	A	A allele associated with blue eye color; major determinant of eye color variation	strong	18172690
+rs1805007	MC1R	skin	Red hair / fair skin	C	T	T	T allele (Arg151Cys) one of the most penetrant red hair variants; increased melanoma risk	strong	8528268
+rs16891982	SLC45A2	skin	Skin pigmentation	G	C	C	C allele (Leu374Phe) strongly associated with lighter skin in Europeans	strong	17570750
+rs12913832	HERC2	skin	Eye color	G	A	A	A allele associated with blue eye color; major determinant of eye color variation	strong	18172690
 # === Vitamins ===
-rs12785878	DHCR7	vitamins	Vitamin D levels	T	T allele associated with lower 25-hydroxyvitamin D levels	strong	20541252
-rs2282679	GC	vitamins	Vitamin D binding protein	C	C allele associated with lower circulating vitamin D levels	strong	20541252
-rs602662	FUT2	vitamins	Vitamin B12 absorption	A	A allele associated with lower serum vitamin B12 levels (secretor status)	moderate	18776911
+rs12785878	DHCR7	vitamins	Vitamin D levels	G	T	T	T allele associated with lower 25-hydroxyvitamin D levels	strong	20541252
+rs2282679	GC	vitamins	Vitamin D binding protein	T	G	C	C allele associated with lower circulating vitamin D levels	strong	20541252
+rs602662	FUT2	vitamins	Vitamin B12 absorption	G	A	A	A allele associated with lower serum vitamin B12 levels (secretor status)	moderate	18776911
 # === Immune ===
-rs2476601	PTPN22	immune	Autoimmune susceptibility	A	A allele (Arg620Trp) increases risk of type 1 diabetes, RA, lupus, thyroiditis	strong	15208781
-rs3087243	CTLA4	immune	Autoimmune susceptibility	G	G allele associated with increased risk of autoimmune thyroid disease and type 1 diabetes	moderate	12724780
+rs2476601	PTPN22	immune	Autoimmune susceptibility	G	A	A	A allele (Arg620Trp) increases risk of type 1 diabetes, RA, lupus, thyroiditis	strong	15208781
+rs3087243	CTLA4	immune	Autoimmune susceptibility	A	G	G	G allele associated with increased risk of autoimmune thyroid disease and type 1 diabetes	moderate	12724780
 # === Cognition ===
-rs6265	BDNF	cognition	Memory and learning	T	T allele (Val66Met) reduces activity-dependent BDNF secretion; affects hippocampal function	strong	12686112
-rs4680	COMT	cognition	Dopamine metabolism (Warrior/Worrier)	A	A allele (Met) = slower dopamine breakdown = higher prefrontal dopamine; better working memory, more stress sensitivity	strong	15457404
+rs6265	BDNF	cognition	Memory and learning	C	T	T	T allele (Val66Met) reduces activity-dependent BDNF secretion; affects hippocampal function	strong	12686112
+rs4680	COMT	cognition	Dopamine metabolism (Warrior/Worrier)	G	A	A	A allele (Met) = slower dopamine breakdown = higher prefrontal dopamine; better working memory, more stress sensitivity	strong	15457404
 # === Longevity ===
-rs2802292	FOXO3	longevity	Longevity association	T	T allele associated with exceptional longevity in multiple populations	strong	18765803
-rs1556516	CDKN2B-AS1	longevity	Cardiovascular aging	G	G allele at 9p21 locus associated with increased cardiovascular disease risk and biological aging	strong	17478679
+rs2802292	FOXO3	longevity	Longevity association	G	T	T	T allele associated with exceptional longevity in multiple populations	strong	18765803
+rs1556516	CDKN2B-AS1	longevity	Cardiovascular aging	C	G	G	G allele at 9p21 locus associated with increased cardiovascular disease risk and biological aging	strong	17478679

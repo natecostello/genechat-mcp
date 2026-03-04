@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """Fetch variant coordinates from Ensembl REST API for trait and PGx variants.
 
-Input:  data/seed/curated/trait_metadata.tsv (rsid, gene, ...)
+Input:  data/seed/curated/trait_metadata.tsv (rsid, gene, ref, alt, ...)
         data/seed/pgx_variants.tsv (gene, rsid, chrom, pos, ref, alt, ...)
-Output: data/seed/trait_variants.tsv (with verified chrom, pos, ref, alt)
-        data/seed/pgx_variants.tsv (with verified coordinates)
+Output: data/seed/trait_variants.tsv (with verified chrom, pos from Ensembl + curated ref/alt)
+        data/seed/pgx_variants.tsv (with verified chrom/pos; curated ref/alt preserved)
 
 Uses Ensembl POST /variation/homo_sapiens endpoint (batch, up to 200 per request).
+Ensembl's allele_string is an unordered list of observed alleles and must NOT be
+assumed to be ordered as REF/ALT. We only trust Ensembl for coordinates (chrom, pos).
 """
 
 import csv
@@ -59,7 +61,11 @@ def batch_variation_lookup(rsids: list[str], max_retries: int = 3) -> dict:
 
 
 def extract_coords(variant_data: dict) -> dict | None:
-    """Extract GRCh38 coordinates from Ensembl variation response."""
+    """Extract GRCh38 coordinates from Ensembl variation response.
+
+    Only returns chrom and pos. Ensembl's allele_string is an unordered list
+    of observed alleles and must not be assumed to be ordered as REF/ALT.
+    """
     mappings = variant_data.get("mappings", [])
     if not mappings:
         return None
@@ -78,24 +84,16 @@ def extract_coords(variant_data: dict) -> dict | None:
             ):
                 continue
 
-            start = m.get("start")
-            allele_string = m.get("allele_string", "")
-            parts = allele_string.split("/")
-            ref = parts[0] if parts else ""
-            alt = parts[1] if len(parts) > 1 else ""
-
             return {
                 "chrom": chrom,
-                "pos": start,
-                "ref": ref,
-                "alt": alt,
+                "pos": m.get("start"),
             }
 
     return None
 
 
-def fetch_variant_coords(rsids: list[str]) -> dict:
-    """Fetch coordinates for all rsIDs. Returns dict of rsid -> coords."""
+def fetch_variant_coords(rsids: list[str]) -> tuple[dict, list[str]]:
+    """Fetch coordinates for all rsIDs. Returns (dict of rsid -> coords, not_found list)."""
     results = {}
     not_found = []
 
@@ -133,7 +131,10 @@ def fetch_variant_coords(rsids: list[str]) -> dict:
 
 
 def build_trait_variants(trait_metadata: list[dict], coords: dict) -> list[dict]:
-    """Merge trait metadata with fetched coordinates."""
+    """Merge trait metadata with fetched coordinates.
+
+    Uses curated ref/alt from trait_metadata (not Ensembl allele_string).
+    """
     output_rows = []
     for row in trait_metadata:
         rsid = row["rsid"]
@@ -149,8 +150,8 @@ def build_trait_variants(trait_metadata: list[dict], coords: dict) -> list[dict]
                 "rsid": rsid,
                 "chrom": c["chrom"],
                 "pos": c["pos"],
-                "ref": c["ref"],
-                "alt": c["alt"],
+                "ref": row.get("ref", "."),
+                "alt": row.get("alt", "."),
                 "gene": row["gene"],
                 "trait_category": row["trait_category"],
                 "trait": row["trait"],
@@ -165,7 +166,7 @@ def build_trait_variants(trait_metadata: list[dict], coords: dict) -> list[dict]
 
 
 def update_pgx_variants(pgx_rows: list[dict], coords: dict) -> list[dict]:
-    """Update PGx variant coordinates from Ensembl, warning on mismatches."""
+    """Update PGx variant chrom/pos from Ensembl; never overwrite curated ref/alt."""
     updated = []
     for row in pgx_rows:
         rsid = row.get("rsid", "")
@@ -175,20 +176,14 @@ def update_pgx_variants(pgx_rows: list[dict], coords: dict) -> list[dict]:
             old_pos = row.get("pos", "")
             new_pos = str(c["pos"])
             if old_pos and old_pos != new_pos:
-                print(f"  MISMATCH: {rsid} pos {old_pos} -> {new_pos} (using Ensembl)")
+                print(
+                    f"  POS UPDATE: {rsid} pos {old_pos} -> {new_pos} (using Ensembl)"
+                )
 
             row_out = dict(row)
             row_out["chrom"] = c["chrom"]
             row_out["pos"] = c["pos"]
-            # Only update ref/alt if they were simple alleles (not 'del', 'TAn', etc.)
-            if (
-                c["ref"]
-                and c["alt"]
-                and "n" not in row.get("alt", "")
-                and row.get("alt") != "del"
-            ):
-                row_out["ref"] = c["ref"]
-                row_out["alt"] = c["alt"]
+            # Never overwrite curated ref/alt — Ensembl allele_string is unordered
             updated.append(row_out)
         else:
             # Keep existing coordinates
