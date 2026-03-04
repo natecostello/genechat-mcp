@@ -66,6 +66,7 @@ class TestGroundTruthAbsent:
 class TestEngineBasics:
     """Basic VCFEngine functionality with real GIAB data."""
 
+    @pytest.mark.slow
     def test_stats_returns_millions(self, giab_engine):
         """GIAB v4.2.1 has ~3.7M variants."""
         stats = giab_engine.stats()
