@@ -1,6 +1,10 @@
 // Complete implementation of condition-based waiting utilities
 // From: Lace test infrastructure improvements (2025-10-03)
 // Context: Fixed 15 flaky tests by replacing arbitrary timeouts
+//
+// NOTE: TypeScript example from an upstream project. The pattern
+// (condition-based waiting vs arbitrary timeouts) is language-agnostic.
+// See condition-based-waiting.md for the concept.
 
 import type { ThreadManager } from '~/threads/thread-manager';
 import type { LaceEvent, LaceEventType } from '~/threads/types';
