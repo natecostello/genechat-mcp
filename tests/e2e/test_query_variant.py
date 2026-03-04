@@ -1,5 +1,6 @@
 """E2E tests for query_variant tool against GIAB NA12878."""
 
+import pytest
 from mcp.server.fastmcp import FastMCP
 
 from genechat.tools.query_variant import register
@@ -13,6 +14,7 @@ def _get_tool(giab_engine, giab_db, giab_config):
 
 
 class TestQueryVariantGIAB:
+    @pytest.mark.slow
     def test_rsid_het_variant(self, giab_engine, giab_db, giab_config):
         """Query rs3892097 (CYP2D6 *4) — expected heterozygous."""
         fn = _get_tool(giab_engine, giab_db, giab_config)
@@ -22,6 +24,7 @@ class TestQueryVariantGIAB:
             f"Expected heterozygous for CYP2D6 *4, got: {result[:200]}"
         )
 
+    @pytest.mark.slow
     def test_rsid_absent_variant(self, giab_engine, giab_db, giab_config):
         """Query rs4149056 (SLCO1B1 *5) — expected absent (ref/ref)."""
         fn = _get_tool(giab_engine, giab_db, giab_config)
