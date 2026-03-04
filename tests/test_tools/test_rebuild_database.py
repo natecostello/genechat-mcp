@@ -20,13 +20,11 @@ class TestRebuildDatabase:
         mock_result = MagicMock()
         mock_result.returncode = 0
         mock_result.stdout = (
-            "GeneChat Seed Data Build Pipeline\n"
-            "============================================================\n"
-            "Pipeline complete! Row counts:\n"
-            "============================================================\n"
-            "  genes                19345 rows  (genes_grch38.tsv)\n"
-            "  pgx_drugs               22 rows  (pgx_drugs.tsv)\n"
-            "  trait_variants           40 rows  (trait_variants.tsv)\n"
+            "Building GeneChat lookup database...\n"
+            "  genes: 19345 rows loaded from genes_grch38.tsv\n"
+            "  pgx_drugs: 22 rows loaded from pgx_drugs.tsv\n"
+            "  trait_variants: 40 rows loaded from trait_variants.tsv\n"
+            "Done."
         )
         mock_result.stderr = ""
 
@@ -37,7 +35,7 @@ class TestRebuildDatabase:
             result = fn()
 
         assert "Rebuilt Successfully" in result
-        assert "Pipeline complete" in result
+        assert "genes" in result
         assert "Restart" in result or "restart" in result
 
     def test_failed_rebuild(self, mock_engine, test_db, test_config):
@@ -66,25 +64,12 @@ class TestRebuildDatabase:
             result = fn()
 
         assert "Timed Out" in result
-        assert "10-minute" in result
+        assert "2-minute" in result
 
     def test_missing_script(self, mock_engine, test_db, test_config):
-        with patch(
-            "genechat.tools.rebuild_database.BUILD_SCRIPT",
-            __class__=type(
-                "FakePath",
-                (),
-                {"exists": lambda self: False, "__str__": lambda self: "/fake/path"},
-            ),
-        ):
-            # Use a simpler approach — patch the Path.exists check
-            fn = _setup_tool(mock_engine, test_db, test_config)
-
-        # The tool was already registered with the real BUILD_SCRIPT path.
-        # Let's test with a proper patch at call time instead.
         from pathlib import Path
 
-        fake_path = Path("/nonexistent/scripts/build_seed_data.py")
+        fake_path = Path("/nonexistent/scripts/build_lookup_db.py")
         with patch("genechat.tools.rebuild_database.BUILD_SCRIPT", fake_path):
             mcp = FastMCP("test")
             register(mcp, mock_engine, test_db, test_config)
