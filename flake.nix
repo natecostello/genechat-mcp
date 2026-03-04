@@ -1,5 +1,5 @@
 {
-  description = "project development environment";
+  description = "genechat-mcp development environment";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
@@ -19,6 +19,7 @@
           default = pkgs.mkShell {
             buildInputs = with pkgs; [
               python3
+              uv
               ruff
             ];
             shellHook = ''
