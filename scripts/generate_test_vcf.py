@@ -196,8 +196,6 @@ def generate_vcf():
         for chrom, pos, rsid, ref, alt, qual, filt, info, gt in sorted_variants:
             f.write(f"{chrom}\t{pos}\t{rsid}\t{ref}\t{alt}\t{qual}\t{filt}\t{info}\tGT\t{gt}\n")
 
-    print(f"VCF written to: {vcf_path}")
-
     # Compress and index with pysam
     if gz_path.exists():
         gz_path.unlink()
