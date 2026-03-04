@@ -1,4 +1,6 @@
 {
+  "_comment": "Use ONE of the configurations below (uv or Docker), not both.",
+
   "mcpServers": {
     "genechat": {
       "command": "uv",
@@ -6,6 +8,17 @@
       "env": {
         "GENECHAT_CONFIG": "/path/to/config.toml"
       }
+    },
+
+    "genechat-docker": {
+      "command": "docker",
+      "args": [
+        "run", "-i", "--rm",
+        "-v", "/path/to/your/genome.vcf.gz:/data/genome.vcf.gz:ro",
+        "-v", "/path/to/your/genome.vcf.gz.tbi:/data/genome.vcf.gz.tbi:ro",
+        "-e", "GENECHAT_VCF=/data/genome.vcf.gz",
+        "genechat-mcp"
+      ]
     }
   }
 }

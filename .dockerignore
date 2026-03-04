@@ -1,0 +1,11 @@
+.venv/
+.git/
+tests/
+.pytest_cache/
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+*.vcf.gz
+*.vcf.gz.tbi

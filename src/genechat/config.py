@@ -77,12 +77,23 @@ def _find_config_file() -> Path | None:
 
 
 def load_config(path: str | None = None) -> AppConfig:
-    """Load config from a TOML file. Falls back to defaults if no file found."""
+    """Load config from a TOML file. Falls back to defaults if no file found.
+
+    Supports GENECHAT_VCF env var as a shortcut for genome.vcf_path,
+    useful for Docker where users can skip config files entirely.
+    """
     config_path = Path(path) if path else _find_config_file()
 
     if config_path and config_path.exists():
         with open(config_path, "rb") as f:
             data = tomllib.load(f)
-        return AppConfig(**data)
+        config = AppConfig(**data)
+    else:
+        config = AppConfig()
 
-    return AppConfig()
+    # GENECHAT_VCF env var overrides vcf_path if not already set
+    vcf_env = os.environ.get("GENECHAT_VCF")
+    if vcf_env and not config.genome.vcf_path:
+        config.genome.vcf_path = vcf_env
+
+    return config
