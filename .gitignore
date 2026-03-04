@@ -48,6 +48,9 @@ result
 !.claude/skills/writing-plans/
 !.claude/skills/writing-skills/
 
+# Git worktrees (created by /using-git-worktrees skill)
+.worktrees/
+
 # Local envrc overrides
 .envrc.local.d/
 
