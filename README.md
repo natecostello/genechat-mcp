@@ -177,13 +177,32 @@ uv run ruff format --check .
 
 GeneChat includes an optional e2e test suite that runs every tool against the [GIAB NA12878 (HG001)](https://www.nist.gov/programs-projects/genome-bottle) benchmark genome (~3.7M variants). These tests validate real-world behavior and verify known pharmacogenomic genotypes.
 
-**Setup** (one-time, ~30 min, ~5 GB downloads):
+There are two setup paths:
+
+| Feature | Python-only (`setup_giab.py`) | Full (`setup_giab.sh`) |
+|---------|-------------------------------|------------------------|
+| rsID lookup | Yes | Yes |
+| ClinVar significance | Yes | Yes |
+| SnpEff functional annotation | No* | Yes |
+| gnomAD frequencies | No | Optional |
+| Prerequisites | Python only | Java + bcftools + SnpEff |
+| Setup time | ~20-30 min | ~30 min |
+
+\*Claude already knows functional consequences for well-characterized variants. Missing SnpEff annotation has minimal practical impact on conversation quality.
+
+**Option A: Python-only setup** (recommended — no external tools needed):
+
+```bash
+uv run python scripts/setup_giab.py ./giab
+```
+
+Add `--skip-rsid` to skip the ~15 GB dbSNP download (ClinVar still works, but rsID-based lookups won't).
+
+**Option B: Full setup** (requires bcftools, Java, SnpEff/SnpSift):
 
 ```bash
 bash scripts/setup_giab.sh ./giab
 ```
-
-This downloads the GIAB VCF, fixes chromosome prefixes, and annotates with SnpEff + dbSNP + ClinVar. Prerequisites: bcftools, Java, SnpEff/SnpSift.
 
 **Run e2e tests:**
 
