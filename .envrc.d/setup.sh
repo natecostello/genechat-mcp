@@ -1,4 +1,5 @@
 # Verify required dev tools are on PATH (works with Nix or Homebrew).
+# Sourced by .envrc — uses direnv builtins (has, log_error). Not standalone.
 _missing=()
 for _cmd in python3 uv ruff; do
     has "$_cmd" || _missing+=("$_cmd")

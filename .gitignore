@@ -54,8 +54,9 @@ result
 # Local envrc overrides
 .envrc.local.d/
 
-# Working documents (docs/plans/.gitkeep is tracked; directory contents are not)
-docs/plans/
+# Working documents
+docs/plans/*
+!docs/plans/.gitkeep
 
 # Project memory
 MEMORY.md
