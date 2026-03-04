@@ -19,6 +19,8 @@ def register(mcp, engine, db, config):
 
         Use this when a user asks about variants in a gene (e.g. "What variants do I have in BRCA1?").
         Filters by SnpEff impact level (HIGH, MODERATE, LOW, MODIFIER) by default.
+        If functional annotation is not available, all variants are included regardless
+        of impact filter.
         """
         gene_info = db.get_gene(gene)
         if not gene_info:
@@ -39,12 +41,13 @@ def register(mcp, engine, db, config):
         except (ValueError, VCFEngineError) as e:
             return f"Error querying gene {gene}: {e}"
 
-        # Filter by impact
+        # Filter by impact — pass through variants with no annotation data
         if impact_filter:
             variants = [
                 v
                 for v in variants
-                if v.get("annotation", {}).get("impact", "").upper() in impacts
+                if not v.get("annotation", {}).get("impact")
+                or v["annotation"]["impact"].upper() in impacts
             ]
 
         # Cap results

@@ -34,3 +34,26 @@ class TestQueryGene:
         result = fn(gene="BRCA1")
         assert "No" in result
         assert "variants found" in result.lower() or "impact" in result.lower()
+
+    def test_mixed_annotated_and_unannotated(self, mock_engine, test_db, test_config):
+        """Both annotated and unannotated variants appear in results."""
+        from tests.conftest import SAMPLE_VARIANT_SLCO1B1
+
+        unannotated = {
+            "chrom": "chr12",
+            "pos": 21178700,
+            "rsid": "rs99999",
+            "ref": "A",
+            "alt": "G",
+            "genotype": {"display": "A/G", "zygosity": "heterozygous"},
+            "annotation": {},
+            "clinvar": {},
+            "population_freq": {},
+        }
+        mock_engine.query_region.return_value = [SAMPLE_VARIANT_SLCO1B1, unannotated]
+        fn = _setup_tool(mock_engine, test_db, test_config)
+        result = fn(gene="SLCO1B1")
+
+        assert "rs4149056" in result  # annotated
+        assert "rs99999" in result  # unannotated
+        assert "missense_variant" in result  # from annotated variant

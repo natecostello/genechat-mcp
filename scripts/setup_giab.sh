@@ -1,6 +1,15 @@
 #!/bin/bash
 # setup_giab.sh — Download and annotate GIAB NA12878 (HG001) for GeneChat e2e testing
 #
+# NOTE: For a Python-only alternative that requires no external tools (no bcftools,
+# Java, SnpEff), use setup_giab.py instead:
+#
+#   uv run python scripts/setup_giab.py [OUTPUT_DIR] [--skip-rsid]
+#
+# The Python setup provides ClinVar + dbSNP rsID annotation. This shell script
+# additionally provides SnpEff functional annotation (ANN field) and optional
+# gnomAD frequencies. See README.md for a comparison table.
+#
 # Usage:
 #   bash scripts/setup_giab.sh [OUTPUT_DIR]
 #
