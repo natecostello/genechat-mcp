@@ -23,21 +23,28 @@ class TestGroundTruthPresent:
             f"but no variants found in region"
         )
 
-        # Check zygosity of the variant at this position
-        found = False
-        for v in variants:
-            if v["pos"] == expected["pos"]:
-                assert v["genotype"]["zygosity"] == expected["expected_zygosity"], (
-                    f"{rsid} ({expected['notes']}): expected {expected['expected_zygosity']}, "
-                    f"got {v['genotype']['zygosity']} ({v['genotype']['display']})"
-                )
-                found = True
-                break
-
-        assert found, (
+        # Check zygosity of all records at this position
+        at_pos = [v for v in variants if v["pos"] == expected["pos"]]
+        assert len(at_pos) > 0, (
             f"Variant at exact position {expected['pos']} not found. "
             f"Got positions: {[v['pos'] for v in variants]}"
         )
+
+        # At least one record should match the expected zygosity
+        matching = [
+            v
+            for v in at_pos
+            if v["genotype"]["zygosity"] == expected["expected_zygosity"]
+        ]
+        if not matching:
+            details = ", ".join(
+                f"{v['genotype']['zygosity']} ({v['genotype']['display']})"
+                for v in at_pos
+            )
+            pytest.fail(
+                f"{rsid} ({expected['notes']}): expected {expected['expected_zygosity']}, "
+                f"got [{details}]"
+            )
 
 
 class TestGroundTruthAbsent:
@@ -53,14 +60,22 @@ class TestGroundTruthAbsent:
         region = f"{expected['chrom']}:{expected['pos']}-{expected['pos'] + 1}"
         variants = giab_engine.query_region(region)
 
-        # Either no variants at this position, or the variant at this exact
-        # position should be homozygous reference
+        # Either no variants at this position, or any variants at this exact
+        # position should all be homozygous reference
         at_pos = [v for v in variants if v["pos"] == expected["pos"]]
         if at_pos:
-            assert at_pos[0]["genotype"]["zygosity"] == "homozygous_ref", (
-                f"{rsid} ({expected['notes']}): expected homozygous_ref (absent), "
-                f"got {at_pos[0]['genotype']['zygosity']} ({at_pos[0]['genotype']['display']})"
+            all_hom_ref = all(
+                v["genotype"]["zygosity"] == "homozygous_ref" for v in at_pos
             )
+            if not all_hom_ref:
+                details = ", ".join(
+                    f"{v['genotype']['zygosity']} ({v['genotype']['display']})"
+                    for v in at_pos
+                )
+                pytest.fail(
+                    f"{rsid} ({expected['notes']}): expected all homozygous_ref (absent), "
+                    f"got [{details}]"
+                )
 
 
 class TestEngineBasics:
