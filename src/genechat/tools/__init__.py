@@ -1,6 +1,9 @@
 """MCP tool modules for GeneChat."""
 
 from genechat.tools import (
+    add_carrier_gene,
+    add_pgx_drug,
+    add_trait_variant,
     calculate_prs,
     genome_summary,
     query_carrier,
@@ -9,6 +12,7 @@ from genechat.tools import (
     query_pgx,
     query_trait,
     query_variant,
+    rebuild_database,
 )
 
 ALL_TOOLS = [
@@ -20,6 +24,10 @@ ALL_TOOLS = [
     query_carrier,
     calculate_prs,
     genome_summary,
+    add_trait_variant,
+    add_carrier_gene,
+    add_pgx_drug,
+    rebuild_database,
 ]
 
 
