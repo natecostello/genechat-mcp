@@ -24,7 +24,7 @@ class ServerConfig(BaseModel):
     host: str = "localhost"
     port: int = 3001
     max_variants_per_response: int = 100
-    bcftools_timeout: int = 30
+    query_timeout: int = 30
 
 
 class DisplayConfig(BaseModel):

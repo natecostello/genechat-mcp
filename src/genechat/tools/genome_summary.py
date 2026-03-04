@@ -1,7 +1,5 @@
 """Genome summary — overview of variant counts and key findings."""
 
-import re
-
 from genechat.vcf_engine import VCFEngineError
 
 
@@ -22,10 +20,9 @@ def register(mcp, engine, db, config):
         lines.append(f"**Build:** {config.genome.genome_build}")
         lines.append(f"**VCF:** {config.genome.vcf_path}")
 
-        # bcftools stats
+        # Variant stats
         try:
-            stats_raw = engine.stats()
-            stats_info = _parse_stats(stats_raw)
+            stats_info = engine.stats()
             lines.append("\n### Variant Counts")
             for key, val in stats_info.items():
                 lines.append(f"- **{key}:** {val:,}" if isinstance(val, int) else f"- **{key}:** {val}")
@@ -86,17 +83,3 @@ def register(mcp, engine, db, config):
         return result
 
 
-def _parse_stats(stats_raw: str) -> dict:
-    """Parse key numbers from bcftools stats output."""
-    info = {}
-    for line in stats_raw.split("\n"):
-        if line.startswith("SN\t"):
-            parts = line.split("\t")
-            if len(parts) >= 4:
-                key = parts[2].strip().rstrip(":")
-                try:
-                    val = int(parts[3].strip())
-                    info[key] = val
-                except ValueError:
-                    info[key] = parts[3].strip()
-    return info

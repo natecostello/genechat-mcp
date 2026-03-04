@@ -13,13 +13,23 @@ TEST_DATA = Path(__file__).resolve().parent / "data"
 DB_PATH = REPO_ROOT / "src" / "genechat" / "data" / "lookup_tables.db"
 
 
+@pytest.fixture(scope="session", autouse=True)
+def ensure_test_vcf():
+    """Auto-generate the test VCF if missing (session-scoped, runs once)."""
+    gz_path = TEST_DATA / "test_sample.vcf.gz"
+    tbi_path = TEST_DATA / "test_sample.vcf.gz.tbi"
+    if not gz_path.exists() or not tbi_path.exists():
+        from scripts.generate_test_vcf import generate_vcf
+        generate_vcf()
+
+
 @pytest.fixture
 def test_config():
     """Config pointing to test data."""
     return AppConfig(
         genome={"vcf_path": str(TEST_DATA / "test_sample.vcf.gz"), "genome_build": "GRCh38"},
         databases={"lookup_db": str(DB_PATH)},
-        server={"max_variants_per_response": 100, "bcftools_timeout": 10},
+        server={"max_variants_per_response": 100},
     )
 
 
@@ -35,9 +45,8 @@ def test_db(test_config):
 
 @pytest.fixture
 def mock_engine():
-    """Mock VCFEngine for tool tests (no bcftools required)."""
+    """Mock VCFEngine for tool tests (no VCF required)."""
     engine = MagicMock()
-    engine.timeout = 30
     engine.max_variants = 100
     return engine
 

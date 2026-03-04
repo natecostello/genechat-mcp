@@ -20,7 +20,7 @@ The LLM calls GeneChat's tools behind the scenes, gets your specific genotypes a
 ```
 You ask a question in Claude
     → Claude picks the right GeneChat tool
-    → GeneChat queries your local VCF with bcftools
+    → GeneChat queries your local VCF with pysam
     → Returns your genotype + clinical annotations
     → Claude interprets the results for you
 ```
@@ -40,69 +40,15 @@ Your genome data stays on your machine. GeneChat only reads from local files. No
 | `calculate_prs` | Polygenic risk scores |
 | `genome_summary` | High-level overview of your genome |
 
-## Quick Start (Docker)
-
-The fastest way to get running. No need to install bcftools, SnpEff, or Python separately.
-
-### 1. Build the image
-
-```bash
-git clone https://github.com/youruser/genechat-mcp.git
-cd genechat-mcp
-docker build -t genechat-mcp .
-```
-
-### 2. Annotate your VCF (one-time)
-
-You still need to annotate your raw VCF once. See the [Annotate your VCF](#3-annotate-your-vcf) section below — or use the Docker image itself:
-
-```bash
-docker run --rm -v /path/to/references:/refs -v /path/to/data:/data \
-  --entrypoint bash genechat-mcp \
-  -c "CLINVAR_VCF=/refs/clinvar_GRCh38.vcf.gz GNOMAD_VCF=/refs/gnomad.exomes.v4.sites.vcf.bgz bash scripts/annotate.sh /data/raw.vcf.gz /data"
-```
-
-### 3. Connect to Claude
-
-Add to your Claude Desktop or Claude Code MCP config (e.g. `~/.claude.json` or Claude Desktop settings):
-
-```json
-{
-  "mcpServers": {
-    "genechat": {
-      "command": "docker",
-      "args": [
-        "run", "-i", "--rm",
-        "-v", "/path/to/your/genome.vcf.gz:/data/genome.vcf.gz:ro",
-        "-v", "/path/to/your/genome.vcf.gz.tbi:/data/genome.vcf.gz.tbi:ro",
-        "-e", "GENECHAT_VCF=/data/genome.vcf.gz",
-        "genechat-mcp"
-      ]
-    }
-  }
-}
-```
-
-Replace `/path/to/your/genome.vcf.gz` (and `.tbi`) with the actual paths to your annotated VCF and its index.
-
-### 4. Start asking questions
-
-Open Claude and ask about your genetics. GeneChat's tools will appear automatically.
-
----
-
 ## Prerequisites
 
 - Python 3.11+
-- [bcftools](https://samtools.github.io/bcftools/) >= 1.17
 - [SnpEff/SnpSift](https://pcingola.github.io/SnpEff/) >= 5.2 (for one-time annotation only)
+- [bcftools](https://samtools.github.io/bcftools/) >= 1.17 (for one-time annotation only)
 - A consumer WGS VCF file (from Nucleus Genomics, Nebula, Sequencing.com, etc.)
 - ~15 GB disk for reference databases, ~2 GB for your annotated VCF
 
-Install bcftools via conda:
-```bash
-conda install -c bioconda bcftools
-```
+VCF reading at runtime is handled by [pysam](https://pysam.readthedocs.io/), which is installed automatically via `uv sync`.
 
 ## Quickstart
 
