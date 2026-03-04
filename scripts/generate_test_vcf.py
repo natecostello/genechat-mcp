@@ -102,7 +102,7 @@ VARIANTS = [
     # HFE C282Y — het carrier (chr6)
     (
         "chr6",
-        26091179,
+        26092913,
         "rs1800562",
         "G",
         "A",
@@ -342,9 +342,9 @@ VARIANTS = [
     # FOXO3 longevity — het (chr6)
     (
         "chr6",
-        108881026,
+        108587315,
         "rs2802292",
-        "C",
+        "G",
         "T",
         ".",
         "PASS",

@@ -64,6 +64,18 @@ def copy_carrier_metadata():
         "carrier_frequency",
         "acmg_recommended",
     ]
+
+    # Validate required columns before processing
+    if rows:
+        available_cols = set(rows[0].keys())
+        missing_cols = [k for k in fieldnames if k not in available_cols]
+        if missing_cols:
+            print(
+                f"ERROR: {src.name} is missing required columns: {', '.join(missing_cols)}\n"
+                f"  Available columns: {', '.join(sorted(available_cols))}"
+            )
+            return False
+
     with open(dst, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter="\t")
         writer.writeheader()

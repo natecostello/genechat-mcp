@@ -229,10 +229,14 @@ def main():
         if rsid:
             rsids.append(rsid)
 
-    # Filter out non-standard rsIDs (like rs8175347 which may have merged)
-    valid_rsids = [
-        r for r in rsids if r.startswith("rs") and r[2:].replace("_", "").isdigit()
-    ]
+    # Filter out non-standard rsIDs (like rs8175347 which may have merged) and dedupe
+    valid_rsids = sorted(
+        {
+            r
+            for r in rsids
+            if r.startswith("rs") and r[2:].replace("_", "").isdigit()
+        }
+    )
     print(f"Collected {len(valid_rsids)} unique rsIDs to look up")
 
     print("Fetching coordinates from Ensembl REST API...")
