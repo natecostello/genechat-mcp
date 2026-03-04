@@ -81,6 +81,7 @@ Configuration files:
 - `pyproject.toml` — dependencies, hatchling build config, pytest config
 - `config.toml.example` — runtime config template (VCF path, server settings)
 - `claude_mcp_config.json.example` — MCP client config for Claude Desktop/Code
+- `.github/workflows/ci.yml` — CI pipeline: ruff lint, ruff format, pytest
 
 ## Key Abstractions
 
