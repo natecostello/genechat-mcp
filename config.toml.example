@@ -1,0 +1,18 @@
+[genome]
+vcf_path = "/path/to/your/annotated.vcf.gz"
+genome_build = "GRCh38"
+sample_name = ""
+
+[databases]
+lookup_db = ""  # Leave empty to use built-in package data
+
+[server]
+transport = "stdio"
+host = "localhost"
+port = 3001
+max_variants_per_response = 100
+bcftools_timeout = 30
+
+[display]
+include_population_freq = true
+include_raw_annotation = false

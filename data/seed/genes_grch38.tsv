@@ -1,0 +1,66 @@
+symbol	name	chrom	start	end	strand
+CYP2C9	Cytochrome P450 family 2 subfamily C member 9	chr10	94938658	94990091	-
+VKORC1	Vitamin K epoxide reductase complex subunit 1	chr16	31096060	31107301	+
+CYP2C19	Cytochrome P450 family 2 subfamily C member 19	chr10	94762681	94855547	-
+CYP2D6	Cytochrome P450 family 2 subfamily D member 6	chr22	42126499	42130881	+
+SLCO1B1	Solute carrier organic anion transporter family member 1B1	chr12	21130942	21242610	-
+DPYD	Dihydropyrimidine dehydrogenase	chr1	97077743	97921049	+
+TPMT	Thiopurine S-methyltransferase	chr6	18128542	18155927	+
+NUDT15	Nudix hydrolase 15	chr13	48037987	48054064	+
+UGT1A1	UDP glucuronosyltransferase family 1 member A1	chr2	233757687	233773299	-
+BCHE	Butyrylcholinesterase	chr3	165772903	165837462	-
+RYR1	Ryanodine receptor 1	chr19	38433691	38587564	+
+HLA-B	Major histocompatibility complex class I B	chr6	31353872	31357187	+
+FTO	Fat mass and obesity associated	chr16	53703963	54121941	+
+MCM6	Minichromosome maintenance complex component 6	chr2	135837554	135873603	-
+FADS1	Fatty acid desaturase 1	chr11	61567099	61580081	+
+MTHFR	Methylenetetrahydrofolate reductase	chr1	11785723	11806103	+
+APOA2	Apolipoprotein A2	chr1	161192086	161194322	+
+TAS2R38	Taste 2 receptor member 38	chr7	141972631	141973773	+
+ACTN3	Actinin alpha 3	chr11	66546987	66563096	+
+COL1A1	Collagen type I alpha 1 chain	chr17	50184101	50201632	-
+COL5A1	Collagen type V alpha 1 chain	chr9	134641802	134843853	+
+PPARGC1A	PPARG coactivator 1 alpha	chr4	23793051	24427594	+
+IL6	Interleukin 6	chr7	22725889	22732002	-
+TNF	Tumor necrosis factor	chr6	31575565	31578336	+
+CYP1A2	Cytochrome P450 family 1 subfamily A member 2	chr15	74748846	74756607	+
+ADH1B	Alcohol dehydrogenase 1B	chr4	99318850	99352625	+
+ALDH2	Aldehyde dehydrogenase 2 family member	chr12	111766887	111817532	+
+F5	Coagulation factor V	chr1	169511951	169586474	+
+F2	Coagulation factor II (thrombin)	chr11	46717498	46739505	+
+APOE	Apolipoprotein E	chr19	44905754	44909393	+
+HFE	Homeostatic iron regulator	chr6	26087281	26098343	+
+CFTR	CF transmembrane conductance regulator	chr7	117465784	117715971	+
+HBB	Hemoglobin subunit beta	chr11	5225464	5229395	-
+SMN1	Survival of motor neuron 1	chr5	70924941	70953015	+
+HEXA	Hexosaminidase subunit alpha	chr15	72338599	72371099	-
+GBA	Glucosylceramidase beta	chr1	155234452	155244699	-
+FMR1	Fragile X messenger ribonucleoprotein 1	chrX	147911919	147951125	-
+PAH	Phenylalanine hydroxylase	chr12	102836889	102958410	+
+ASPA	Aspartoacylase	chr17	3476897	3507258	-
+GAA	Alpha glucosidase	chr17	80101535	80119879	-
+GJB2	Gap junction protein beta 2	chr13	20187470	20192938	+
+SLC26A4	Solute carrier family 26 member 4	chr7	107660828	107718159	+
+BCKDHA	Branched chain keto acid dehydrogenase E1 subunit alpha	chr19	41851547	41880693	-
+FANCC	FA complementation group C	chr9	97861336	98079468	+
+BLM	BLM RecQ like helicase	chr15	90717347	90816368	-
+MCOLN1	Mucolipin TRP cation channel 1	chr19	7587494	7598895	-
+BRCA1	BRCA1 DNA repair associated	chr17	43044295	43170245	-
+BRCA2	BRCA2 DNA repair associated	chr13	32315086	32400266	+
+TP53	Tumor protein p53	chr17	7668402	7687538	-
+APOB	Apolipoprotein B	chr2	21001429	21044073	+
+LDLR	Low density lipoprotein receptor	chr19	11089362	11133820	+
+PCSK9	Proprotein convertase subtilisin/kexin type 9	chr1	55039447	55064852	+
+FADS2	Fatty acid desaturase 2	chr11	61583906	61624854	+
+LCT	Lactase	chr2	135787848	135837183	-
+ABCB1	ATP binding cassette subfamily B member 1	chr7	87503017	87713323	-
+CYP3A4	Cytochrome P450 family 3 subfamily A member 4	chr7	99756960	99784247	-
+CYP3A5	Cytochrome P450 family 3 subfamily A member 5	chr7	99648194	99680058	-
+CYP1A1	Cytochrome P450 family 1 subfamily A member 1	chr15	74719542	74726098	+
+NAT2	N-acetyltransferase 2	chr8	18248755	18258728	+
+GSTT1	Glutathione S-transferase theta 1	chr22	24376141	24384284	-
+GSTM1	Glutathione S-transferase mu 1	chr1	109687839	109693754	-
+APC	APC regulator of WNT signaling pathway	chr5	112707498	112846239	+
+MLH1	MutL homolog 1	chr3	36993331	37050918	+
+MSH2	MutS homolog 2	chr2	47403067	47709830	+
+RB1	RB transcriptional corepressor 1	chr13	48303747	48481890	+

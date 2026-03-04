@@ -1,0 +1,16 @@
+gene	condition_name	inheritance	carrier_frequency	acmg_recommended
+CFTR	Cystic fibrosis	AR	1 in 25 (European)	1
+HBB	Sickle cell disease / Beta-thalassemia	AR	1 in 12 (African American)	1
+SMN1	Spinal muscular atrophy	AR	1 in 50	1
+HEXA	Tay-Sachs disease	AR	1 in 30 (Ashkenazi Jewish)	1
+GBA	Gaucher disease	AR	1 in 18 (Ashkenazi Jewish)	1
+FMR1	Fragile X syndrome	X-linked	1 in 250 (female premutation)	1
+PAH	Phenylketonuria (PKU)	AR	1 in 50	1
+ASPA	Canavan disease	AR	1 in 40 (Ashkenazi Jewish)	0
+GAA	Pompe disease	AR	1 in 100	0
+GJB2	Non-syndromic hearing loss (DFNB1)	AR	1 in 33	1
+SLC26A4	Pendred syndrome / DFNB4	AR	1 in 50	0
+BCKDHA	Maple syrup urine disease	AR	1 in 100	0
+FANCC	Fanconi anemia type C	AR	1 in 89 (Ashkenazi Jewish)	0
+BLM	Bloom syndrome	AR	1 in 100 (Ashkenazi Jewish)	0
+MCOLN1	Mucolipidosis type IV	AR	1 in 100 (Ashkenazi Jewish)	0

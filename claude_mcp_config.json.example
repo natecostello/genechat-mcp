@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "genechat": {
+      "command": "uv",
+      "args": ["run", "--directory", "/path/to/genechat-mcp", "genechat"],
+      "env": {
+        "GENECHAT_CONFIG": "/path/to/config.toml"
+      }
+    }
+  }
+}

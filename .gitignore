@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+*.db
+data/lookup_tables.db
+src/genechat/data/lookup_tables.db
+*.vcf.gz
+*.vcf.gz.tbi
+.pytest_cache/

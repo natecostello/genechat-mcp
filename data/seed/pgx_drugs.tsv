@@ -1,0 +1,22 @@
+# Source: CPIC (https://cpicpgx.org/guidelines/). Positions should be verified against PharmGKB before clinical use.
+drug_name	drug_aliases	gene	guideline_source	guideline_url	clinical_summary
+warfarin	coumadin	CYP2C9	CPIC	https://cpicpgx.org/guidelines/guideline-for-warfarin-and-cyp2c9-and-vkorc1/	CYP2C9 poor/intermediate metabolizers need lower warfarin doses to avoid bleeding risk.
+warfarin	coumadin	VKORC1	CPIC	https://cpicpgx.org/guidelines/guideline-for-warfarin-and-cyp2c9-and-vkorc1/	VKORC1 -1639G>A (rs9923231) AA genotype associated with lower dose requirements.
+clopidogrel	plavix	CYP2C19	CPIC	https://cpicpgx.org/guidelines/guideline-for-clopidogrel-and-cyp2c19/	CYP2C19 poor metabolizers have reduced activation of clopidogrel; consider alternative antiplatelet.
+codeine	.	CYP2D6	CPIC	https://cpicpgx.org/guidelines/guideline-for-codeine-and-cyp2d6/	CYP2D6 ultra-rapid metabolizers convert codeine to morphine too quickly (toxicity risk); poor metabolizers get inadequate pain relief.
+simvastatin	zocor	SLCO1B1	CPIC	https://cpicpgx.org/guidelines/guideline-for-simvastatin-and-slco1b1/	SLCO1B1 *5 carriers have increased simvastatin levels and myopathy risk; consider lower dose or alternative statin.
+tamoxifen	nolvadex	CYP2D6	CPIC	https://cpicpgx.org/guidelines/guideline-for-tamoxifen-and-cyp2d6/	CYP2D6 poor metabolizers have reduced conversion to active endoxifen; consider alternative endocrine therapy.
+ondansetron	zofran	CYP2D6	CPIC	https://cpicpgx.org/guidelines/guideline-for-ondansetron-and-tropisetron-and-cyp2d6/	CYP2D6 ultra-rapid metabolizers may have reduced ondansetron efficacy.
+fluorouracil	5-fu,capecitabine	DPYD	CPIC	https://cpicpgx.org/guidelines/guideline-for-fluoropyrimidines-and-dpyd/	DPYD poor metabolizers at high risk of severe/fatal toxicity; dose reduction or alternative required.
+azathioprine	imuran	TPMT	CPIC	https://cpicpgx.org/guidelines/guideline-for-thiopurines-and-tpmt-and-nudt15/	TPMT poor metabolizers at risk of life-threatening myelosuppression; start at reduced dose.
+sertraline	zoloft	CYP2C19	CPIC	https://cpicpgx.org/guidelines/guideline-for-selective-serotonin-reuptake-inhibitors-and-cyp2d6-and-cyp2c19/	CYP2C19 poor metabolizers may need lower sertraline dose; ultra-rapid metabolizers may need higher dose or alternative.
+omeprazole	prilosec	CYP2C19	CPIC	https://cpicpgx.org/guidelines/guideline-for-proton-pump-inhibitors-and-cyp2c19/	CYP2C19 rapid/ultra-rapid metabolizers may need increased omeprazole dose for H. pylori.
+metoprolol	lopressor	CYP2D6	CPIC	https://cpicpgx.org/guidelines/guideline-for-beta-blockers-and-cyp2d6/	CYP2D6 poor metabolizers have increased metoprolol exposure; consider dose reduction.
+tramadol	ultram	CYP2D6	CPIC	https://cpicpgx.org/guidelines/guideline-for-codeine-and-cyp2d6/	CYP2D6 ultra-rapid metabolizers at risk of respiratory depression; poor metabolizers get reduced analgesia.
+ibuprofen	advil,motrin	CYP2C9	CPIC	https://cpicpgx.org/guidelines/guideline-for-nsaids-and-cyp2c9/	CYP2C9 poor metabolizers have increased NSAID exposure and GI bleeding risk.
+phenytoin	dilantin	CYP2C9	CPIC	https://cpicpgx.org/guidelines/guideline-for-phenytoin-and-cyp2c9-and-hla-b/	CYP2C9 poor metabolizers need reduced phenytoin dose to avoid toxicity.
+succinylcholine	anectine,suxamethonium	BCHE	CPIC	.	BCHE deficiency causes prolonged neuromuscular blockade after succinylcholine.
+volatile_anesthetics	sevoflurane,desflurane,isoflurane,halothane	RYR1	CPIC	.	RYR1 pathogenic variants predispose to malignant hyperthermia with volatile anesthetics.
+allopurinol	zyloprim	HLA-B	CPIC	https://cpicpgx.org/guidelines/guideline-for-allopurinol-and-hla-b/	HLA-B*58:01 carriers at high risk of allopurinol hypersensitivity (SJS/TEN).
+carbamazepine	tegretol	HLA-B	CPIC	https://cpicpgx.org/guidelines/guideline-for-carbamazepine-and-hla-b/	HLA-B*15:02 carriers at high risk of carbamazepine-induced SJS/TEN.
+abacavir	ziagen	HLA-B	CPIC	https://cpicpgx.org/guidelines/guideline-for-abacavir-and-hla-b/	HLA-B*57:01 carriers must not receive abacavir due to hypersensitivity reaction risk.
