@@ -42,7 +42,9 @@ def register(mcp, engine, db, config):
 
         Use this when the user wants to add a new trait variant (e.g. a SNP associated
         with a trait like caffeine metabolism, muscle fiber type, etc.) to the GeneChat
-        database. After adding, run rebuild_database to fetch coordinates and update SQLite.
+        database. After adding, run the full seed data pipeline to fetch coordinates
+        from Ensembl and update the SQLite database:
+        `uv run python scripts/build_seed_data.py`
 
         Parameters:
         - rsid: dbSNP rsID (e.g. rs7501331)
@@ -152,6 +154,7 @@ def register(mcp, engine, db, config):
             f"- Alleles: ref={ref}, alt={alt}, effect={effect_allele}\n"
             f"- Evidence: {evidence_level}\n"
             f"- PMID: {pmid}\n\n"
-            f"Run **rebuild_database** to fetch genomic coordinates from Ensembl "
-            f"and update the SQLite database."
+            f"Run the full seed data pipeline to fetch genomic coordinates "
+            f"from Ensembl and update the SQLite database:\n"
+            f"`uv run python scripts/build_seed_data.py`"
         )
