@@ -5,9 +5,10 @@ This project uses [Claude Code](https://docs.anthropic.com/en/docs/claude-code) 
 ## Quick Start
 
 1. Fork and clone the repo
-2. Run `direnv allow` to set up the environment (see README for prerequisites)
-3. Follow `docs/FIRST_RUN.md` to initialize project memory
-4. The contributing workflow skills ship with the repo in `.claude/skills/`
+2. Install [Nix](https://nixos.org/download/) and [direnv](https://direnv.net/docs/installation.html)
+3. Run `direnv allow` to set up the environment (loads `flake.nix` dependencies)
+4. Follow `docs/FIRST_RUN.md` to initialize project memory
+5. The contributing workflow skills ship with the repo in `.claude/skills/`
 
 ## Workflow
 

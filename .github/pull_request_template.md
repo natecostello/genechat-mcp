@@ -41,3 +41,4 @@ Closes #
 - [ ] `/systematic-debugging`
 - [ ] `/writing-skills` (for skill contributions)
 - [ ] `/writing-clearly-and-concisely`
+- [ ] `/codify-subsystem`
