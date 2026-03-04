@@ -11,7 +11,6 @@ transport = "stdio"
 host = "localhost"
 port = 3001
 max_variants_per_response = 100
-query_timeout = 30
 
 [display]
 include_population_freq = true
