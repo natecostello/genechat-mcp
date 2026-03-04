@@ -10,3 +10,42 @@ src/genechat/data/lookup_tables.db
 *.vcf.gz
 *.vcf.gz.tbi
 .pytest_cache/
+
+# OS
+.DS_Store
+
+# Nix / direnv
+.direnv/
+result
+
+# Claude Code
+.claude/*
+!.claude/skills/
+.claude/skills/*
+!.claude/skills/SPEC.md
+!.claude/skills/UPSTREAM-superpowers.md
+!.claude/skills/brainstorming/
+!.claude/skills/code-simplification/
+!.claude/skills/codify-subsystem/
+!.claude/skills/dispatching-parallel-agents/
+!.claude/skills/executing-plans/
+!.claude/skills/finishing-a-development-branch/
+!.claude/skills/receiving-code-review/
+!.claude/skills/requesting-code-review/
+!.claude/skills/subagent-driven-development/
+!.claude/skills/systematic-debugging/
+!.claude/skills/test-driven-development/
+!.claude/skills/using-git-worktrees/
+!.claude/skills/verification-before-completion/
+!.claude/skills/writing-clearly-and-concisely/
+!.claude/skills/writing-plans/
+!.claude/skills/writing-skills/
+
+# Local envrc overrides
+.envrc.local.d/
+
+# Working documents
+docs/plans/
+
+# Project memory
+MEMORY.md
