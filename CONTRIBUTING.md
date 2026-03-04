@@ -5,10 +5,22 @@ This project uses [Claude Code](https://docs.anthropic.com/en/docs/claude-code) 
 ## Quick Start
 
 1. Fork and clone the repo
-2. Install [Nix](https://nixos.org/download/) and [direnv](https://direnv.net/docs/installation.html)
-3. Run `direnv allow` to set up the environment (loads `flake.nix` dependencies)
-4. Follow `docs/FIRST_RUN.md` to initialize project memory
-5. The contributing workflow skills ship with the repo in `.claude/skills/`
+2. Install dev dependencies (choose one):
+
+   **Option A — Homebrew (macOS/Linux)**
+   ```bash
+   brew install python3 uv ruff
+   ```
+
+   **Option B — Nix + direnv (reproducible, any platform)**
+   ```bash
+   # Install Nix: https://nixos.org/download/
+   # Install direnv: https://direnv.net/docs/installation.html
+   direnv allow   # loads flake.nix → python3, uv, ruff
+   ```
+
+3. Follow `docs/FIRST_RUN.md` to initialize project memory
+4. The contributing workflow skills ship with the repo in `.claude/skills/`
 
 ## Workflow
 
@@ -81,7 +93,7 @@ These skills ship with the repo in `.claude/skills/`. They are loaded automatica
 
 ## Project-Specific Guidelines
 
-- **Dependencies.** If you add a dependency, update `flake.nix` (Nix), the Prerequisites section in `README.md`, and any dependency checks in `.envrc.d/setup.sh`.
+- **Dependencies.** If you add a dependency, update `flake.nix` (Nix), the Homebrew instructions in this file's Quick Start, the dep check in `.envrc.d/setup.sh`, and the Prerequisites section in `README.md`.
 - **Documentation.** If your change affects usage, output, or setup, update `README.md` to match.
 - **Subsystem specs.** When a directory grows to 3+ files or contains important invariants, use `/codify-subsystem` to create a SPEC.md. See the Architecture section of CLAUDE.md.
 

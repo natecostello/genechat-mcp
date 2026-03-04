@@ -10,9 +10,11 @@ On first use in a fresh clone, follow `docs/FIRST_RUN.md` to initialize project 
 
 ## Environment
 
-- **Dependencies**: Managed via `flake.nix`. Add packages to `buildInputs`.
-- **Initialization**: `.envrc` sources `use flake` and runs scripts from `.envrc.d/` and `.envrc.local.d/`.
-- If you add a dependency to `flake.nix`, ask the user to restart the session so `direnv` reloads.
+- **Dependencies**: python3, uv, ruff. Two supported install methods:
+  - **Nix (reproducible):** `flake.nix` + direnv. Add packages to `buildInputs`.
+  - **Homebrew (quick):** `brew install python3 uv ruff`.
+- **Initialization**: `.envrc` sources `use flake` (if Nix is present) and runs scripts from `.envrc.d/` and `.envrc.local.d/`. The `setup.sh` script verifies required tools are on PATH regardless of install method.
+- If you add a dependency to `flake.nix`, also add it to the Homebrew instructions in `CONTRIBUTING.md` and the check in `.envrc.d/setup.sh`. Ask the user to restart the session so direnv reloads.
 
 ## Architecture
 

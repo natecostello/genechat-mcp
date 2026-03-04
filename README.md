@@ -55,7 +55,7 @@ VCF reading at runtime is handled by [pysam](https://pysam.readthedocs.io/), whi
 ### 1. Clone and install
 
 ```bash
-git clone https://github.com/youruser/genechat-mcp.git
+git clone https://github.com/natecostello/genechat-mcp.git
 cd genechat-mcp
 uv sync
 ```
@@ -137,13 +137,25 @@ GeneChat is an informational tool, not a medical device. It is not a substitute 
 
 ## Development
 
-Contributors use [Nix](https://nixos.org/download/) + [direnv](https://direnv.net/) for a reproducible dev environment. See [CONTRIBUTING.md](CONTRIBUTING.md) for the full workflow.
+You need python3, uv, and ruff. Install via Homebrew or Nix:
 
 ```bash
+# Option A: Homebrew
+brew install python3 uv ruff
+
+# Option B: Nix + direnv (reproducible)
+# Install Nix (https://nixos.org/download/) and direnv (https://direnv.net/)
 direnv allow   # loads flake.nix → python3, uv, ruff
+```
+
+Then:
+
+```bash
 uv sync        # install Python dependencies
 uv run pytest  # run tests
 ```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the full workflow.
 
 ## License
 
