@@ -1,4 +1,4 @@
-"""Tests for VCF engine (input validation and parsing, no bcftools required)."""
+"""Tests for VCF engine (pysam-based, integration tests against test VCF)."""
 
 import pytest
 
@@ -29,16 +29,15 @@ class TestPatterns:
 
 class TestParseFreq:
     def test_valid_freqs(self):
-        result = _parse_freq("0.14", "0.21")
+        result = _parse_freq(0.14, 0.21)
         assert result["global"] == pytest.approx(0.14)
         assert result["popmax"] == pytest.approx(0.21)
 
     def test_missing_freqs(self):
-        assert _parse_freq(".", ".") == {}
-        assert _parse_freq("", "") == {}
+        assert _parse_freq(None, None) == {}
 
     def test_partial_freq(self):
-        result = _parse_freq("0.14", ".")
+        result = _parse_freq(0.14, None)
         assert "global" in result
         assert "popmax" not in result
 
@@ -47,48 +46,124 @@ class TestVCFEngineInit:
     def test_missing_vcf(self, test_config):
         """VCFEngine raises FileNotFoundError for missing VCF."""
         test_config.genome.vcf_path = "/nonexistent/file.vcf.gz"
-        # May raise FileNotFoundError or VCFEngineError depending on bcftools availability
-        with pytest.raises(Exception):
+        with pytest.raises(FileNotFoundError):
             VCFEngine(test_config)
 
 
-class TestParseLine:
-    """Test _parse_line by constructing an engine-like object."""
+class TestQueryRegion:
+    """Integration tests querying known variants from the test VCF."""
 
-    def test_parse_complete_line(self):
-        """Test parsing a complete bcftools output line."""
-        from genechat.parsers import (
-            parse_ann_field,
-            parse_clinvar_fields,
-            parse_genotype,
+    def test_query_slco1b1_region(self, test_config):
+        engine = VCFEngine(test_config)
+        # SLCO1B1 rs4149056 is at chr12:21178615
+        variants = engine.query_region("chr12:21178600-21178700")
+        assert len(variants) == 1
+        v = variants[0]
+        assert v["rsid"] == "rs4149056"
+        assert v["chrom"] == "chr12"
+        assert v["pos"] == 21178615
+        assert v["ref"] == "T"
+        assert v["alt"] == "C"
+        assert v["genotype"]["zygosity"] == "heterozygous"
+        assert v["annotation"]["gene"] == "SLCO1B1"
+        assert v["annotation"]["effect"] == "missense_variant"
+        assert v["clinvar"]["significance"] == "drug response"
+        assert v["population_freq"]["global"] == pytest.approx(0.14)
+
+    def test_query_cftr_region(self, test_config):
+        engine = VCFEngine(test_config)
+        variants = engine.query_region("chr7:117559580-117559600")
+        assert len(variants) == 1
+        v = variants[0]
+        assert v["rsid"] == "rs113993960"
+        assert v["annotation"]["gene"] == "CFTR"
+        assert v["annotation"]["impact"] == "HIGH"
+        assert v["clinvar"]["significance"] == "Pathogenic"
+
+    def test_query_empty_region(self, test_config):
+        engine = VCFEngine(test_config)
+        variants = engine.query_region("chr1:1-10")
+        assert variants == []
+
+    def test_invalid_region_raises(self, test_config):
+        engine = VCFEngine(test_config)
+        with pytest.raises(ValueError, match="Invalid region"):
+            engine.query_region("1:100-200")
+
+
+class TestQueryRsid:
+    def test_query_known_rsid(self, test_config):
+        engine = VCFEngine(test_config)
+        variants = engine.query_rsid("rs4149056")
+        assert len(variants) == 1
+        assert variants[0]["rsid"] == "rs4149056"
+        assert variants[0]["genotype"]["zygosity"] == "heterozygous"
+
+    def test_query_missing_rsid(self, test_config):
+        engine = VCFEngine(test_config)
+        variants = engine.query_rsid("rs999999999")
+        assert variants == []
+
+    def test_invalid_rsid_raises(self, test_config):
+        engine = VCFEngine(test_config)
+        with pytest.raises(ValueError, match="Invalid rsID"):
+            engine.query_rsid("notanrsid")
+
+
+class TestQueryClinvar:
+    def test_query_pathogenic(self, test_config):
+        engine = VCFEngine(test_config)
+        variants = engine.query_clinvar("Pathogenic")
+        # Test VCF has: DPYD, F5, HFE, CFTR as Pathogenic
+        assert len(variants) >= 3
+        genes = {v["annotation"].get("gene") for v in variants}
+        assert "CFTR" in genes
+        assert "DPYD" in genes
+
+    def test_query_drug_response(self, test_config):
+        engine = VCFEngine(test_config)
+        variants = engine.query_clinvar("drug_response")
+        assert len(variants) >= 1
+        rsids = {v["rsid"] for v in variants}
+        assert "rs4149056" in rsids  # SLCO1B1
+
+    def test_query_clinvar_with_region(self, test_config):
+        engine = VCFEngine(test_config)
+        variants = engine.query_clinvar(
+            "drug_response", region="chr12:21178600-21178700"
         )
+        assert len(variants) == 1
+        assert variants[0]["rsid"] == "rs4149056"
 
-        line = (
-            "chr12\t21178615\trs4149056\tT\tC\t"
-            "C|missense_variant|MODERATE|SLCO1B1|ENSG00000134538|transcript|ENST00000256958|protein_coding||c.521T>C|p.Val174Ala|||||\t"
-            "drug_response\tSimvastatin_response\t"
-            "criteria_provided,_multiple_submitters\t0.14\t0.21\t0/1"
+
+class TestQueryRegions:
+    def test_multiple_regions(self, test_config):
+        engine = VCFEngine(test_config)
+        variants = engine.query_regions(
+            [
+                "chr12:21178600-21178700",  # SLCO1B1
+                "chr7:117559580-117559600",  # CFTR
+            ]
         )
-        parts = line.split("\t")
-        assert len(parts) == 12
+        assert len(variants) == 2
+        rsids = {v["rsid"] for v in variants}
+        assert rsids == {"rs4149056", "rs113993960"}
 
-        # Manually parse like _parse_line would
-        chrom, pos_str, rsid, ref, alt = (
-            parts[0],
-            parts[1],
-            parts[2],
-            parts[3],
-            parts[4],
-        )
-        assert chrom == "chr12"
-        assert int(pos_str) == 21178615
-        assert rsid == "rs4149056"
 
-        gt = parse_genotype(parts[11], ref, alt)
-        assert gt["zygosity"] == "heterozygous"
+class TestStats:
+    def test_stats_returns_counts(self, test_config):
+        engine = VCFEngine(test_config)
+        result = engine.stats()
+        assert isinstance(result, dict)
+        assert result["Total variants"] == 18
+        assert result["SNPs"] > 0
 
-        ann = parse_ann_field(parts[5])
-        assert ann["gene"] == "SLCO1B1"
 
-        clin = parse_clinvar_fields(parts[6], parts[7], parts[8])
-        assert clin["significance"] == "drug response"
+class TestMaxVariantsCap:
+    def test_cap_limits_results(self, test_config):
+        test_config.server.max_variants_per_response = 3
+        engine = VCFEngine(test_config)
+        # Query ClinVar Pathogenic — should hit cap at 3
+        variants = engine.query_clinvar("Pathogenic")
+        assert len(variants) == 3
+        assert variants[-1].get("_truncated") is True

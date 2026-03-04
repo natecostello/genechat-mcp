@@ -20,7 +20,7 @@ The LLM calls GeneChat's tools behind the scenes, gets your specific genotypes a
 ```
 You ask a question in Claude
     → Claude picks the right GeneChat tool
-    → GeneChat queries your local VCF with bcftools
+    → GeneChat queries your local VCF with pysam
     → Returns your genotype + clinical annotations
     → Claude interprets the results for you
 ```
@@ -43,15 +43,12 @@ Your genome data stays on your machine. GeneChat only reads from local files. No
 ## Prerequisites
 
 - Python 3.11+
-- [bcftools](https://samtools.github.io/bcftools/) >= 1.17
 - [SnpEff/SnpSift](https://pcingola.github.io/SnpEff/) >= 5.2 (for one-time annotation only)
+- [bcftools](https://samtools.github.io/bcftools/) >= 1.17 (for one-time annotation only)
 - A consumer WGS VCF file (from Nucleus Genomics, Nebula, Sequencing.com, etc.)
 - ~15 GB disk for reference databases, ~2 GB for your annotated VCF
 
-Install bcftools via conda:
-```bash
-conda install -c bioconda bcftools
-```
+VCF reading at runtime is handled by [pysam](https://pysam.readthedocs.io/), which is installed automatically via `uv sync`.
 
 ## Quickstart
 

@@ -2,12 +2,12 @@
 """Generate a synthetic VCF for testing GeneChat.
 
 Creates a small VCF with known variants covering PGx, ClinVar, trait,
-and carrier screening use cases. Optionally bgzips and tabix-indexes.
+and carrier screening use cases. Uses pysam for compression and indexing.
 """
 
-import shutil
-import subprocess
 from pathlib import Path
+
+import pysam
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 OUTPUT_DIR = REPO_ROOT / "tests" / "data"
@@ -292,6 +292,7 @@ VARIANTS = [
 def generate_vcf():
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     vcf_path = OUTPUT_DIR / "test_sample.vcf"
+    gz_path = OUTPUT_DIR / "test_sample.vcf.gz"
 
     # Sort variants by chromosome order and position
     chrom_order = {f"chr{i}": i for i in range(1, 23)}
@@ -305,28 +306,20 @@ def generate_vcf():
                 f"{chrom}\t{pos}\t{rsid}\t{ref}\t{alt}\t{qual}\t{filt}\t{info}\tGT\t{gt}\n"
             )
 
-    print(f"VCF written to: {vcf_path}")
+    # Compress and index with pysam
+    if gz_path.exists():
+        gz_path.unlink()
+    tbi_path = Path(f"{gz_path}.tbi")
+    if tbi_path.exists():
+        tbi_path.unlink()
 
-    # Try to bgzip and tabix
-    bgzip = shutil.which("bgzip")
-    tabix = shutil.which("tabix")
+    pysam.tabix_compress(str(vcf_path), str(gz_path))
+    pysam.tabix_index(str(gz_path), preset="vcf")
 
-    if bgzip and tabix:
-        gz_path = Path(f"{vcf_path}.gz")
-        if gz_path.exists():
-            gz_path.unlink()
-        tbi_path = Path(f"{gz_path}.tbi")
-        if tbi_path.exists():
-            tbi_path.unlink()
+    # Clean up uncompressed VCF
+    vcf_path.unlink()
 
-        subprocess.run([bgzip, str(vcf_path)], check=True)
-        subprocess.run([tabix, "-p", "vcf", str(gz_path)], check=True)
-        print(f"Compressed and indexed: {gz_path}")
-    else:
-        print("WARNING: bgzip/tabix not found. VCF is uncompressed.")
-        print(
-            "Install htslib for compressed+indexed VCF: conda install -c bioconda htslib"
-        )
+    print(f"Compressed and indexed: {gz_path}")
 
 
 if __name__ == "__main__":
