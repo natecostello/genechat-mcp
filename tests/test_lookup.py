@@ -1,7 +1,5 @@
 """Tests for SQLite lookup layer."""
 
-import pytest
-
 
 class TestGetGene:
     def test_known_gene(self, test_db):

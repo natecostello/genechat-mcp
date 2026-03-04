@@ -129,7 +129,9 @@ class TestQueryClinvar:
 
     def test_query_clinvar_with_region(self, test_config):
         engine = VCFEngine(test_config)
-        variants = engine.query_clinvar("drug_response", region="chr12:21178600-21178700")
+        variants = engine.query_clinvar(
+            "drug_response", region="chr12:21178600-21178700"
+        )
         assert len(variants) == 1
         assert variants[0]["rsid"] == "rs4149056"
 
@@ -137,10 +139,12 @@ class TestQueryClinvar:
 class TestQueryRegions:
     def test_multiple_regions(self, test_config):
         engine = VCFEngine(test_config)
-        variants = engine.query_regions([
-            "chr12:21178600-21178700",   # SLCO1B1
-            "chr7:117559580-117559600",  # CFTR
-        ])
+        variants = engine.query_regions(
+            [
+                "chr12:21178600-21178700",  # SLCO1B1
+                "chr7:117559580-117559600",  # CFTR
+            ]
+        )
         assert len(variants) == 2
         rsids = {v["rsid"] for v in variants}
         assert rsids == {"rs4149056", "rs113993960"}

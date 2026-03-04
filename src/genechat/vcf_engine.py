@@ -80,7 +80,9 @@ class VCFEngine:
                 sample_idx = self._get_sample_index()
                 for r in regions:
                     for record in vcf.fetch(region=r):
-                        if include_filter and not self._matches_filter(record, include_filter):
+                        if include_filter and not self._matches_filter(
+                            record, include_filter
+                        ):
                             continue
                         parsed = self._record_to_dict(record, sample_idx)
                         if parsed:
@@ -107,9 +109,7 @@ class VCFEngine:
     def query_rsid(self, rsid: str) -> list[dict]:
         """Query a specific variant by rsID (e.g. rs4149056)."""
         if not RSID_PATTERN.match(rsid):
-            raise ValueError(
-                f"Invalid rsID format: {rsid}. Expected rs<digits>"
-            )
+            raise ValueError(f"Invalid rsID format: {rsid}. Expected rs<digits>")
         # No region-based shortcut for rsID — must scan entire file.
         # rsIDs can repeat across records (different alleles, overlapping
         # representations), so collect all matches up to max_variants.
@@ -137,9 +137,7 @@ class VCFEngine:
             )
         return variants
 
-    def query_clinvar(
-        self, significance: str, region: str | None = None
-    ) -> list[dict]:
+    def query_clinvar(self, significance: str, region: str | None = None) -> list[dict]:
         """Query variants by ClinVar clinical significance."""
         if region and not REGION_PATTERN.match(region):
             raise ValueError(f"Invalid region format: {region}")
@@ -226,7 +224,9 @@ class VCFEngine:
             with pysam.VariantFile(str(self.vcf_path)) as vcf:
                 sample_idx = self._get_sample_index()
                 for record in vcf.fetch(region=region):
-                    if include_filter and not self._matches_filter(record, include_filter):
+                    if include_filter and not self._matches_filter(
+                        record, include_filter
+                    ):
                         continue
                     parsed = self._record_to_dict(record, sample_idx)
                     if parsed:
@@ -234,7 +234,7 @@ class VCFEngine:
                     if len(variants) >= cap:
                         truncated = True
                         break
-        except ValueError as e:
+        except ValueError:
             # pysam raises ValueError for invalid regions (e.g. unknown contig)
             return []
         except Exception as e:
@@ -273,7 +273,9 @@ class VCFEngine:
             pass
         return False
 
-    def _record_to_dict(self, record: pysam.VariantRecord, sample_idx: int) -> dict | None:
+    def _record_to_dict(
+        self, record: pysam.VariantRecord, sample_idx: int
+    ) -> dict | None:
         """Convert a pysam VariantRecord to a variant dict."""
         alt = ",".join(record.alts) if record.alts else "."
         rsid = record.id if record.id and record.id != "." else None

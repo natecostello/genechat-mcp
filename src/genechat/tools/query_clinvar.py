@@ -39,7 +39,8 @@ def register(mcp, engine, db, config):
         if condition:
             condition_upper = condition.upper()
             variants = [
-                v for v in variants
+                v
+                for v in variants
                 if v.get("clinvar", {}).get("condition", "")
                 and condition_upper in v["clinvar"]["condition"].upper()
             ]
@@ -72,7 +73,9 @@ def register(mcp, engine, db, config):
         ]
 
         if truncated:
-            lines.append(f"*Results capped at {cap}. Narrow your query for complete results.*\n")
+            lines.append(
+                f"*Results capped at {cap}. Narrow your query for complete results.*\n"
+            )
 
         for gene_name, gene_variants in sorted(by_gene.items()):
             lines.append(f"### {gene_name}")

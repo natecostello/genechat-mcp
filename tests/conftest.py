@@ -20,6 +20,7 @@ def ensure_test_vcf():
     tbi_path = TEST_DATA / "test_sample.vcf.gz.tbi"
     if not gz_path.exists() or not tbi_path.exists():
         from scripts.generate_test_vcf import generate_vcf
+
         generate_vcf()
 
 
@@ -27,7 +28,10 @@ def ensure_test_vcf():
 def test_config():
     """Config pointing to test data."""
     return AppConfig(
-        genome={"vcf_path": str(TEST_DATA / "test_sample.vcf.gz"), "genome_build": "GRCh38"},
+        genome={
+            "vcf_path": str(TEST_DATA / "test_sample.vcf.gz"),
+            "genome_build": "GRCh38",
+        },
         databases={"lookup_db": str(DB_PATH)},
         server={"max_variants_per_response": 100},
     )

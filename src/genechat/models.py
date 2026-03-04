@@ -53,5 +53,7 @@ class QueryCarrierInput(BaseModel):
 
 
 class CalculatePrsInput(BaseModel):
-    trait: str | None = Field(None, description="Trait name (e.g. coronary artery disease)")
+    trait: str | None = Field(
+        None, description="Trait name (e.g. coronary artery disease)"
+    )
     prs_id: str | None = Field(None, description="Specific PGS Catalog ID")
