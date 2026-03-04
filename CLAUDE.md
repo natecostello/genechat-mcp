@@ -7,6 +7,13 @@ When submitting a PR, always request a GitHub Copilot review using:
 gh pr edit <PR_NUMBER> --add-reviewer @copilot
 ```
 
+## Code Review
+
+GitHub Copilot is configured as a PR code reviewer. Its instructions are in
+[`.github/copilot-instructions.md`](.github/copilot-instructions.md). Copilot reviews
+deliver inline comments with suggestion blocks. Use `/resolve-pr-comments` to process
+review feedback.
+
 ## Project Overview
 
 GeneChat is an open-source MCP (Model Context Protocol) server that enables conversational AI assistants to query a user's whole-genome sequencing (WGS) data stored locally. It wraps bcftools and curated reference databases (ClinVar, gnomAD, PharmGKB/CPIC) behind MCP tools, enabling natural-language questions about pharmacogenomics, disease risk, carrier status, nutrigenomics, exercise genetics, and more — with genomic data never leaving the user's machine.
