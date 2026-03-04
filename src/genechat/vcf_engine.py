@@ -72,19 +72,31 @@ class VCFEngine:
             if not REGION_PATTERN.match(r):
                 raise ValueError(f"Invalid region format: {r}")
 
-        variants = []
-        for r in regions:
-            batch = self._fetch_and_parse(
-                region=r,
-                include_filter=include_filter,
-                remaining=self.max_variants - len(variants),
-            )
-            variants.extend(batch)
-            if len(variants) >= self.max_variants:
-                break
+        # Open VCF once and iterate all regions with the same handle
+        variants: list[dict] = []
+        truncated = False
+        try:
+            with pysam.VariantFile(str(self.vcf_path)) as vcf:
+                sample_idx = self._get_sample_index()
+                for r in regions:
+                    for record in vcf.fetch(region=r):
+                        if include_filter and not self._matches_filter(record, include_filter):
+                            continue
+                        parsed = self._record_to_dict(record, sample_idx)
+                        if parsed:
+                            variants.append(parsed)
+                        if len(variants) >= self.max_variants:
+                            truncated = True
+                            break
+                    if truncated:
+                        break
+        except ValueError:
+            # pysam raises ValueError for unknown contigs
+            pass
+        except Exception as e:
+            raise VCFEngineError(f"Error querying regions: {e}") from e
 
-        if len(variants) >= self.max_variants:
-            variants = variants[: self.max_variants]
+        if truncated and variants:
             variants[-1]["_truncated"] = True
             variants[-1]["_truncation_notice"] = (
                 f"Results capped at {self.max_variants} variants. "
@@ -184,13 +196,17 @@ class VCFEngine:
             with pysam.VariantFile(str(self.vcf_path)) as vcf:
                 for record in vcf:
                     counts["Total variants"] += 1
-                    if len(record.alts or []) > 1:
+                    alts = record.alts or ()
+                    if len(alts) > 1:
                         counts["Multi-allelic"] += 1
-                    for alt in record.alts or []:
-                        if len(record.ref) == 1 and len(alt) == 1:
-                            counts["SNPs"] += 1
-                        else:
-                            counts["Indels"] += 1
+                    if not alts:
+                        continue
+                    # Classify at record level so counts are comparable to Total
+                    is_snp = all(len(record.ref) == 1 and len(a) == 1 for a in alts)
+                    if is_snp:
+                        counts["SNPs"] += 1
+                    else:
+                        counts["Indels"] += 1
         except Exception as e:
             raise VCFEngineError(f"Error computing stats: {e}") from e
         return counts
