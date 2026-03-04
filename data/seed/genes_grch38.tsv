@@ -1,66 +1,274 @@
 symbol	name	chrom	start	end	strand
-CYP2C9	Cytochrome P450 family 2 subfamily C member 9	chr10	94938658	94990091	-
-VKORC1	Vitamin K epoxide reductase complex subunit 1	chr16	31096060	31107301	+
-CYP2C19	Cytochrome P450 family 2 subfamily C member 19	chr10	94762681	94855547	-
-CYP2D6	Cytochrome P450 family 2 subfamily D member 6	chr22	42126499	42130881	+
-SLCO1B1	Solute carrier organic anion transporter family member 1B1	chr12	21130942	21242610	-
-DPYD	Dihydropyrimidine dehydrogenase	chr1	97077743	97921049	+
-TPMT	Thiopurine S-methyltransferase	chr6	18128542	18155927	+
-NUDT15	Nudix hydrolase 15	chr13	48037987	48054064	+
-UGT1A1	UDP glucuronosyltransferase family 1 member A1	chr2	233757687	233773299	-
-BCHE	Butyrylcholinesterase	chr3	165772903	165837462	-
-RYR1	Ryanodine receptor 1	chr19	38433691	38587564	+
-HLA-B	Major histocompatibility complex class I B	chr6	31353872	31357187	+
-FTO	Fat mass and obesity associated	chr16	53703963	54121941	+
-MCM6	Minichromosome maintenance complex component 6	chr2	135837554	135873603	-
-FADS1	Fatty acid desaturase 1	chr11	61567099	61580081	+
-MTHFR	Methylenetetrahydrofolate reductase	chr1	11785723	11806103	+
-APOA2	Apolipoprotein A2	chr1	161192086	161194322	+
-TAS2R38	Taste 2 receptor member 38	chr7	141972631	141973773	+
-ACTN3	Actinin alpha 3	chr11	66546987	66563096	+
-COL1A1	Collagen type I alpha 1 chain	chr17	50184101	50201632	-
-COL5A1	Collagen type V alpha 1 chain	chr9	134641802	134843853	+
-PPARGC1A	PPARG coactivator 1 alpha	chr4	23793051	24427594	+
-IL6	Interleukin 6	chr7	22725889	22732002	-
-TNF	Tumor necrosis factor	chr6	31575565	31578336	+
-CYP1A2	Cytochrome P450 family 1 subfamily A member 2	chr15	74748846	74756607	+
-ADH1B	Alcohol dehydrogenase 1B	chr4	99318850	99352625	+
-ALDH2	Aldehyde dehydrogenase 2 family member	chr12	111766887	111817532	+
-F5	Coagulation factor V	chr1	169511951	169586474	+
-F2	Coagulation factor II (thrombin)	chr11	46717498	46739505	+
-APOE	Apolipoprotein E	chr19	44905754	44909393	+
-HFE	Homeostatic iron regulator	chr6	26087281	26098343	+
-CFTR	CF transmembrane conductance regulator	chr7	117465784	117715971	+
-HBB	Hemoglobin subunit beta	chr11	5225464	5229395	-
-SMN1	Survival of motor neuron 1	chr5	70924941	70953015	+
-HEXA	Hexosaminidase subunit alpha	chr15	72338599	72371099	-
-GBA	Glucosylceramidase beta	chr1	155234452	155244699	-
-FMR1	Fragile X messenger ribonucleoprotein 1	chrX	147911919	147951125	-
-PAH	Phenylalanine hydroxylase	chr12	102836889	102958410	+
-ASPA	Aspartoacylase	chr17	3476897	3507258	-
-GAA	Alpha glucosidase	chr17	80101535	80119879	-
-GJB2	Gap junction protein beta 2	chr13	20187470	20192938	+
-SLC26A4	Solute carrier family 26 member 4	chr7	107660828	107718159	+
-BCKDHA	Branched chain keto acid dehydrogenase E1 subunit alpha	chr19	41851547	41880693	-
-FANCC	FA complementation group C	chr9	97861336	98079468	+
-BLM	BLM RecQ like helicase	chr15	90717347	90816368	-
-MCOLN1	Mucolipin TRP cation channel 1	chr19	7587494	7598895	-
-BRCA1	BRCA1 DNA repair associated	chr17	43044295	43170245	-
-BRCA2	BRCA2 DNA repair associated	chr13	32315086	32400266	+
-TP53	Tumor protein p53	chr17	7668402	7687538	-
-APOB	Apolipoprotein B	chr2	21001429	21044073	+
-LDLR	Low density lipoprotein receptor	chr19	11089362	11133820	+
-PCSK9	Proprotein convertase subtilisin/kexin type 9	chr1	55039447	55064852	+
-FADS2	Fatty acid desaturase 2	chr11	61583906	61624854	+
-LCT	Lactase	chr2	135787848	135837183	-
-ABCB1	ATP binding cassette subfamily B member 1	chr7	87503017	87713323	-
-CYP3A4	Cytochrome P450 family 3 subfamily A member 4	chr7	99756960	99784247	-
-CYP3A5	Cytochrome P450 family 3 subfamily A member 5	chr7	99648194	99680058	-
-CYP1A1	Cytochrome P450 family 1 subfamily A member 1	chr15	74719542	74726098	+
-NAT2	N-acetyltransferase 2	chr8	18248755	18258728	+
-GSTT1	Glutathione S-transferase theta 1	chr22	24376141	24384284	-
-GSTM1	Glutathione S-transferase mu 1	chr1	109687839	109693754	-
+PARK7	Parkinsonism associated deglycase	chr1	7954264	7985505	+
+TARDBP	TAR DNA binding protein	chr1	11012344	11030528	+
+MTHFR	methylenetetrahydrofolate reductase	chr1	11785723	11806455	-
+SDHB	succinate dehydrogenase complex iron sulfur subunit B	chr1	17018664	17054151	-
+PINK1	PTEN induced kinase 1	chr1	20633458	20651511	+
+NBPF3	NBPF member 3	chr1	21440099	21485005	+
+PPT1	palmitoyl-protein thioesterase 1	chr1	40072710	40097267	-
+MUTYH	mutY DNA glycosylase	chr1	45329163	45340893	-
+POMGNT1	protein O-linked mannose N-acetylglucosaminyltransferase 1 (beta 1,2-)	chr1	46188681	46220305	-
+PCSK9	proprotein convertase subtilisin/kexin type 9	chr1	55039445	55064852	+
+RPE65	retinoid isomerohydrolase RPE65	chr1	68428822	68451103	-
+ACADM	acyl-CoA dehydrogenase medium chain	chr1	75724431	75787575	+
+DPYD	dihydropyrimidine dehydrogenase	chr1	97077743	97995000	-
+SORT1	sortilin 1	chr1	109309568	109397967	-
+GSTM1	glutathione S-transferase mu 1	chr1	109687340	109709039	+
+PTPN22	protein tyrosine phosphatase non-receptor type 22	chr1	113813811	113871753	-
+CASQ2	calsequestrin 2	chr1	115698038	115837921	-
+GBA1	glucosylceramidase beta 1	chr1	155234447	155245178	-
+LMNA	lamin A/C	chr1	156082572	156140081	+
+NTRK1	neurotrophic receptor tyrosine kinase 1	chr1	156815636	156881850	+
+APOA2	apolipoprotein A2	chr1	161222290	161224305	-
+SDHC	succinate dehydrogenase complex subunit C	chr1	161314381	161363206	+
+F5	coagulation factor V	chr1	169511951	169586588	-
+CACNA1S	calcium voltage-gated channel subunit alpha1 S	chr1	201039512	201112451	-
+TNNT2	troponin T2, cardiac type	chr1	201359002	201379773	-
+IL10	interleukin 10	chr1	206767602	206774541	-
+LAMB3	laminin subunit beta 3	chr1	209614870	209653106	-
+USH2A	usherin	chr1	215622891	216423448	-
+PSEN2	presenilin 2	chr1	226870184	226927726	+
+RYR2	ryanodine receptor 2	chr1	237042184	237833988	+
+TPO	thyroid peroxidase	chr2	1373933	1543711	+
+LDAH	lipid droplet associated hydrolase	chr2	20684014	20823130	-
+APOB	apolipoprotein B	chr2	21001429	21044073	-
+EPCAM	epithelial cell adhesion molecule	chr2	47345158	47387601	+
+MSH2	mutS homolog 2	chr2	47403067	47663146	+
+MSH6	mutS homolog 6	chr2	47695530	47810109	+
+VAMP5	vesicle associated membrane protein 5	chr2	85584431	85593406	+
+TMEM127	transmembrane protein 127	chr2	96248500	96266047	-
+IL1B	interleukin 1 beta	chr2	112829751	112836816	-
+LCT	lactase	chr2	135787850	135837184	-
+MCM6	minichromosome maintenance complex component 6	chr2	135839626	135876479	-
+NEB	nebulin	chr2	151485336	151734487	-
+SCN1A	sodium voltage-gated channel alpha subunit 1	chr2	165984641	166182806	-
+TTN	titin	chr2	178525989	178830802	-
+COL3A1	collagen type III alpha 1 chain	chr2	188974371	189012746	+
+WDR12	WD repeat domain 12	chr2	202874261	203014798	-
+CTLA4	cytotoxic T-lymphocyte associated protein 4	chr2	203853888	203873965	+
+FN1	fibronectin 1	chr2	215360440	215436120	-
+WNT10A	Wnt family member 10A	chr2	218880852	218899581	+
+DES	desmin	chr2	219417474	219426739	+
+IRS1	insulin receptor substrate 1	chr2	226731312	226799820	-
+UGT1A1	UDP glucuronosyltransferase family 1 member A1	chr2	233760270	233773300	+
+VHL	von Hippel-Lindau tumor suppressor	chr3	10141778	10153676	+
+PPARG	peroxisome proliferator activated receptor gamma	chr3	12287368	12434574	+
+TMEM43	transmembrane protein 43	chr3	14125015	14143681	+
+BTD	biotinidase	chr3	15601341	15722311	+
+TGFBR2	transforming growth factor beta receptor 2	chr3	30606478	30694249	+
+MLH1	mutL homolog 1	chr3	36993226	37050896	+
+SCN5A	sodium voltage-gated channel alpha subunit 5	chr3	38548057	38649743	-
+MYL3	myosin light chain 3	chr3	46835109	46885911	-
+BAP1	BRCA1 associated deubiquitinase 1	chr3	52401008	52410008	-
+TNNC1	troponin C1, slow skeletal and cardiac type	chr3	52451100	52454041	-
+MRAS	muscle RAS oncogene homolog	chr3	138347648	138405534	+
+CLRN1	clarin 1	chr3	150926163	150972727	-
+BCHE	butyrylcholinesterase	chr3	165772904	165837462	-
+IDUA	alpha-L-iduronidase	chr4	986997	1008344	+
+HTT	huntingtin	chr4	3041363	3243957	+
+PPARGC1A	PPARG coactivator 1 alpha	chr4	23755041	23904089	-
+CLOCK	clock circadian regulator	chr4	55427903	55547491	-
+GC	GC vitamin D binding protein	chr4	71735436	71805527	-
+SNCA	synuclein alpha	chr4	89700345	89838315	-
+ADH1B	alcohol dehydrogenase 1B (class I), beta polypeptide	chr4	99304971	99321659	-
+EDNRA	endothelin receptor type A	chr4	147480917	147544954	+
+TERT	telomerase reverse transcriptase	chr5	1253147	1295085	-
+SLC45A2	solute carrier family 45 member 2	chr5	33944623	33984693	-
+ANKRD55	ankyrin repeat domain 55	chr5	56099680	56233330	-
+SMN1	survival of motor neuron 1, telomeric	chr5	70925030	70953942	+
+HEXB	hexosaminidase subunit beta	chr5	74640023	74722647	+
 APC	APC regulator of WNT signaling pathway	chr5	112707498	112846239	+
-MLH1	MutL homolog 1	chr3	36993331	37050918	+
-MSH2	MutS homolog 2	chr2	47403067	47709830	+
-RB1	RB transcriptional corepressor 1	chr13	48303747	48481890	+
+SLC22A5	solute carrier family 22 member 5	chr5	132369710	132395614	+
+DSP	desmoplakin	chr6	7541326	7586717	+
+PHACTR1	phosphatase and actin regulator 1	chr6	12716312	13290446	+
+TPMT	thiopurine S-methyltransferase	chr6	18128311	18155348	-
+HFE	homeostatic iron regulator	chr6	26087226	26098343	+
+HLA-A	major histocompatibility complex, class I, A	chr6	29941260	29949572	+
+HLA-C	major histocompatibility complex, class I, C	chr6	31268749	31272130	-
+HLA-B	major histocompatibility complex, class I, B	chr6	31353867	31367067	-
+TNF	tumor necrosis factor	chr6	31575565	31578336	+
+HLA-DRB1	major histocompatibility complex, class II, DR beta 1	chr6	32577902	32589848	-
+HLA-DQB1	major histocompatibility complex, class II, DQ beta 1	chr6	32659467	32668383	-
+HLA-DPB1	major histocompatibility complex, class II, DP beta 1	chr6	33073786	33089696	+
+SLC17A5	solute carrier family 17 member 5	chr6	73593364	73654014	-
+FOXO3	forkhead box O3	chr6	108559652	108684774	+
+PLN	phospholamban	chr6	118543971	118561716	+
+TRDN	triadin	chr6	123215088	123637260	-
+TCF21	transcription factor 21	chr6	133889113	133895553	+
+MTHFD1L	methylenetetrahydrofolate dehydrogenase (NADP+ dependent) 1 like	chr6	150865679	151101887	+
+OPRM1	opioid receptor mu 1	chr6	154010496	154246867	+
+LPA	lipoprotein(a)	chr6	160531482	160664275	-
+PMS2	PMS1 homolog 2, mismatch repair system component	chr7	5970925	6009130	-
+IL6	interleukin 6	chr7	22725884	22732002	+
+GCK	glucokinase	chr7	44143213	44198170	-
+ASL	argininosuccinate lyase	chr7	66075800	66094697	+
+ABCB1	ATP binding cassette subfamily B member 1	chr7	87503017	87713375	-
+CYP3A5	cytochrome P450 family 3 subfamily A member 5	chr7	99648194	99679997	-
+CYP3A4	cytochrome P450 family 3 subfamily A member 4	chr7	99756959	99784274	-
+SLC26A4	solute carrier family 26 member 4	chr7	107660594	107717809	+
+CFTR	CF transmembrane conductance regulator	chr7	117287120	117715971	+
+LEP	leptin	chr7	128241278	128257629	+
+FLNC	filamin C	chr7	128830312	128859275	+
+ZC3HC1	zinc finger C3HC-type containing 1	chr7	130018286	130051401	-
+TAS2R38	taste 2 receptor member 38	chr7	141972631	141973773	-
+KCNH2	potassium voltage-gated channel subfamily H member 2	chr7	150944064	150978394	-
+PRKAG2	protein kinase AMP-activated non-catalytic subunit gamma 2	chr7	151556117	151877507	-
+NAT2	N-acetyltransferase 2	chr8	18391252	18401218	+
+STAR	steroidogenic acute regulatory protein	chr8	38141747	38151061	-
+NBN	nibrin	chr8	89924515	90003228	-
+SLC30A8	solute carrier family 30 member 8	chr8	116950273	117176714	+
+TG	thyroglobulin	chr8	132866958	133134903	+
+CDKN2A	cyclin dependent kinase inhibitor 2A	chr9	21967752	21995301	-
+CDKN2B-AS1	CDKN2B and CDKN2A antisense cis and trans regulatory RNA 1	chr9	21994139	22212895	+
+CDKN2B	cyclin dependent kinase inhibitor 2B	chr9	22002903	22009305	-
+C9orf72	C9orf72-SMCR8 complex subunit	chr9	27535640	27573895	-
+GALT	galactose-1-phosphate uridylyltransferase	chr9	34637367	34651754	+
+FANCG	FA complementation group G	chr9	35073820	35082444	-
+FANCC	FA complementation group C	chr9	95099054	95426796	-
+TGFBR1	transforming growth factor beta receptor 1	chr9	99104038	99154192	+
+ELP1	elongator acetyltransferase complex subunit 1	chr9	108866898	108934414	-
+TSC1	TSC complex subunit 1	chr9	132891348	132946874	-
+ABO	ABO, alpha 1-3-N-acetylgalactosaminyltransferase and alpha 1-3-galactosyltransferase	chr9	133233278	133276024	-
+COL5A1	collagen type V alpha 1 chain	chr9	134641803	134844843	+
+RET	ret proto-oncogene	chr10	43077026	43130351	+
+CXCL12	C-X-C motif chemokine ligand 12	chr10	44370165	44386493	-
+ERCC6	ERCC excision repair 6, chromatin remodeling factor	chr10	49454168	49539538	-
+CTNNA3	catenin alpha 3	chr10	65912457	67763637	-
+BMPR1A	bone morphogenetic protein receptor type 1A	chr10	86755763	86932825	+
+PTEN	phosphatase and tensin homolog	chr10	87862638	87971930	+
+ACTA2	actin alpha 2, smooth muscle	chr10	88934822	88991339	-
+CYP2C19	cytochrome P450 family 2 subfamily C member 19	chr10	94762662	94856282	+
+CYP2C9	cytochrome P450 family 2 subfamily C member 9	chr10	94938588	94990148	+
+CYP17A1	cytochrome P450 family 17 subfamily A member 1	chr10	102830461	102837501	-
+TCF7L2	transcription factor 7 like 2	chr10	112950205	113167678	+
+INS	insulin	chr11	2159779	2161221	-
+KCNQ1	potassium voltage-gated channel subfamily Q member 1	chr11	2444654	2849105	+
+HBB	hemoglobin subunit beta	chr11	5225464	5229395	-
+SMPD1	sphingomyelin phosphodiesterase 1	chr11	6390414	6394998	+
+TPP1	tripeptidyl peptidase 1	chr11	6612768	6619448	-
+SWAP70	switching B cell complex subunit SWAP70	chr11	9664072	9752993	+
+KCNJ11	potassium inwardly rectifying channel subfamily J member 11	chr11	17365172	17389353	-
+ABCC8	ATP binding cassette subfamily C member 8	chr11	17392498	17476894	-
+BDNF	brain derived neurotrophic factor	chr11	27654893	27722058	-
+WT1	WT1 transcription factor	chr11	32387775	32435564	-
+F2	coagulation factor II, thrombin	chr11	46719166	46739822	+
+MYBPC3	myosin binding protein C3	chr11	47331406	47352702	-
+SDHAF2	succinate dehydrogenase complex assembly factor 2	chr11	61430042	61446839	+
+FADS2	fatty acid desaturase 2	chr11	61792980	61867354	+
+FADS1	fatty acid desaturase 1	chr11	61799624	61829318	-
+MEN1	menin 1	chr11	64803510	64811294	-
+ACTN3	actinin alpha 3	chr11	66546395	66563334	+
+DHCR7	7-dehydrocholesterol reductase	chr11	71428193	71452868	-
+MTNR1B	melatonin receptor 1B	chr11	92969651	92985066	+
+ATM	ATM serine/threonine kinase	chr11	108222804	108369102	+
+SDHD	succinate dehydrogenase complex subunit D	chr11	112086824	112120016	+
+DRD2	dopamine receptor D2	chr11	113409605	113476402	-
+ZPR1	ZPR1 zinc finger	chr11	116773799	116788046	-
+SLCO1B1	solute carrier organic anion transporter family member 1B1	chr12	21131120	21241074	+
+PKP2	plakophilin 2	chr12	32790745	32896798	-
+LRRK2	leucine rich repeat kinase 2	chr12	40196744	40369285	+
+GNPTAB	N-acetylglucosamine-1-phosphate transferase subunits alpha and beta	chr12	101745486	101830980	-
+PAH	phenylalanine hydroxylase	chr12	102836889	102958410	-
+MYL2	myosin light chain 2	chr12	110909996	111052434	-
+SH2B3	SH2B adaptor protein 3	chr12	111405000	111451623	+
+BRAP	BRCA1 associated protein	chr12	111642146	111685991	-
+ALDH2	aldehyde dehydrogenase 2 family member	chr12	111766887	111817532	+
+HNF1A	HNF1 homeobox A	chr12	120978543	121002512	+
+GJB2	gap junction protein beta 2	chr13	20187463	20192980	-
+GJB6	gap junction protein beta 6	chr13	20221962	20232450	-
+FLT1	fms related receptor tyrosine kinase 1	chr13	28300346	28495145	-
+BRCA2	BRCA2 DNA repair associated	chr13	32315086	32400268	+
+NUDT15	nudix hydrolase 15	chr13	48037694	48054196	+
+RB1	RB transcriptional corepressor 1	chr13	48303735	48599436	+
+ATP7B	ATPase copper transporting beta	chr13	51930436	52012166	-
+COL4A1	collagen type IV alpha 1 chain	chr13	110148963	110307202	-
+COL4A2	collagen type IV alpha 2 chain	chr13	110305812	110513209	+
+MYH7	myosin heavy chain 7	chr14	23412733	23436137	-
+GCH1	GTP cyclohydrolase 1	chr14	54842008	54903280	-
+MAX	MYC associated factor X	chr14	65006174	65102695	-
+PSEN1	presenilin 1	chr14	73136418	73223691	+
+TSHR	thyroid stimulating hormone receptor	chr14	80954989	81146306	+
+GALC	galactosylceramidase	chr14	87837820	87993665	-
+CALM1	calmodulin 1	chr14	90396502	90408268	+
+SERPINA1	serpin family A member 1	chr14	94376745	94390866	-
+HHIPL1	HHIP like 1	chr14	99645129	99680569	+
+DYNC1H1	dynein cytoplasmic 1 heavy chain 1	chr14	101964573	102056443	+
+HERC2	HECT and RLD domain containing E3 ubiquitin protein ligase 2	chr15	28111040	28322179	-
+ACTC1	actin alpha cardiac muscle 1	chr15	34790107	34795912	-
+IVD	isovaleryl-CoA dehydrogenase	chr15	40405485	40435947	+
+FBN1	fibrillin 1	chr15	48408313	48645721	-
+TPM1	tropomyosin 1	chr15	63042481	63071915	+
+SMAD3	SMAD family member 3	chr15	67063763	67195173	+
+HEXA	hexosaminidase subunit alpha	chr15	72340924	72376420	-
+CYP1A1	cytochrome P450 family 1 subfamily A member 1	chr15	74719542	74725536	-
+CYP1A2	cytochrome P450 family 1 subfamily A member 2	chr15	74748795	74756607	+
+ADAMTS7	ADAM metallopeptidase with thrombospondin type 1 motif 7	chr15	78759204	78811503	-
+POLG	DNA polymerase gamma, catalytic subunit	chr15	89305198	89334861	-
+BLM	BLM RecQ like helicase	chr15	90717340	90816166	+
+HBA2	hemoglobin subunit alpha 2	chr16	172876	173710	+
+HBA1	hemoglobin subunit alpha 1	chr16	176680	177522	+
+TSC2	TSC complex subunit 2	chr16	2047345	2089491	+
+MEFV	MEFV innate immunity regulator, pyrin	chr16	3240392	3256954	-
+PMM2	phosphomannomutase 2	chr16	8788823	8862534	+
+MYH11	myosin heavy chain 11	chr16	15703135	15858438	-
+PALB2	partner and localizer of BRCA2	chr16	23603160	23641321	-
+CLN3	CLN3 lysosomal/endosomal transmembrane protein, battenin	chr16	28474111	28495575	-
+VKORC1	vitamin K epoxide reductase complex subunit 1	chr16	31090842	31095980	-
+FUS	FUS RNA binding protein	chr16	31180134	31196963	+
+FTO	FTO alpha-ketoglutarate dependent dioxygenase	chr16	53701692	54158512	+
+SLC12A3	solute carrier family 12 member 3	chr16	56865207	56915850	+
+CDH1	cadherin 1	chr16	68737292	68835540	+
+FANCA	FA complementation group A	chr16	89726683	89816977	-
+MC1R	melanocortin 1 receptor	chr16	89912119	89920977	+
+ASPA	aspartoacylase	chr17	3472374	3503405	+
+TP53	tumor protein p53	chr17	7661779	7687546	-
+FLCN	folliculin	chr17	17212206	17237203	-
+SLC6A4	solute carrier family 6 member 4	chr17	30194312	30238482	-
+RAD51D	RAD51 paralog D	chr17	35092221	35121522	-
+HNF1B	HNF1 homeobox B	chr17	37686431	37745091	-
+JUP	junction plakoglobin	chr17	41750887	41786931	-
+BRCA1	BRCA1 DNA repair associated	chr17	43044292	43170245	-
+GRN	granulin precursor	chr17	44345108	44353106	+
+MAPT	microtubule associated protein tau	chr17	45894358	46028334	+
+HOXB13	homeobox B13	chr17	48724763	48728750	-
+UBE2Z	ubiquitin conjugating enzyme E2 Z	chr17	48908398	48929056	+
+COL1A1	collagen type I alpha 1 chain	chr17	50184101	50201634	-
+RAD51C	RAD51 paralog C	chr17	58692573	58735611	+
+BRIP1	BRCA1 interacting DNA helicase 1	chr17	61679139	61863561	-
+GAA	alpha glucosidase	chr17	80101533	80119881	+
+NPC1	NPC intracellular cholesterol transporter 1	chr18	23506184	23586969	-
+DSC2	desmocollin 2	chr18	31058545	31102600	-
+DSG2	desmoglein 2	chr18	31497624	31551351	+
+SMAD4	SMAD family member 4	chr18	51028528	51085045	+
+MC4R	melanocortin 4 receptor	chr18	60371062	60372775	-
+STK11	serine/threonine kinase 11	chr19	1177558	1228431	+
+MCOLN1	mucolipin TRP cation channel 1	chr19	7522611	7534009	+
+SMARCA4	SWI/SNF related BAF chromatin remodeling complex subunit ATPase 4	chr19	10960824	11079426	+
+LDLR	low density lipoprotein receptor	chr19	11089418	11133830	+
+CACNA1A	calcium voltage-gated channel subunit alpha1 A	chr19	13206442	13624489	-
+NOTCH3	notch receptor 3	chr19	15159038	15200996	-
+SLC5A5	solute carrier family 5 member 5	chr19	17871945	17895174	+
+RYR1	ryanodine receptor 1	chr19	38433691	38595273	+
+CYP2B6	cytochrome P450 family 2 subfamily B member 6	chr19	40991281	41018398	+
+BCKDHA	branched chain keto acid dehydrogenase E1 subunit alpha	chr19	41397793	41425005	+
+APOE	apolipoprotein E	chr19	44903787	44909396	+
+FUT2	fucosyltransferase 2 (H blood group)	chr19	48695957	48705951	+
+TNNI3	troponin I3, cardiac type	chr19	55151767	55157773	-
+HNF4A	hepatocyte nuclear factor 4 alpha	chr20	44355699	44432845	+
+ADA	adenosine deaminase	chr20	44584896	44652252	-
+APP	amyloid beta precursor protein	chr21	25880535	26171128	-
+SOD1	superoxide dismutase 1	chr21	31659633	31668931	+
+TMPRSS3	transmembrane serine protease 3	chr21	42371840	42396119	-
+COMT	catechol-O-methyltransferase	chr22	19941371	19969975	+
+CHEK2	checkpoint kinase 2	chr22	28687738	28742422	-
+NF2	NF2, moesin-ezrin-radixin like (MERLIN) tumor suppressor	chr22	29603546	29698598	+
+CYP2D6	cytochrome P450 family 2 subfamily D member 6 (gene/pseudogene)	chr22	42125962	42131236	-
+PPARA	peroxisome proliferator activated receptor alpha	chr22	46149924	46243755	+
+TRMU	tRNA mitochondrial 2-thiouridylase	chr22	46330875	46357344	+
+MLC1	modulator of VRAC current 1	chr22	50059391	50085969	-
+OTC	ornithine transcarbamylase	chrX	38327598	38424632	+
+FOXP3	forkhead box P3	chrX	49250436	49264800	-
+GLA	galactosidase alpha	chrX	101393273	101408012	-
+FMR1	fragile X messenger ribonucleoprotein 1	chrX	147911858	147951125	+
+G6PD	glucose-6-phosphate dehydrogenase	chrX	154517825	154547584	-
+GSTT1	glutathione S-transferase theta 1	chrHSCHR22_1_CTG7	270314	278855	-

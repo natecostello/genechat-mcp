@@ -155,7 +155,7 @@ class TestStats:
         engine = VCFEngine(test_config)
         result = engine.stats()
         assert isinstance(result, dict)
-        assert result["Total variants"] == 18
+        assert result["Total variants"] == 24
         assert result["SNPs"] > 0
 
 

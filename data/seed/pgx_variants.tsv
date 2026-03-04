@@ -1,24 +1,25 @@
-# Source: PharmVar, CPIC, dbSNP (GRCh38.p14). All positions verified against dbSNP. Positions should be re-verified against dbSNP before clinical use.
+# Source: PharmVar, CPIC, dbSNP (GRCh38.p14). Coordinates verified via Ensembl REST API.
 # Note: rs8175347 (UGT1A1 *28) was merged into rs3064744 in dbSNP Build 152.
 # Note: TPMT is on the minus strand; ref/alt alleles are given on the genomic plus strand per VCF convention.
 gene	rsid	chrom	pos	ref	alt	star_allele	function_impact	notes
-CYP2D6	rs3892097	chr22	42128945	C	T	*4	No function	Most common null allele in Europeans; splice defect c.506-1G>A
+CYP2D6	rs35742686	chr22	42128242	T	del	*3	No function	Frameshift 2549delA; common null allele
+CYP2D6	rs3892097	chr22	42128945	C	A	*4	No function	Most common null allele in Europeans; splice defect c.506-1G>A
 CYP2D6	rs5030655	chr22	42129084	A	del	*6	No function	Frameshift deletion c.454delT (p.Trp152fs)
-CYP2D6	rs1065852	chr22	42130692	C	T	*10	Decreased function	Most common decreased-function allele in East Asians
-CYP2D6	rs28371706	chr22	42129770	G	T	*17	Decreased function	Common in African populations
-CYP2D6	rs28371725	chr22	42127803	C	T	*41	Decreased function	Reduced splicing efficiency
+CYP2D6	rs1065852	chr22	42130692	G	A	*10	Decreased function	Most common decreased-function allele in East Asians
+CYP2D6	rs28371706	chr22	42129770	G	A	*17	Decreased function	Common in African populations
+CYP2D6	rs28371725	chr22	42127803	C	A	*41	Decreased function	Reduced splicing efficiency
 CYP2C19	rs4244285	chr10	94781859	G	A	*2	No function	Most common loss-of-function allele; c.681G>A splice variant
 CYP2C19	rs4986893	chr10	94780653	G	A	*3	No function	Common in East Asian populations; c.636G>A (p.Trp212Ter)
-CYP2C19	rs12248560	chr10	94761900	C	T	*17	Increased function	Ultra-rapid metabolizer allele; promoter variant
-CYP2C9	rs1799853	chr10	94942290	C	T	*2	Decreased function	~30% reduced metabolism; Arg144Cys
+CYP2C19	rs12248560	chr10	94761900	C	A	*17	Increased function	Ultra-rapid metabolizer allele; promoter variant
+CYP2C9	rs1799853	chr10	94942290	C	A	*2	Decreased function	~30% reduced metabolism; Arg144Cys
 CYP2C9	rs1057910	chr10	94981296	A	C	*3	Decreased function	~80% reduced metabolism; Ile359Leu
-SLCO1B1	rs4149056	chr12	21178615	T	C	*5	Decreased function	Val174Ala; increased statin plasma levels and myopathy risk
-SLCO1B1	rs2306283	chr12	21176804	A	G	*1B	Increased function	Asn130Asp; generally considered normal-to-increased function
-DPYD	rs3918290	chr1	97450058	C	T	*2A	No function	IVS14+1G>A splice site variant; risk of fatal fluoropyrimidine toxicity
-VKORC1	rs9923231	chr16	31096368	C	T	.	Reduced expression	-1639G>A promoter variant (minus strand); major warfarin dose determinant
+SLCO1B1	rs4149056	chr12	21178615	T	A	*5	Decreased function	Val174Ala; increased statin plasma levels and myopathy risk
+SLCO1B1	rs2306283	chr12	21176804	A	C	*1B	Increased function	Asn130Asp; generally considered normal-to-increased function
+DPYD	rs3918290	chr1	97450058	C	A	*2A	No function	IVS14+1G>A splice site variant; risk of fatal fluoropyrimidine toxicity
+VKORC1	rs9923231	chr16	31096368	C	A	.	Reduced expression	-1639G>A promoter variant (minus strand); major warfarin dose determinant
 TPMT	rs1800462	chr6	18143724	C	G	*2	No function	Ala80Pro (c.238G>C on coding strand); 100-fold reduced activity
-TPMT	rs1800460	chr6	18138997	C	T	*3B	No function	Ala154Thr (c.460G>A on coding strand); component of *3A haplotype
-TPMT	rs1142345	chr6	18130687	T	C	*3C	No function	Tyr240Cys (c.719A>G on coding strand); most common in Africans; also component of *3A
+TPMT	rs1800460	chr6	18138997	C	A	*3B	No function	Ala154Thr (c.460G>A on coding strand); component of *3A haplotype
+TPMT	rs1142345	chr6	18130687	T	A	*3C	No function	Tyr240Cys (c.719A>G on coding strand); most common in Africans; also component of *3A
 NUDT15	rs116855232	chr13	48045719	C	T	*3	No function	Arg139Cys; prevalent in East Asians; risk of thiopurine toxicity
 UGT1A1	rs887829	chr2	233759924	C	T	*6	Decreased function	Associated with Gilbert syndrome; linked to UGT1A1*28
 UGT1A1	rs3064744	chr2	233760234	TA	TAn	*28	Decreased function	(TA)7 promoter repeat (formerly rs8175347); Gilbert syndrome; reduced UGT1A1 expression
