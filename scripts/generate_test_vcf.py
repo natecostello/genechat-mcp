@@ -33,8 +33,11 @@ VCF_HEADER = """\
 ##contig=<ID=chr12,length=133275309>
 ##contig=<ID=chr15,length=101991189>
 ##contig=<ID=chr16,length=90338345>
+##contig=<ID=chr13,length=114364328>
+##contig=<ID=chr14,length=107043718>
 ##contig=<ID=chr17,length=83257441>
 ##contig=<ID=chr19,length=58617616>
+##contig=<ID=chr20,length=64444167>
 ##contig=<ID=chr22,length=50818468>
 #CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tTEST_SAMPLE"""
 
@@ -99,7 +102,7 @@ VARIANTS = [
     # HFE C282Y — het carrier (chr6)
     (
         "chr6",
-        26091179,
+        26092913,
         "rs1800562",
         "G",
         "A",
@@ -271,6 +274,83 @@ VARIANTS = [
         "CLNSIG=risk_factor;CLNDN=Hyperlipoproteinemia_type_III;"
         "CLNREVSTAT=criteria_provided,_single_submitter;AF=0.08;AF_popmax=0.12",
         "0/0",
+    ),
+    # MC1R red hair — het (chr16)
+    (
+        "chr16",
+        89919709,
+        "rs1805007",
+        "C",
+        "T",
+        ".",
+        "PASS",
+        "ANN=T|missense_variant|MODERATE|MC1R|ENSG00000258839|transcript|ENST00000555147|protein_coding||c.451C>T|p.Arg151Cys||||||;"
+        "AF=0.07;AF_popmax=0.12",
+        "0/1",
+    ),
+    # HERC2 eye color — hom alt (blue eyes) (chr15)
+    (
+        "chr15",
+        28120472,
+        "rs12913832",
+        "G",
+        "A",
+        ".",
+        "PASS",
+        "ANN=A|intergenic_region|MODIFIER|HERC2||||||||||||||;AF=0.50;AF_popmax=0.79",
+        "1/1",
+    ),
+    # COMT Val158Met — het (chr22)
+    (
+        "chr22",
+        19963748,
+        "rs4680",
+        "G",
+        "A",
+        ".",
+        "PASS",
+        "ANN=A|missense_variant|MODERATE|COMT|ENSG00000093010|transcript|ENST00000361682|protein_coding||c.472G>A|p.Val158Met||||||;"
+        "AF=0.50;AF_popmax=0.55",
+        "0/1",
+    ),
+    # TCF7L2 T2D PRS variant — het (chr10)
+    (
+        "chr10",
+        112998590,
+        "rs7903146",
+        "C",
+        "T",
+        ".",
+        "PASS",
+        "ANN=T|intron_variant|MODIFIER|TCF7L2|ENSG00000148737|transcript|ENST00000543371|protein_coding||||||||||;"
+        "AF=0.28;AF_popmax=0.40",
+        "0/1",
+    ),
+    # KCNJ11 T2D PRS variant — hom alt (chr11)
+    (
+        "chr11",
+        17388025,
+        "rs5219",
+        "C",
+        "T",
+        ".",
+        "PASS",
+        "ANN=T|missense_variant|MODERATE|KCNJ11|ENSG00000187486|transcript|ENST00000339994|protein_coding||c.67C>T|p.Lys23Glu||||||;"
+        "AF=0.36;AF_popmax=0.50",
+        "1/1",
+    ),
+    # FOXO3 longevity — het (chr6)
+    (
+        "chr6",
+        108587315,
+        "rs2802292",
+        "G",
+        "T",
+        ".",
+        "PASS",
+        "ANN=T|intron_variant|MODIFIER|FOXO3|ENSG00000118689|transcript|ENST00000343882|protein_coding||||||||||;"
+        "AF=0.30;AF_popmax=0.45",
+        "0/1",
     ),
     # CYP2D6 *4 — het (chr22)
     (

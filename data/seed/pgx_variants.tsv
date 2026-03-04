@@ -1,7 +1,8 @@
-# Source: PharmVar, CPIC, dbSNP (GRCh38.p14). All positions verified against dbSNP. Positions should be re-verified against dbSNP before clinical use.
+# Source: PharmVar, CPIC, dbSNP (GRCh38.p14). Coordinates verified via Ensembl REST API.
 # Note: rs8175347 (UGT1A1 *28) was merged into rs3064744 in dbSNP Build 152.
 # Note: TPMT is on the minus strand; ref/alt alleles are given on the genomic plus strand per VCF convention.
 gene	rsid	chrom	pos	ref	alt	star_allele	function_impact	notes
+CYP2D6	rs35742686	chr22	42128242	T	del	*3	No function	Frameshift 2549delA; common null allele
 CYP2D6	rs3892097	chr22	42128945	C	T	*4	No function	Most common null allele in Europeans; splice defect c.506-1G>A
 CYP2D6	rs5030655	chr22	42129084	A	del	*6	No function	Frameshift deletion c.454delT (p.Trp152fs)
 CYP2D6	rs1065852	chr22	42130692	C	T	*10	Decreased function	Most common decreased-function allele in East Asians

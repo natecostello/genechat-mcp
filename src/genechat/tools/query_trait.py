@@ -17,15 +17,16 @@ def register(mcp, engine, db, config):
     ) -> str:
         """Look up trait-associated genetic variants in your genome.
 
-        Categories: nutrigenomics, exercise, metabolism, caffeine, alcohol,
-        cardiovascular, inflammation, sleep, other.
-        Use when a user asks about diet, exercise, caffeine metabolism, etc.
+        Categories: nutrigenomics, exercise, metabolism, cardiovascular, sleep,
+        skin, vitamins, immune, cognition, longevity, other.
+        Use when a user asks about diet, exercise, caffeine metabolism, sleep,
+        skin traits, vitamin needs, immune risk, cognitive traits, etc.
         """
         if not category and not trait and not gene:
             return (
                 "Please provide at least one filter: category, trait, or gene.\n"
                 "Available categories: nutrigenomics, exercise, metabolism, "
-                "cardiovascular, other."
+                "cardiovascular, sleep, skin, vitamins, immune, cognition, longevity, other."
             )
 
         trait_entries = db.get_trait_variants(category=category, trait=trait, gene=gene)

@@ -17,8 +17,8 @@ def register(mcp, engine, db, config):
         """Calculate a polygenic risk score (PRS) for a trait.
 
         PRS aggregates the effects of many common genetic variants to estimate
-        genetic predisposition to a trait. Currently available: coronary artery disease.
-        Provide either a trait name or a PGS Catalog ID.
+        genetic predisposition to a trait. Currently available: coronary artery disease,
+        type 2 diabetes. Provide either a trait name or a PGS Catalog ID.
         """
         if not trait and not prs_id:
             return "Please provide either a trait name or a PRS/PGS ID."
@@ -28,7 +28,8 @@ def register(mcp, engine, db, config):
             query = trait or prs_id
             return (
                 f"No PRS data found for '{query}'.\n"
-                "Currently available: 'coronary artery disease' (PGS000013)."
+                "Currently available: 'coronary artery disease' (PGS000013), "
+                "'type 2 diabetes' (PGS000014)."
             )
 
         prs_name = weights[0]["trait"]

@@ -99,16 +99,25 @@ genechat-mcp/
   scripts/
     setup_references.sh            # Downloads ClinVar, gnomAD, SnpEff DB
     annotate.sh                    # One-time VCF annotation pipeline
-    build_lookup_db.py             # Builds SQLite from seed TSVs
+    build_seed_data.py             # Full pipeline: fetch coords → merge → SQLite
+    build_lookup_db.py             # Final seed TSVs → SQLite
+    fetch_gene_coords.py           # Ensembl API → gene coordinates
+    fetch_variant_coords.py        # Ensembl API → variant coordinates
+    fetch_prs_coords.py            # Ensembl API → PRS variant coordinates
     generate_test_vcf.py           # Creates synthetic VCF for testing
   data/
     seed/
-      genes_grch38.tsv             # Gene coordinates (subset covering all referenced genes)
-      pgx_drugs.tsv                # CPIC drug-gene pairs
-      pgx_variants.tsv             # PGx key variants with star alleles
-      trait_variants.tsv           # Curated trait SNPs
-      carrier_genes.tsv            # Carrier screening panel
-      prs_weights.tsv              # PGS Catalog scores (start small)
+      curated/                     # Hand-maintained clinical metadata
+        gene_lists.tsv             # Gene symbols + category (no coordinates)
+        carrier_metadata.tsv       # Carrier conditions, inheritance, frequencies
+        trait_metadata.tsv         # Trait rsIDs, descriptions, evidence, PMIDs
+        prs_scores.tsv             # PRS weights + effect alleles (no coordinates)
+      genes_grch38.tsv             # Generated: gene coordinates from Ensembl
+      pgx_drugs.tsv                # CPIC drug-gene pairs (fully curated)
+      pgx_variants.tsv             # PGx star-allele variants (coords verified by pipeline)
+      trait_variants.tsv           # Generated: trait metadata + Ensembl coordinates
+      carrier_genes.tsv            # Generated: copied from curated/carrier_metadata.tsv
+      prs_weights.tsv              # Generated: PRS scores + Ensembl coordinates
     lookup_tables.db               # Built by build_lookup_db.py (gitignored)
   src/
     genechat/
@@ -653,3 +662,152 @@ Fixtures:
 5. Graceful failures with helpful messages, not stack traces.
 6. No network calls at runtime. Everything local.
 7. Seed data accuracy > completeness. Include PubMed IDs. Honest evidence levels.
+
+---
+
+## Seed Data Pipeline
+
+GeneChat uses a two-layer data model. **Curated metadata** (clinical knowledge) lives in `data/seed/curated/`. **Genomic coordinates** are fetched from Ensembl REST API by scripts. The pipeline merges both into final TSVs in `data/seed/`, then rebuilds the SQLite database.
+
+```
+data/seed/curated/          ← You edit these (clinical knowledge)
+  gene_lists.tsv            ← Gene symbols + category tags
+  carrier_metadata.tsv      ← Carrier screening: conditions, inheritance, frequencies
+  trait_metadata.tsv        ← Trait variants: rsid, gene, description, evidence, PMID
+  prs_scores.tsv            ← PRS weights: rsid, effect allele, weight
+
+scripts/
+  fetch_gene_coords.py      ← Ensembl → gene coordinates
+  fetch_variant_coords.py   ← Ensembl → variant coordinates (trait + pgx)
+  fetch_prs_coords.py       ← Ensembl → PRS variant coordinates
+  build_seed_data.py        ← Runs full pipeline: fetch → merge → SQLite
+  build_lookup_db.py        ← Final TSVs → SQLite (called by build_seed_data.py)
+
+data/seed/                  ← Generated output (committed to git)
+  genes_grch38.tsv, trait_variants.tsv, pgx_variants.tsv,
+  prs_weights.tsv, carrier_genes.tsv, pgx_drugs.tsv
+```
+
+**Rebuild everything:** `uv run python scripts/build_seed_data.py`
+
+This fetches latest coordinates from Ensembl and rebuilds all TSVs + SQLite. Idempotent, safe to re-run. Requires internet access (build-time only, never at runtime).
+
+### Gene Coverage
+
+The `genes` table includes ALL ~19,000 human protein-coding genes, fetched automatically from HGNC. **You do not need to add genes manually for the LLM to query them.** If the LLM asks about any protein-coding gene, it will already have coordinates.
+
+The curated `data/seed/curated/gene_lists.tsv` file is supplementary — it documents which genes have specific clinical roles (carrier screening, PGx, traits, etc.) and ensures non-protein-coding genes we care about are also included. You only need to edit it when adding genes to the carrier/trait/PGx curated files, to document the clinical category.
+
+### Adding a Carrier Gene
+
+Two edits required:
+
+**1. Add to `data/seed/curated/gene_lists.tsv`** (if not already there):
+```
+SLC22A5	carrier
+```
+
+**2. Add to `data/seed/curated/carrier_metadata.tsv`:**
+```
+SLC22A5	Systemic primary carnitine deficiency	AR	1 in 100	0
+```
+
+**Columns (tab-separated):**
+
+| Column | Required | Description |
+|--------|----------|-------------|
+| `gene` | yes | HGNC symbol. Must also be in `gene_lists.tsv`. |
+| `condition_name` | yes | Human-readable condition name. Source: OMIM, GeneReviews. |
+| `inheritance` | yes | `AR` (autosomal recessive), `AD` (autosomal dominant), `X-linked`. |
+| `carrier_frequency` | no | e.g., `1 in 25 (European)`. Source: GeneReviews, gnomAD. Use `.` if unknown. |
+| `acmg_recommended` | yes | `1` if on ACMG recommended list, `0` otherwise. |
+
+### Adding a Trait Variant
+
+Two edits required:
+
+**1. Add to `data/seed/curated/gene_lists.tsv`** (if gene not already there):
+```
+BCMO1	trait
+```
+
+**2. Add to `data/seed/curated/trait_metadata.tsv`:**
+```
+rs7501331	BCMO1	vitamins	Beta-carotene conversion	C	T	T	T allele (Ala379Val) associated with ~50% reduced beta-carotene to retinal conversion	moderate	21878437
+```
+
+**Columns (tab-separated):**
+
+| Column | Required | Description |
+|--------|----------|-------------|
+| `rsid` | yes | dbSNP rsID. Must exist in Ensembl (verify at ncbi.nlm.nih.gov/snp/). |
+| `gene` | yes | HGNC symbol of the gene this variant is in. |
+| `trait_category` | yes | One of: `nutrigenomics`, `exercise`, `metabolism`, `cardiovascular`, `sleep`, `skin`, `vitamins`, `immune`, `cognition`, `longevity`, `other`. |
+| `trait` | yes | Short trait name, e.g., `Beta-carotene conversion`. |
+| `ref` | yes | GRCh38 plus-strand reference allele. Verify against dbSNP. |
+| `alt` | yes | GRCh38 plus-strand alternate allele. Verify against dbSNP. |
+| `effect_allele` | yes | The allele that has the described effect. Must be one of `ref` or `alt`. |
+| `effect_description` | yes | What the effect allele does. Be specific: include protein change, magnitude, direction. |
+| `evidence_level` | yes | `strong` (replicated GWAS, functional validation), `moderate` (single large GWAS or replicated candidate gene), `preliminary` (small studies, not yet replicated). |
+| `pmid` | yes | PubMed ID of the primary source paper. |
+
+**Do NOT provide** `chrom` or `pos` — these are fetched from Ensembl automatically. **Do provide** curated `ref` and `alt` alleles on the GRCh38 plus strand.
+
+If adding a new trait_category value, also update `src/genechat/tools/query_trait.py`: the docstring category list and the "Available categories" message.
+
+### Adding a PGx Drug-Gene Pair
+
+Edit `data/seed/pgx_drugs.tsv` directly (this file is fully curated, no coordinates needed):
+
+```
+pantoprazole	protonix	CYP2C19	CPIC	https://cpicpgx.org/guidelines/guideline-for-proton-pump-inhibitors-and-cyp2c19/	CYP2C19 rapid/ultra-rapid metabolizers may need increased dose; poor metabolizers may have increased efficacy.
+```
+
+**Columns:** `drug_name`, `drug_aliases` (comma-separated, or `.`), `gene`, `guideline_source`, `guideline_url` (or `.`), `clinical_summary`.
+
+Source: [CPIC guidelines](https://cpicpgx.org/guidelines/).
+
+### Adding a PGx Variant (Star Allele)
+
+Edit `data/seed/pgx_variants.tsv` directly. Coordinates are verified by `fetch_variant_coords.py` on next pipeline run.
+
+```
+CYP2D6	rs28371706	chr22	42129770	G	T	*17	Decreased function	Common in African populations
+```
+
+**Columns:** `gene`, `rsid`, `chrom`, `pos`, `ref`, `alt`, `star_allele`, `function_impact`, `notes`.
+
+Source: [PharmVar](https://www.pharmvar.org/), CPIC allele tables.
+
+### Adding PRS Variants
+
+Edit `data/seed/curated/prs_scores.tsv`:
+
+```
+PGS000014	Type 2 diabetes	rs7903146	T	0.34	PGS000014_Mahajan2018
+```
+
+**Columns (tab-separated):**
+
+| Column | Required | Description |
+|--------|----------|-------------|
+| `prs_id` | yes | PGS Catalog ID (e.g., `PGS000014`). |
+| `trait` | yes | Trait name. Must match exactly across all rows with the same prs_id. |
+| `rsid` | yes | dbSNP rsID. |
+| `effect_allele` | yes | The allele whose count is multiplied by weight. |
+| `weight` | yes | Log-odds ratio weight from the scoring file. |
+| `reference` | yes | Citation, e.g., `PGS000014_Mahajan2018`. |
+
+**Do NOT provide** `chrom` or `pos` — fetched from Ensembl.
+
+Source: [PGS Catalog](https://www.pgscatalog.org/) scoring file downloads.
+
+If adding an entirely new PRS trait, also update `src/genechat/tools/calculate_prs.py`: the docstring and the "Currently available" message.
+
+### After Any Edit
+
+```bash
+uv run python scripts/build_seed_data.py    # Fetch coords + rebuild SQLite
+uv run pytest -x                             # Verify nothing broke
+uv run ruff check . && uv run ruff format .  # Lint
+```
