@@ -27,6 +27,32 @@ Several skills in this repo originate from [obra/superpowers](https://github.com
 **identical+** — our additions appended at end; upstream content unchanged above.
 **diverged** — structural differences throughout; requires manual merge on sync.
 
+## Original UX design skills
+
+These skills are original (not from obra/superpowers). They form a dependency chain rooted at `ux-design-agent`:
+
+| Skill | Purpose |
+|-------|---------|
+| ux-design-agent | Entry point: requirements, user modeling, modality selection |
+| design-principles | GUI modality: visual design patterns and polish |
+| delegation-oversight | Agentic modality: human-AI handoff design |
+| approval-confirmation | Sub-skill of delegation-oversight: informed consent UI |
+| failure-choreography | Graceful failure: state preservation and human handoff |
+| trust-calibration | Confidence framing and uncertainty acknowledgment |
+| ux-writing | Interface copy: buttons, labels, errors, forms |
+
+**Dependency graph:**
+```
+ux-design-agent
+├── design-principles        [GUI modality]
+├── delegation-oversight      [Agentic modality]
+│   ├── approval-confirmation
+│   │   ├── failure-choreography → trust-calibration
+│   │   └── ux-writing
+│   └── writing-plans         [already tracked above]
+└── writing-plans             [already tracked above]
+```
+
 ## Where and why we differ
 
 Five skills diverge from upstream. Three share a theme:
