@@ -4,6 +4,20 @@
 
 A local-first MCP server enabling conversational queries about personal genomic data.
 
+## PR Workflow
+
+When submitting a PR, always request a GitHub Copilot review using:
+```
+gh pr edit <PR_NUMBER> --add-reviewer @copilot
+```
+
+## Code Review
+
+GitHub Copilot is configured as a PR code reviewer. Its instructions are in
+[`.github/copilot-instructions.md`](.github/copilot-instructions.md). Copilot reviews
+deliver inline comments with suggestion blocks. Use `/resolve-pr-comments` to process
+review feedback.
+
 ## First-Run Setup
 
 On first use in a fresh clone, follow `docs/FIRST_RUN.md` to initialize project memory files.
