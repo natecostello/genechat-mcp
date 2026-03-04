@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.11-slim-trixie
 
 # Install bcftools and tabix (htslib)
 RUN apt-get update && \
