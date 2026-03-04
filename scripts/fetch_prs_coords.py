@@ -78,6 +78,18 @@ def extract_coords(variant_data: dict) -> dict | None:
 
 
 def main():
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description="Fetch PRS variant coordinates from Ensembl"
+    )
+    parser.add_argument(
+        "--allow-missing",
+        action="store_true",
+        help="Allow missing coordinates instead of failing (writes incomplete output with warning)",
+    )
+    args = parser.parse_args()
+
     prs_path = CURATED_DIR / "prs_scores.tsv"
     output_path = SEED_DIR / "prs_weights.tsv"
 
@@ -131,13 +143,12 @@ def main():
 
     # Build output with coordinates
     output_rows = []
-    skipped = 0
+    missing_variants = []
     for row in prs_rows:
         rsid = row["rsid"]
         c = coords.get(rsid)
         if not c:
-            print(f"  WARNING: No coordinates for PRS variant {rsid}, skipping")
-            skipped += 1
+            missing_variants.append(rsid)
             continue
 
         output_rows.append(
@@ -151,6 +162,23 @@ def main():
                 "weight": row["weight"],
                 "reference": row["reference"],
             }
+        )
+
+    if missing_variants:
+        print(
+            f"\nERROR: {len(missing_variants)} PRS variant(s) could not be resolved: "
+            f"{', '.join(missing_variants)}"
+        )
+        if not args.allow_missing:
+            print(
+                "PRS weights directly drive calculate_prs scoring. Writing an incomplete "
+                "prs_weights.tsv would silently reduce PRS coverage."
+            )
+            print("Fix the missing rsIDs or use --allow-missing to proceed anyway.")
+            return 1
+        print(
+            "WARNING: --allow-missing set, proceeding with incomplete output "
+            f"({len(output_rows)}/{len(prs_rows)} variants)"
         )
 
     # Write output
@@ -176,8 +204,6 @@ def main():
             writer.writerow(row)
 
     print(f"\nWrote {len(output_rows)} PRS weights to {output_path}")
-    if skipped:
-        print(f"Skipped {skipped} variants without coordinates")
 
     return 0
 

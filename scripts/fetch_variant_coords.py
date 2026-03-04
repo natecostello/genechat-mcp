@@ -134,15 +134,15 @@ def build_trait_variants(trait_metadata: list[dict], coords: dict) -> list[dict]
     """Merge trait metadata with fetched coordinates.
 
     Uses curated ref/alt from trait_metadata (not Ensembl allele_string).
+    Raises ValueError if any curated trait variant is missing coordinates.
     """
     output_rows = []
+    missing = []
     for row in trait_metadata:
         rsid = row["rsid"]
         c = coords.get(rsid)
         if not c:
-            print(
-                f"  WARNING: No coordinates for trait variant {rsid} ({row.get('gene', '?')}), skipping"
-            )
+            missing.append(f"{rsid} ({row.get('gene', '?')})")
             continue
 
         ref = row.get("ref")
@@ -169,6 +169,14 @@ def build_trait_variants(trait_metadata: list[dict], coords: dict) -> list[dict]
                 "evidence_level": row["evidence_level"],
                 "pmid": row["pmid"],
             }
+        )
+
+    if missing:
+        raise ValueError(
+            f"Missing Ensembl coordinates for {len(missing)} curated trait "
+            f"variant(s): {', '.join(missing)}. All curated trait variants must "
+            "have resolvable coordinates. Fix the rsIDs or remove the entries "
+            "from curated/trait_metadata.tsv."
         )
 
     return output_rows
