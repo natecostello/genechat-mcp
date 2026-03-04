@@ -59,6 +59,7 @@ load the nearest SPEC.md. This mirrors how .gitignore resolution works.
 
 | Subsystem | Path | Purpose |
 |---|---|---|
+| GeneChat | `src/genechat/` | MCP server: VCF parsing, variant lookup, genomic tools |
 | Skills | `.claude/skills/` | Reusable agent instructions as Markdown with YAML frontmatter |
 
 For detailed specifications, read the SPEC.md in each subsystem directory.
