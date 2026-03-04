@@ -165,7 +165,12 @@ def main():
         "reference",
     ]
     with open(output_path, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter="\t")
+        writer = csv.DictWriter(
+            f,
+            fieldnames=fieldnames,
+            delimiter="\t",
+            lineterminator="\n",
+        )
         writer.writeheader()
         for row in output_rows:
             writer.writerow(row)

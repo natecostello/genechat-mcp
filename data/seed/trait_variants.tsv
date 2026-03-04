@@ -31,7 +31,7 @@ rs1805007	chr16	89919709	C	T	MC1R	skin	Red hair / fair skin	T	T allele (Arg151Cy
 rs16891982	chr5	33951588	G	C	SLC45A2	skin	Skin pigmentation	C	C allele (Leu374Phe) strongly associated with lighter skin in Europeans	strong	17570750
 rs12913832	chr15	28120472	G	A	HERC2	skin	Eye color	A	A allele associated with blue eye color; major determinant of eye color variation	strong	18172690
 rs12785878	chr11	71456403	G	T	DHCR7	vitamins	Vitamin D levels	T	T allele associated with lower 25-hydroxyvitamin D levels	strong	20541252
-rs2282679	chr4	71742666	T	G	GC	vitamins	Vitamin D binding protein	C	C allele associated with lower circulating vitamin D levels	strong	20541252
+rs2282679	chr4	71742666	T	G	GC	vitamins	Vitamin D binding protein	G	G allele associated with lower circulating vitamin D levels	strong	20541252
 rs602662	chr19	48703728	G	A	FUT2	vitamins	Vitamin B12 absorption	A	A allele associated with lower serum vitamin B12 levels (secretor status)	moderate	18776911
 rs2476601	chr1	113834946	G	A	PTPN22	immune	Autoimmune susceptibility	A	A allele (Arg620Trp) increases risk of type 1 diabetes, RA, lupus, thyroiditis	strong	15208781
 rs3087243	chr2	203874196	A	G	CTLA4	immune	Autoimmune susceptibility	G	G allele associated with increased risk of autoimmune thyroid disease and type 1 diabetes	moderate	12724780

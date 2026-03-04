@@ -145,13 +145,22 @@ def build_trait_variants(trait_metadata: list[dict], coords: dict) -> list[dict]
             )
             continue
 
+        ref = row.get("ref")
+        alt = row.get("alt")
+        if not ref or ref == "." or not alt or alt == ".":
+            raise ValueError(
+                f"Missing or invalid ref/alt for trait variant {rsid} "
+                f"({row.get('gene', '?')}). Please ensure curated "
+                "trait_metadata.tsv includes non-'.' ref and alt values."
+            )
+
         output_rows.append(
             {
                 "rsid": rsid,
                 "chrom": c["chrom"],
                 "pos": c["pos"],
-                "ref": row.get("ref", "."),
-                "alt": row.get("alt", "."),
+                "ref": ref,
+                "alt": alt,
                 "gene": row["gene"],
                 "trait_category": row["trait_category"],
                 "trait": row["trait"],
@@ -203,7 +212,12 @@ def write_tsv(
         if header_comments:
             for comment in header_comments:
                 f.write(f"# {comment}\n")
-        writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter="\t")
+        writer = csv.DictWriter(
+            f,
+            fieldnames=fieldnames,
+            delimiter="\t",
+            lineterminator="\n",
+        )
         writer.writeheader()
         for row in rows:
             writer.writerow(row)
@@ -231,11 +245,7 @@ def main():
 
     # Filter out non-standard rsIDs (like rs8175347 which may have merged) and dedupe
     valid_rsids = sorted(
-        {
-            r
-            for r in rsids
-            if r.startswith("rs") and r[2:].replace("_", "").isdigit()
-        }
+        {r for r in rsids if r.startswith("rs") and r[2:].replace("_", "").isdigit()}
     )
     print(f"Collected {len(valid_rsids)} unique rsIDs to look up")
 

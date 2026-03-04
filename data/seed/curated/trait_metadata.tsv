@@ -32,7 +32,7 @@ rs7412	APOE	cardiovascular	APOE e2 allele (part 2)	C	T	T	Part of APOE e2 haploty
 # === Other ===
 rs1800562	HFE	other	Hereditary hemochromatosis (C282Y)	G	A	A	A allele (C282Y) most common HFE mutation; homozygous = high iron overload risk	strong	8696333
 rs1799945	HFE	other	Hereditary hemochromatosis (H63D)	C	G	G	G allele (H63D) mildly increases iron absorption; compound heterozygote C282Y/H63D increases risk	strong	8696333
-rs3064744	UGT1A1	other	Gilbert syndrome	.	.	TAn	(TA)7 repeat (*28) reduces UGT1A1 expression; causes benign unconjugated hyperbilirubinemia	strong	7481376
+rs3064744	UGT1A1	other	Gilbert syndrome	ATATATATATATATA	ATATATATATATATATA	TAn	(TA)7 repeat (*28) reduces UGT1A1 expression; causes benign unconjugated hyperbilirubinemia	strong	7481376
 # === Sleep ===
 rs1801260	CLOCK	sleep	Evening chronotype	A	G	G	G allele (3111T>C) associated with evening preference and delayed sleep phase	moderate	9545397
 rs73598374	ADA	sleep	Deep sleep efficiency	C	T	T	T allele associated with increased slow-wave sleep and deeper sleep	moderate	15800623
@@ -43,7 +43,7 @@ rs16891982	SLC45A2	skin	Skin pigmentation	G	C	C	C allele (Leu374Phe) strongly as
 rs12913832	HERC2	skin	Eye color	G	A	A	A allele associated with blue eye color; major determinant of eye color variation	strong	18172690
 # === Vitamins ===
 rs12785878	DHCR7	vitamins	Vitamin D levels	G	T	T	T allele associated with lower 25-hydroxyvitamin D levels	strong	20541252
-rs2282679	GC	vitamins	Vitamin D binding protein	T	G	C	C allele associated with lower circulating vitamin D levels	strong	20541252
+rs2282679	GC	vitamins	Vitamin D binding protein	T	G	G	G allele associated with lower circulating vitamin D levels	strong	20541252
 rs602662	FUT2	vitamins	Vitamin B12 absorption	G	A	A	A allele associated with lower serum vitamin B12 levels (secretor status)	moderate	18776911
 # === Immune ===
 rs2476601	PTPN22	immune	Autoimmune susceptibility	G	A	A	A allele (Arg620Trp) increases risk of type 1 diabetes, RA, lupus, thyroiditis	strong	15208781

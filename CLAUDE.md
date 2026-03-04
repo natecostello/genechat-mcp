@@ -733,7 +733,7 @@ BCMO1	trait
 
 **2. Add to `data/seed/curated/trait_metadata.tsv`:**
 ```
-rs7501331	BCMO1	vitamins	Beta-carotene conversion	T	T allele (Ala379Val) associated with ~50% reduced beta-carotene to retinal conversion	moderate	21878437
+rs7501331	BCMO1	vitamins	Beta-carotene conversion	C	T	T	T allele (Ala379Val) associated with ~50% reduced beta-carotene to retinal conversion	moderate	21878437
 ```
 
 **Columns (tab-separated):**
@@ -744,12 +744,14 @@ rs7501331	BCMO1	vitamins	Beta-carotene conversion	T	T allele (Ala379Val) associa
 | `gene` | yes | HGNC symbol of the gene this variant is in. |
 | `trait_category` | yes | One of: `nutrigenomics`, `exercise`, `metabolism`, `cardiovascular`, `sleep`, `skin`, `vitamins`, `immune`, `cognition`, `longevity`, `other`. |
 | `trait` | yes | Short trait name, e.g., `Beta-carotene conversion`. |
-| `effect_allele` | yes | The allele that has the described effect. Must be one of the alleles at this position. |
+| `ref` | yes | GRCh38 plus-strand reference allele. Verify against dbSNP. |
+| `alt` | yes | GRCh38 plus-strand alternate allele. Verify against dbSNP. |
+| `effect_allele` | yes | The allele that has the described effect. Must be one of `ref` or `alt`. |
 | `effect_description` | yes | What the effect allele does. Be specific: include protein change, magnitude, direction. |
 | `evidence_level` | yes | `strong` (replicated GWAS, functional validation), `moderate` (single large GWAS or replicated candidate gene), `preliminary` (small studies, not yet replicated). |
 | `pmid` | yes | PubMed ID of the primary source paper. |
 
-**Do NOT provide** `chrom`, `pos`, `ref`, or `alt` — these are fetched from Ensembl automatically.
+**Do NOT provide** `chrom` or `pos` — these are fetched from Ensembl automatically. **Do provide** curated `ref` and `alt` alleles on the GRCh38 plus strand.
 
 If adding a new trait_category value, also update `src/genechat/tools/query_trait.py`: the docstring category list and the "Available categories" message.
 

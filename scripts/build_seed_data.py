@@ -77,7 +77,12 @@ def copy_carrier_metadata():
             return False
 
     with open(dst, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter="\t")
+        writer = csv.DictWriter(
+            f,
+            fieldnames=fieldnames,
+            delimiter="\t",
+            lineterminator="\n",
+        )
         writer.writeheader()
         for row in rows:
             writer.writerow({k: row[k] for k in fieldnames})

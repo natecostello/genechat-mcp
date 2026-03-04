@@ -196,6 +196,7 @@ def write_tsv(results: list[dict], output_path: Path):
             f,
             fieldnames=["symbol", "name", "chrom", "start", "end", "strand"],
             delimiter="\t",
+            lineterminator="\n",
         )
         writer.writeheader()
         for row in results:
