@@ -10,3 +10,4 @@ src/genechat/data/lookup_tables.db
 *.vcf.gz
 *.vcf.gz.tbi
 .pytest_cache/
+giab/

@@ -173,6 +173,33 @@ uv run ruff check .
 uv run ruff format --check .
 ```
 
+### End-to-End Testing with GIAB NA12878
+
+GeneChat includes an optional e2e test suite that runs every tool against the [GIAB NA12878 (HG001)](https://www.nist.gov/programs-projects/genome-bottle) benchmark genome (~3.7M variants). These tests validate real-world behavior and verify known pharmacogenomic genotypes.
+
+**Setup** (one-time, ~30 min, ~5 GB downloads):
+
+```bash
+bash scripts/setup_giab.sh ./giab
+```
+
+This downloads the GIAB VCF, fixes chromosome prefixes, and annotates with SnpEff + dbSNP + ClinVar. Prerequisites: bcftools, Java, SnpEff/SnpSift.
+
+**Run e2e tests:**
+
+```bash
+export GENECHAT_GIAB_VCF=./giab/HG001_annotated.vcf.gz
+uv run pytest tests/e2e/ -v
+```
+
+**Run fast e2e tests only** (skip full-VCF scans):
+
+```bash
+uv run pytest tests/e2e/ -v -m "not slow"
+```
+
+E2e tests are **automatically skipped** when `GENECHAT_GIAB_VCF` is not set, so they never affect CI or the regular test suite.
+
 ## Troubleshooting
 
 **Missing VCF index (.tbi)**
