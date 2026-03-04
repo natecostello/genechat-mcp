@@ -19,7 +19,8 @@ def register(mcp, engine, db, config):
         """Add a new carrier screening gene to the curated seed data.
 
         Use this when the user wants to add a gene to the carrier screening panel.
-        After adding, run rebuild_database to update the SQLite database.
+        After adding, run the full seed data pipeline to update the SQLite database:
+        `uv run python scripts/build_seed_data.py`
 
         Parameters:
         - gene: HGNC gene symbol (e.g. SLC22A5)
@@ -85,5 +86,6 @@ def register(mcp, engine, db, config):
             f"- Inheritance: {inheritance}\n"
             f"- Carrier frequency: {carrier_frequency}\n"
             f"- ACMG recommended: {acmg_str}\n\n"
-            f"Run **rebuild_database** to update the SQLite database."
+            f"Run the full seed data pipeline to update the SQLite database:\n"
+            f"`uv run python scripts/build_seed_data.py`"
         )

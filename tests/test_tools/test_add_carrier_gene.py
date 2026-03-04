@@ -56,7 +56,7 @@ class TestAddCarrierGene:
         assert "Carrier Gene Added" in result
         assert "SLC22A5" in result
         assert "carnitine" in result.lower()
-        assert "rebuild_database" in result.lower()
+        assert "build_seed_data" in result
 
         # Verify file was written
         content = (tmp_path / "carrier_metadata.tsv").read_text(encoding="utf-8")
