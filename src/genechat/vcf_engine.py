@@ -30,7 +30,9 @@ class VCFEngine:
         csi = Path(f"{self.vcf_path}.csi")
         if not tbi.exists() and not csi.exists():
             raise FileNotFoundError(
-                f"VCF index not found. Run: tabix -p vcf {self.vcf_path}"
+                f"VCF index not found for {self.vcf_path}. "
+                "Create one with pysam.tabix_index(..., preset='vcf') or "
+                "tabix -p vcf <file>."
             )
 
         # Validate the file can be opened
@@ -96,19 +98,31 @@ class VCFEngine:
             raise ValueError(
                 f"Invalid rsID format: {rsid}. Expected rs<digits>"
             )
-        # No region-based shortcut for rsID — must scan entire file
-        variants = []
+        # No region-based shortcut for rsID — must scan entire file.
+        # rsIDs can repeat across records (different alleles, overlapping
+        # representations), so collect all matches up to max_variants.
+        variants: list[dict] = []
+        truncated = False
         try:
             with pysam.VariantFile(str(self.vcf_path)) as vcf:
                 sample_idx = self._get_sample_index()
                 for record in vcf:
-                    if record.id == rsid:
-                        parsed = self._record_to_dict(record, sample_idx)
-                        if parsed:
-                            variants.append(parsed)
-                        break  # rsIDs are unique
+                    if record.id != rsid:
+                        continue
+                    parsed = self._record_to_dict(record, sample_idx)
+                    if parsed:
+                        variants.append(parsed)
+                    if len(variants) >= self.max_variants:
+                        truncated = True
+                        break
         except Exception as e:
             raise VCFEngineError(f"Error querying rsID {rsid}: {e}") from e
+        if truncated and variants:
+            variants[-1]["_truncated"] = True
+            variants[-1]["_truncation_notice"] = (
+                f"Results capped at {self.max_variants} variants. "
+                "Narrow your query for complete results."
+            )
         return variants
 
     def query_clinvar(
@@ -152,10 +166,13 @@ class VCFEngine:
         return variants
 
     def stats(self) -> dict:
-        """Compute summary statistics by iterating all records.
+        """Compute basic variant statistics by iterating all records.
 
-        Returns a dict with keys like 'Total variants', 'SNPs', 'Indels',
-        'ClinVar pathogenic', etc.
+        Returns a dict with counts for:
+        - 'Total variants'
+        - 'SNPs'
+        - 'Indels'
+        - 'Multi-allelic'
         """
         counts = {
             "Total variants": 0,
@@ -212,20 +229,31 @@ class VCFEngine:
         if truncated and variants:
             variants[-1]["_truncated"] = True
             variants[-1]["_truncation_notice"] = (
-                f"Results capped at {cap} variants. "
+                f"Results capped at {self.max_variants} variants. "
                 "Narrow your query for complete results."
             )
         return variants
 
     def _matches_filter(self, record: pysam.VariantRecord, filt: str) -> bool:
-        """Basic filter matching for impact level strings."""
-        # Support simple INFO field substring filters used by tools
-        # e.g. 'INFO/ANN~"HIGH"' or impact filter strings
+        """Basic filter matching for impact level strings.
+
+        Supports plain strings like 'HIGH' and bcftools-style expressions
+        like 'INFO/ANN~"HIGH"'.
+        """
+        # e.g. 'INFO/ANN~"HIGH"' or plain impact strings like 'HIGH'.
         try:
+            # If the filter looks like INFO/ANN~"VALUE", extract VALUE.
+            search = filt
+            match = re.search(r'~"([^"]+)"', filt)
+            if match:
+                search = match.group(1)
+            if not search:
+                return False
             ann = self._get_info_str(record, "ANN")
-            if ann and filt.upper() in ann.upper():
+            if ann and search.upper() in ann.upper():
                 return True
         except Exception:
+            # On any error retrieving/processing the ANN field, treat as no match.
             pass
         return False
 
