@@ -28,9 +28,7 @@ def register(mcp, engine, db, config):
                 "cardiovascular, other."
             )
 
-        trait_entries = db.get_trait_variants(
-            category=category, trait=trait, gene=gene
-        )
+        trait_entries = db.get_trait_variants(category=category, trait=trait, gene=gene)
         if not trait_entries:
             filters = []
             if category:
@@ -62,10 +60,12 @@ def register(mcp, engine, db, config):
             except (ValueError, VCFEngineError):
                 gt_info = {"display": "query error", "zygosity": "unknown"}
 
-            by_trait.setdefault(trait_name, []).append({
-                **entry,
-                "user_genotype": gt_info,
-            })
+            by_trait.setdefault(trait_name, []).append(
+                {
+                    **entry,
+                    "user_genotype": gt_info,
+                }
+            )
 
         cat_display = category.title() if category else "Selected"
         lines = [f"## {cat_display} Trait Variants"]
@@ -81,7 +81,9 @@ def register(mcp, engine, db, config):
                 pmid = e.get("pmid", "")
 
                 lines.append(f"**{rsid}** ({gene_name})")
-                lines.append(f"- Your genotype: **{gt['display']}** ({gt['zygosity'].replace('_', ' ')})")
+                lines.append(
+                    f"- Your genotype: **{gt['display']}** ({gt['zygosity'].replace('_', ' ')})"
+                )
                 lines.append(f"- Effect allele: {effect_allele}")
                 lines.append(f"- {e['effect_description']}")
                 lines.append(f"- Evidence: {evidence}")

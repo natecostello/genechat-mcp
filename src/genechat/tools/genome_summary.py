@@ -1,7 +1,5 @@
 """Genome summary — overview of variant counts and key findings."""
 
-import re
-
 from genechat.vcf_engine import VCFEngineError
 
 
@@ -28,15 +26,21 @@ def register(mcp, engine, db, config):
             stats_info = _parse_stats(stats_raw)
             lines.append("\n### Variant Counts")
             for key, val in stats_info.items():
-                lines.append(f"- **{key}:** {val:,}" if isinstance(val, int) else f"- **{key}:** {val}")
+                lines.append(
+                    f"- **{key}:** {val:,}"
+                    if isinstance(val, int)
+                    else f"- **{key}:** {val}"
+                )
         except VCFEngineError as e:
             lines.append(f"\n*Could not retrieve stats: {e}*")
 
         # ClinVar summary — count pathogenic variants
         try:
             pathogenic = engine.query_clinvar("athogenic")
-            lines.append(f"\n### ClinVar Pathogenic/Likely Pathogenic")
-            lines.append(f"Found **{len(pathogenic)}** pathogenic or likely pathogenic variant(s)")
+            lines.append("\n### ClinVar Pathogenic/Likely Pathogenic")
+            lines.append(
+                f"Found **{len(pathogenic)}** pathogenic or likely pathogenic variant(s)"
+            )
             if pathogenic:
                 genes = set()
                 for v in pathogenic[:50]:
@@ -50,7 +54,15 @@ def register(mcp, engine, db, config):
 
         # PGx summary — count non-ref PGx variants
         try:
-            pgx_genes = ["CYP2D6", "CYP2C19", "CYP2C9", "SLCO1B1", "DPYD", "VKORC1", "TPMT"]
+            pgx_genes = [
+                "CYP2D6",
+                "CYP2C19",
+                "CYP2C9",
+                "SLCO1B1",
+                "DPYD",
+                "VKORC1",
+                "TPMT",
+            ]
             pgx_findings = []
             for gene in pgx_genes:
                 variants = db.get_pgx_variants(gene)
@@ -59,7 +71,10 @@ def register(mcp, engine, db, config):
                     try:
                         region = f"{pv['chrom']}:{pv['pos']}-{pv['pos'] + 1}"
                         user_vars = engine.query_region(region)
-                        if user_vars and user_vars[0]["genotype"]["zygosity"] != "homozygous_ref":
+                        if (
+                            user_vars
+                            and user_vars[0]["genotype"]["zygosity"] != "homozygous_ref"
+                        ):
                             non_ref += 1
                     except (ValueError, VCFEngineError):
                         pass

@@ -63,8 +63,12 @@ def _format_variant(v: dict, config) -> str:
     freq = v["population_freq"]
 
     lines = [f"## Variant: {rsid_display}"]
-    lines.append(f"**Position:** {v['chrom']}:{v['pos']} ({config.genome.genome_build})")
-    lines.append(f"**Your genotype:** {gt['display']} ({gt['zygosity'].replace('_', ' ')})")
+    lines.append(
+        f"**Position:** {v['chrom']}:{v['pos']} ({config.genome.genome_build})"
+    )
+    lines.append(
+        f"**Your genotype:** {gt['display']} ({gt['zygosity'].replace('_', ' ')})"
+    )
     lines.append(f"**Alleles:** REF={v['ref']} ALT={v['alt']}")
 
     if ann:

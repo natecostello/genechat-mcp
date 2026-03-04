@@ -30,7 +30,10 @@ def main():
         engine = VCFEngine(config)
     except (FileNotFoundError, Exception) as e:
         print(f"Error initializing VCF engine: {e}", file=sys.stderr)
-        print("Set genome.vcf_path in your config to a valid annotated VCF.", file=sys.stderr)
+        print(
+            "Set genome.vcf_path in your config to a valid annotated VCF.",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     try:

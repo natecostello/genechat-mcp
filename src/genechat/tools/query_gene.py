@@ -42,7 +42,8 @@ def register(mcp, engine, db, config):
         # Filter by impact
         if impact_filter:
             variants = [
-                v for v in variants
+                v
+                for v in variants
                 if v.get("annotation", {}).get("impact", "").upper() in impacts
             ]
 
@@ -67,7 +68,9 @@ def register(mcp, engine, db, config):
         ]
 
         if truncated:
-            lines.append(f"*Showing first {max_results} variants. Narrow your query for complete results.*\n")
+            lines.append(
+                f"*Showing first {max_results} variants. Narrow your query for complete results.*\n"
+            )
 
         lines.append("| rsID | Position | Genotype | Effect | Impact | ClinVar |")
         lines.append("|------|----------|----------|--------|--------|---------|")

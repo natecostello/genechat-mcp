@@ -7,7 +7,6 @@ and carrier screening use cases. Optionally bgzips and tabix-indexes.
 
 import shutil
 import subprocess
-import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -43,141 +42,250 @@ VCF_HEADER = """\
 # Sorted by chrom then pos for valid VCF
 VARIANTS = [
     # DPYD *2A — het carrier (chr1)
-    ("chr1", 97450058, "rs3918290", "C", "T",
-     ".", "PASS",
-     "ANN=T|splice_donor_variant|HIGH|DPYD|ENSG00000188641|transcript|ENST00000370192|protein_coding||c.1905+1G>A|||||||;"
-     "CLNSIG=Pathogenic;CLNDN=Dihydropyrimidine_dehydrogenase_deficiency;"
-     "CLNREVSTAT=criteria_provided,_multiple_submitters,_no_conflicts;AF=0.01;AF_popmax=0.02",
-     "0/1"),
-
+    (
+        "chr1",
+        97450058,
+        "rs3918290",
+        "C",
+        "T",
+        ".",
+        "PASS",
+        "ANN=T|splice_donor_variant|HIGH|DPYD|ENSG00000188641|transcript|ENST00000370192|protein_coding||c.1905+1G>A|||||||;"
+        "CLNSIG=Pathogenic;CLNDN=Dihydropyrimidine_dehydrogenase_deficiency;"
+        "CLNREVSTAT=criteria_provided,_multiple_submitters,_no_conflicts;AF=0.01;AF_popmax=0.02",
+        "0/1",
+    ),
     # MTHFR C677T — het (chr1)
-    ("chr1", 11796321, "rs1801133", "G", "A",
-     ".", "PASS",
-     "ANN=A|missense_variant|MODERATE|MTHFR|ENSG00000177000|transcript|ENST00000376592|protein_coding||c.665C>T|p.Ala222Val||||||;"
-     "CLNSIG=risk_factor;CLNDN=MTHFR_thermolabile_variant;"
-     "CLNREVSTAT=criteria_provided,_single_submitter;AF=0.33;AF_popmax=0.44",
-     "0/1"),
-
+    (
+        "chr1",
+        11796321,
+        "rs1801133",
+        "G",
+        "A",
+        ".",
+        "PASS",
+        "ANN=A|missense_variant|MODERATE|MTHFR|ENSG00000177000|transcript|ENST00000376592|protein_coding||c.665C>T|p.Ala222Val||||||;"
+        "CLNSIG=risk_factor;CLNDN=MTHFR_thermolabile_variant;"
+        "CLNREVSTAT=criteria_provided,_single_submitter;AF=0.33;AF_popmax=0.44",
+        "0/1",
+    ),
     # Factor V Leiden — hom ref (chr1)
-    ("chr1", 169549811, "rs6025", "C", "T",
-     ".", "PASS",
-     "ANN=T|missense_variant|MODERATE|F5|ENSG00000198734|transcript|ENST00000367797|protein_coding||c.1601G>A|p.Arg534Gln||||||;"
-     "CLNSIG=Pathogenic;CLNDN=Factor_V_Leiden_thrombophilia;"
-     "CLNREVSTAT=criteria_provided,_multiple_submitters,_no_conflicts;AF=0.03;AF_popmax=0.05",
-     "0/0"),
-
+    (
+        "chr1",
+        169549811,
+        "rs6025",
+        "C",
+        "T",
+        ".",
+        "PASS",
+        "ANN=T|missense_variant|MODERATE|F5|ENSG00000198734|transcript|ENST00000367797|protein_coding||c.1601G>A|p.Arg534Gln||||||;"
+        "CLNSIG=Pathogenic;CLNDN=Factor_V_Leiden_thrombophilia;"
+        "CLNREVSTAT=criteria_provided,_multiple_submitters,_no_conflicts;AF=0.03;AF_popmax=0.05",
+        "0/0",
+    ),
     # ADH1B — het (chr4)
-    ("chr4", 99318162, "rs1229984", "T", "C",
-     ".", "PASS",
-     "ANN=C|missense_variant|MODERATE|ADH1B|ENSG00000196616|transcript|ENST00000394887|protein_coding||c.143A>G|p.His48Arg||||||;"
-     "AF=0.25;AF_popmax=0.75",
-     "0/1"),
-
+    (
+        "chr4",
+        99318162,
+        "rs1229984",
+        "T",
+        "C",
+        ".",
+        "PASS",
+        "ANN=C|missense_variant|MODERATE|ADH1B|ENSG00000196616|transcript|ENST00000394887|protein_coding||c.143A>G|p.His48Arg||||||;"
+        "AF=0.25;AF_popmax=0.75",
+        "0/1",
+    ),
     # HFE C282Y — het carrier (chr6)
-    ("chr6", 26091179, "rs1800562", "G", "A",
-     ".", "PASS",
-     "ANN=A|missense_variant|MODERATE|HFE|ENSG00000010704|transcript|ENST00000357618|protein_coding||c.845G>A|p.Cys282Tyr||||||;"
-     "CLNSIG=Pathogenic;CLNDN=Hereditary_hemochromatosis;"
-     "CLNREVSTAT=criteria_provided,_multiple_submitters,_no_conflicts;AF=0.06;AF_popmax=0.10",
-     "0/1"),
-
+    (
+        "chr6",
+        26091179,
+        "rs1800562",
+        "G",
+        "A",
+        ".",
+        "PASS",
+        "ANN=A|missense_variant|MODERATE|HFE|ENSG00000010704|transcript|ENST00000357618|protein_coding||c.845G>A|p.Cys282Tyr||||||;"
+        "CLNSIG=Pathogenic;CLNDN=Hereditary_hemochromatosis;"
+        "CLNREVSTAT=criteria_provided,_multiple_submitters,_no_conflicts;AF=0.06;AF_popmax=0.10",
+        "0/1",
+    ),
     # CFTR F508del — het carrier (chr7)
-    ("chr7", 117559590, "rs113993960", "ATCT", "A",
-     ".", "PASS",
-     "ANN=A|frameshift_variant|HIGH|CFTR|ENSG00000001626|transcript|ENST00000003084|protein_coding||c.1521_1523del|p.Phe508del||||||;"
-     "CLNSIG=Pathogenic;CLNDN=Cystic_fibrosis;"
-     "CLNREVSTAT=reviewed_by_expert_panel;AF=0.02;AF_popmax=0.04",
-     "0/1"),
-
+    (
+        "chr7",
+        117559590,
+        "rs113993960",
+        "ATCT",
+        "A",
+        ".",
+        "PASS",
+        "ANN=A|frameshift_variant|HIGH|CFTR|ENSG00000001626|transcript|ENST00000003084|protein_coding||c.1521_1523del|p.Phe508del||||||;"
+        "CLNSIG=Pathogenic;CLNDN=Cystic_fibrosis;"
+        "CLNREVSTAT=reviewed_by_expert_panel;AF=0.02;AF_popmax=0.04",
+        "0/1",
+    ),
     # 9p21 CAD locus (chr9)
-    ("chr9", 22125503, "rs1333049", "C", "G",
-     ".", "PASS",
-     "ANN=G|intergenic_region|MODIFIER|CDKN2B-AS1||||||||||||||;AF=0.47;AF_popmax=0.52",
-     "1/1"),
-
+    (
+        "chr9",
+        22125503,
+        "rs1333049",
+        "C",
+        "G",
+        ".",
+        "PASS",
+        "ANN=G|intergenic_region|MODIFIER|CDKN2B-AS1||||||||||||||;AF=0.47;AF_popmax=0.52",
+        "1/1",
+    ),
     # CYP2C9 *2 — hom ref (chr10)
-    ("chr10", 94942290, "rs1799853", "C", "T",
-     ".", "PASS",
-     "ANN=T|missense_variant|MODERATE|CYP2C9|ENSG00000138109|transcript|ENST00000260682|protein_coding||c.430C>T|p.Arg144Cys||||||;"
-     "CLNSIG=drug_response;CLNDN=warfarin_response;"
-     "CLNREVSTAT=criteria_provided,_single_submitter;AF=0.12;AF_popmax=0.15",
-     "0/0"),
-
+    (
+        "chr10",
+        94942290,
+        "rs1799853",
+        "C",
+        "T",
+        ".",
+        "PASS",
+        "ANN=T|missense_variant|MODERATE|CYP2C9|ENSG00000138109|transcript|ENST00000260682|protein_coding||c.430C>T|p.Arg144Cys||||||;"
+        "CLNSIG=drug_response;CLNDN=warfarin_response;"
+        "CLNREVSTAT=criteria_provided,_single_submitter;AF=0.12;AF_popmax=0.15",
+        "0/0",
+    ),
     # CYP2C19 *2 — het (chr10)
-    ("chr10", 94781859, "rs4244285", "G", "A",
-     ".", "PASS",
-     "ANN=A|splice_variant|HIGH|CYP2C19|ENSG00000165841|transcript|ENST00000371321|protein_coding||c.681G>A|||||||;"
-     "CLNSIG=drug_response;CLNDN=clopidogrel_response;"
-     "CLNREVSTAT=criteria_provided,_single_submitter;AF=0.15;AF_popmax=0.30",
-     "0/1"),
-
+    (
+        "chr10",
+        94781859,
+        "rs4244285",
+        "G",
+        "A",
+        ".",
+        "PASS",
+        "ANN=A|splice_variant|HIGH|CYP2C19|ENSG00000165841|transcript|ENST00000371321|protein_coding||c.681G>A|||||||;"
+        "CLNSIG=drug_response;CLNDN=clopidogrel_response;"
+        "CLNREVSTAT=criteria_provided,_single_submitter;AF=0.15;AF_popmax=0.30",
+        "0/1",
+    ),
     # ACTN3 R577X — hom alt CC (chr11)
-    ("chr11", 66560624, "rs1815739", "C", "T",
-     ".", "PASS",
-     "ANN=T|stop_gained|HIGH|ACTN3|ENSG00000095932|transcript|ENST00000502587|protein_coding||c.1729C>T|p.Arg577Ter||||||;"
-     "AF=0.42;AF_popmax=0.58",
-     "0/0"),
-
+    (
+        "chr11",
+        66560624,
+        "rs1815739",
+        "C",
+        "T",
+        ".",
+        "PASS",
+        "ANN=T|stop_gained|HIGH|ACTN3|ENSG00000095932|transcript|ENST00000502587|protein_coding||c.1729C>T|p.Arg577Ter||||||;"
+        "AF=0.42;AF_popmax=0.58",
+        "0/0",
+    ),
     # SLCO1B1 *5 — het (chr12)
-    ("chr12", 21178615, "rs4149056", "T", "C",
-     ".", "PASS",
-     "ANN=C|missense_variant|MODERATE|SLCO1B1|ENSG00000134538|transcript|ENST00000256958|protein_coding||c.521T>C|p.Val174Ala||||||;"
-     "CLNSIG=drug_response;CLNDN=Simvastatin_response;"
-     "CLNREVSTAT=criteria_provided,_multiple_submitters,_no_conflicts;AF=0.14;AF_popmax=0.21",
-     "0/1"),
-
+    (
+        "chr12",
+        21178615,
+        "rs4149056",
+        "T",
+        "C",
+        ".",
+        "PASS",
+        "ANN=C|missense_variant|MODERATE|SLCO1B1|ENSG00000134538|transcript|ENST00000256958|protein_coding||c.521T>C|p.Val174Ala||||||;"
+        "CLNSIG=drug_response;CLNDN=Simvastatin_response;"
+        "CLNREVSTAT=criteria_provided,_multiple_submitters,_no_conflicts;AF=0.14;AF_popmax=0.21",
+        "0/1",
+    ),
     # ALDH2 — het (chr12)
-    ("chr12", 111803962, "rs671", "G", "A",
-     ".", "PASS",
-     "ANN=A|missense_variant|MODERATE|ALDH2|ENSG00000111275|transcript|ENST00000261733|protein_coding||c.1510G>A|p.Glu504Lys||||||;"
-     "AF=0.08;AF_popmax=0.28",
-     "0/1"),
-
+    (
+        "chr12",
+        111803962,
+        "rs671",
+        "G",
+        "A",
+        ".",
+        "PASS",
+        "ANN=A|missense_variant|MODERATE|ALDH2|ENSG00000111275|transcript|ENST00000261733|protein_coding||c.1510G>A|p.Glu504Lys||||||;"
+        "AF=0.08;AF_popmax=0.28",
+        "0/1",
+    ),
     # CYP1A2 caffeine — het (chr15)
-    ("chr15", 74749576, "rs762551", "A", "C",
-     ".", "PASS",
-     "ANN=C|upstream_gene_variant|MODIFIER|CYP1A2|ENSG00000140505|transcript|ENST00000343932|protein_coding||||||||||;"
-     "AF=0.33;AF_popmax=0.45",
-     "0/1"),
-
+    (
+        "chr15",
+        74749576,
+        "rs762551",
+        "A",
+        "C",
+        ".",
+        "PASS",
+        "ANN=C|upstream_gene_variant|MODIFIER|CYP1A2|ENSG00000140505|transcript|ENST00000343932|protein_coding||||||||||;"
+        "AF=0.33;AF_popmax=0.45",
+        "0/1",
+    ),
     # FTO obesity — het (chr16)
-    ("chr16", 53786615, "rs9939609", "T", "A",
-     ".", "PASS",
-     "ANN=A|intron_variant|MODIFIER|FTO|ENSG00000140718|transcript|ENST00000471389|protein_coding||||||||||;"
-     "AF=0.42;AF_popmax=0.49",
-     "0/1"),
-
+    (
+        "chr16",
+        53786615,
+        "rs9939609",
+        "T",
+        "A",
+        ".",
+        "PASS",
+        "ANN=A|intron_variant|MODIFIER|FTO|ENSG00000140718|transcript|ENST00000471389|protein_coding||||||||||;"
+        "AF=0.42;AF_popmax=0.49",
+        "0/1",
+    ),
     # VKORC1 — hom alt (chr16)
-    ("chr16", 31096368, "rs9923231", "G", "A",
-     ".", "PASS",
-     "ANN=A|upstream_gene_variant|MODIFIER|VKORC1|ENSG00000167397|transcript|ENST00000394975|protein_coding||||||||||;"
-     "CLNSIG=drug_response;CLNDN=warfarin_dose;"
-     "CLNREVSTAT=criteria_provided,_single_submitter;AF=0.39;AF_popmax=0.94",
-     "1/1"),
-
+    (
+        "chr16",
+        31096368,
+        "rs9923231",
+        "G",
+        "A",
+        ".",
+        "PASS",
+        "ANN=A|upstream_gene_variant|MODIFIER|VKORC1|ENSG00000167397|transcript|ENST00000394975|protein_coding||||||||||;"
+        "CLNSIG=drug_response;CLNDN=warfarin_dose;"
+        "CLNREVSTAT=criteria_provided,_single_submitter;AF=0.39;AF_popmax=0.94",
+        "1/1",
+    ),
     # APOE rs429358 (E4 defining) — het (chr19)
-    ("chr19", 44908684, "rs429358", "T", "C",
-     ".", "PASS",
-     "ANN=C|missense_variant|MODERATE|APOE|ENSG00000130203|transcript|ENST00000252486|protein_coding||c.388T>C|p.Cys130Arg||||||;"
-     "CLNSIG=risk_factor;CLNDN=Alzheimer_disease;"
-     "CLNREVSTAT=criteria_provided,_single_submitter;AF=0.15;AF_popmax=0.20",
-     "0/1"),
-
+    (
+        "chr19",
+        44908684,
+        "rs429358",
+        "T",
+        "C",
+        ".",
+        "PASS",
+        "ANN=C|missense_variant|MODERATE|APOE|ENSG00000130203|transcript|ENST00000252486|protein_coding||c.388T>C|p.Cys130Arg||||||;"
+        "CLNSIG=risk_factor;CLNDN=Alzheimer_disease;"
+        "CLNREVSTAT=criteria_provided,_single_submitter;AF=0.15;AF_popmax=0.20",
+        "0/1",
+    ),
     # APOE rs7412 (E2 defining) — hom ref (chr19)
-    ("chr19", 44908822, "rs7412", "C", "T",
-     ".", "PASS",
-     "ANN=T|missense_variant|MODERATE|APOE|ENSG00000130203|transcript|ENST00000252486|protein_coding||c.526C>T|p.Arg176Cys||||||;"
-     "CLNSIG=risk_factor;CLNDN=Hyperlipoproteinemia_type_III;"
-     "CLNREVSTAT=criteria_provided,_single_submitter;AF=0.08;AF_popmax=0.12",
-     "0/0"),
-
+    (
+        "chr19",
+        44908822,
+        "rs7412",
+        "C",
+        "T",
+        ".",
+        "PASS",
+        "ANN=T|missense_variant|MODERATE|APOE|ENSG00000130203|transcript|ENST00000252486|protein_coding||c.526C>T|p.Arg176Cys||||||;"
+        "CLNSIG=risk_factor;CLNDN=Hyperlipoproteinemia_type_III;"
+        "CLNREVSTAT=criteria_provided,_single_submitter;AF=0.08;AF_popmax=0.12",
+        "0/0",
+    ),
     # CYP2D6 *4 — het (chr22)
-    ("chr22", 42128945, "rs3892097", "C", "T",
-     ".", "PASS",
-     "ANN=T|splice_variant|HIGH|CYP2D6|ENSG00000100197|transcript|ENST00000360608|protein_coding||c.506-1G>A|||||||;"
-     "CLNSIG=drug_response;CLNDN=CYP2D6_poor_metabolizer;"
-     "CLNREVSTAT=criteria_provided,_single_submitter;AF=0.12;AF_popmax=0.22",
-     "0/1"),
+    (
+        "chr22",
+        42128945,
+        "rs3892097",
+        "C",
+        "T",
+        ".",
+        "PASS",
+        "ANN=T|splice_variant|HIGH|CYP2D6|ENSG00000100197|transcript|ENST00000360608|protein_coding||c.506-1G>A|||||||;"
+        "CLNSIG=drug_response;CLNDN=CYP2D6_poor_metabolizer;"
+        "CLNREVSTAT=criteria_provided,_single_submitter;AF=0.12;AF_popmax=0.22",
+        "0/1",
+    ),
 ]
 
 
@@ -193,7 +301,9 @@ def generate_vcf():
     with open(vcf_path, "w") as f:
         f.write(VCF_HEADER + "\n")
         for chrom, pos, rsid, ref, alt, qual, filt, info, gt in sorted_variants:
-            f.write(f"{chrom}\t{pos}\t{rsid}\t{ref}\t{alt}\t{qual}\t{filt}\t{info}\tGT\t{gt}\n")
+            f.write(
+                f"{chrom}\t{pos}\t{rsid}\t{ref}\t{alt}\t{qual}\t{filt}\t{info}\tGT\t{gt}\n"
+            )
 
     print(f"VCF written to: {vcf_path}")
 
@@ -214,7 +324,9 @@ def generate_vcf():
         print(f"Compressed and indexed: {gz_path}")
     else:
         print("WARNING: bgzip/tabix not found. VCF is uncompressed.")
-        print("Install htslib for compressed+indexed VCF: conda install -c bioconda htslib")
+        print(
+            "Install htslib for compressed+indexed VCF: conda install -c bioconda htslib"
+        )
 
 
 if __name__ == "__main__":

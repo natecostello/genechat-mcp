@@ -93,7 +93,9 @@ def _format_pgx_entry(entry, engine, db, config, include_all_variants):
         if gene_region:
             try:
                 all_vars = engine.query_region(gene_region)
-                non_ref = [v for v in all_vars if v["genotype"]["zygosity"] != "homozygous_ref"]
+                non_ref = [
+                    v for v in all_vars if v["genotype"]["zygosity"] != "homozygous_ref"
+                ]
                 if non_ref:
                     lines.append(f"\n### All non-reference variants in {gene}")
                     lines.append("| rsID | Position | Genotype | Effect |")

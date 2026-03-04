@@ -57,8 +57,11 @@ class TestParseLine:
 
     def test_parse_complete_line(self):
         """Test parsing a complete bcftools output line."""
-        from genechat.parsers import parse_ann_field, parse_clinvar_fields, parse_genotype
-        from genechat.vcf_engine import _parse_freq
+        from genechat.parsers import (
+            parse_ann_field,
+            parse_clinvar_fields,
+            parse_genotype,
+        )
 
         line = (
             "chr12\t21178615\trs4149056\tT\tC\t"
@@ -70,7 +73,13 @@ class TestParseLine:
         assert len(parts) == 12
 
         # Manually parse like _parse_line would
-        chrom, pos_str, rsid, ref, alt = parts[0], parts[1], parts[2], parts[3], parts[4]
+        chrom, pos_str, rsid, ref, alt = (
+            parts[0],
+            parts[1],
+            parts[2],
+            parts[3],
+            parts[4],
+        )
         assert chrom == "chr12"
         assert int(pos_str) == 21178615
         assert rsid == "rs4149056"

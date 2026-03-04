@@ -75,8 +75,12 @@ def register(mcp, engine, db, config):
         # Show top contributing variants
         details_sorted = sorted(details, key=lambda x: abs(x[2] * x[3]), reverse=True)
         lines.append("### Top Contributing Variants")
-        lines.append("| rsID | Your Genotype | Effect Allele Dosage | Weight | Contribution |")
-        lines.append("|------|--------------|---------------------|--------|-------------|")
+        lines.append(
+            "| rsID | Your Genotype | Effect Allele Dosage | Weight | Contribution |"
+        )
+        lines.append(
+            "|------|--------------|---------------------|--------|-------------|"
+        )
         for rsid, gt_display, dosage, weight in details_sorted[:15]:
             contrib = dosage * weight
             if contrib != 0:

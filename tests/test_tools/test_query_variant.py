@@ -2,7 +2,6 @@
 
 from mcp.server.fastmcp import FastMCP
 
-from genechat.config import AppConfig
 from genechat.tools.query_variant import register
 
 

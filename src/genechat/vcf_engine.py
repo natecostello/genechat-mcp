@@ -55,9 +55,12 @@ class VCFEngine:
                 f"Invalid region format: {region}. Expected chr<N>:<start>-<end>"
             )
         cmd = [
-            "bcftools", "query",
-            "-f", QUERY_FORMAT,
-            "-r", region,
+            "bcftools",
+            "query",
+            "-f",
+            QUERY_FORMAT,
+            "-r",
+            region,
         ]
         if include_filter:
             cmd.extend(["-i", include_filter])
@@ -72,9 +75,12 @@ class VCFEngine:
             if not REGION_PATTERN.match(r):
                 raise ValueError(f"Invalid region format: {r}")
         cmd = [
-            "bcftools", "query",
-            "-f", QUERY_FORMAT,
-            "-r", ",".join(regions),
+            "bcftools",
+            "query",
+            "-f",
+            QUERY_FORMAT,
+            "-r",
+            ",".join(regions),
         ]
         if include_filter:
             cmd.extend(["-i", include_filter])
@@ -84,26 +90,28 @@ class VCFEngine:
     def query_rsid(self, rsid: str) -> list[dict]:
         """Query a specific variant by rsID (e.g. rs4149056)."""
         if not RSID_PATTERN.match(rsid):
-            raise ValueError(
-                f"Invalid rsID format: {rsid}. Expected rs<digits>"
-            )
+            raise ValueError(f"Invalid rsID format: {rsid}. Expected rs<digits>")
         cmd = [
-            "bcftools", "query",
-            "-f", QUERY_FORMAT,
-            "-i", f'ID="{rsid}"',
+            "bcftools",
+            "query",
+            "-f",
+            QUERY_FORMAT,
+            "-i",
+            f'ID="{rsid}"',
             str(self.vcf_path),
         ]
         return self._execute_and_parse(cmd)
 
-    def query_clinvar(
-        self, significance: str, region: str | None = None
-    ) -> list[dict]:
+    def query_clinvar(self, significance: str, region: str | None = None) -> list[dict]:
         """Query variants by ClinVar clinical significance."""
         filt = f'INFO/CLNSIG~"{significance}"'
         cmd = [
-            "bcftools", "query",
-            "-f", QUERY_FORMAT,
-            "-i", filt,
+            "bcftools",
+            "query",
+            "-f",
+            QUERY_FORMAT,
+            "-i",
+            filt,
         ]
         if region:
             if not REGION_PATTERN.match(region):
@@ -173,7 +181,13 @@ class VCFEngine:
         if len(parts) < 11:
             return None
 
-        chrom, pos_str, rsid, ref, alt = parts[0], parts[1], parts[2], parts[3], parts[4]
+        chrom, pos_str, rsid, ref, alt = (
+            parts[0],
+            parts[1],
+            parts[2],
+            parts[3],
+            parts[4],
+        )
         ann_raw, clnsig, clndn, clnrevstat = parts[5], parts[6], parts[7], parts[8]
         af_raw, af_popmax_raw = parts[9], parts[10]
         gt = parts[11] if len(parts) > 11 else "."

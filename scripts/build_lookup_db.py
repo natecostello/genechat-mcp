@@ -7,7 +7,6 @@ Idempotent: drops and recreates tables on each run.
 
 import csv
 import sqlite3
-import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -114,6 +113,7 @@ def load_tsv(path: Path) -> list[dict]:
         # Skip comment lines before the header
         lines = [line for line in f if not line.startswith("#")]
     import io
+
     reader = csv.DictReader(io.StringIO("".join(lines)), delimiter="\t")
     rows = []
     for row in reader:

@@ -17,7 +17,10 @@ DB_PATH = REPO_ROOT / "src" / "genechat" / "data" / "lookup_tables.db"
 def test_config():
     """Config pointing to test data."""
     return AppConfig(
-        genome={"vcf_path": str(TEST_DATA / "test_sample.vcf.gz"), "genome_build": "GRCh38"},
+        genome={
+            "vcf_path": str(TEST_DATA / "test_sample.vcf.gz"),
+            "genome_build": "GRCh38",
+        },
         databases={"lookup_db": str(DB_PATH)},
         server={"max_variants_per_response": 100, "bcftools_timeout": 10},
     )

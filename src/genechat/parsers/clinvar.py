@@ -7,12 +7,8 @@ def parse_clinvar_fields(clnsig: str, clndn: str, clnrevstat: str) -> dict:
         return {}
     return {
         "significance": clnsig.replace("_", " "),
-        "condition": (
-            clndn.replace("_", " ") if clndn and clndn != "." else None
-        ),
+        "condition": (clndn.replace("_", " ") if clndn and clndn != "." else None),
         "review_status": (
-            clnrevstat.replace("_", " ")
-            if clnrevstat and clnrevstat != "."
-            else None
+            clnrevstat.replace("_", " ") if clnrevstat and clnrevstat != "." else None
         ),
     }

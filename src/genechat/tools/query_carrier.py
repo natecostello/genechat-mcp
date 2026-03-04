@@ -21,14 +21,14 @@ def register(mcp, engine, db, config):
         Use when a user asks about carrier status, reproductive genetics, or inherited conditions.
         Set acmg_only=false to include expanded panel beyond ACMG recommendations.
         """
-        carrier_genes = db.get_carrier_genes(
-            condition=condition, acmg_only=acmg_only
-        )
+        carrier_genes = db.get_carrier_genes(condition=condition, acmg_only=acmg_only)
         if not carrier_genes:
             scope = "ACMG-recommended" if acmg_only else "expanded"
-            return f"No carrier genes found in {scope} panel" + (
-                f" matching '{condition}'" if condition else ""
-            ) + "."
+            return (
+                f"No carrier genes found in {scope} panel"
+                + (f" matching '{condition}'" if condition else "")
+                + "."
+            )
 
         positive = []
         negative = []
@@ -44,7 +44,8 @@ def register(mcp, engine, db, config):
                 variants = engine.query_clinvar("athogenic", region=region)
                 # Filter to Pathogenic or Likely_pathogenic
                 path_variants = [
-                    v for v in variants
+                    v
+                    for v in variants
                     if v.get("clinvar", {}).get("significance", "")
                     and "athogenic" in v["clinvar"]["significance"]
                 ]
@@ -74,14 +75,18 @@ def register(mcp, engine, db, config):
                     gt = v["genotype"]["display"]
                     sig = v.get("clinvar", {}).get("significance", "")
                     cond = v.get("clinvar", {}).get("condition", "")
-                    lines.append(f"- {rsid}: {gt} — {sig}" + (f" ({cond})" if cond else ""))
+                    lines.append(
+                        f"- {rsid}: {gt} — {sig}" + (f" ({cond})" if cond else "")
+                    )
 
         if negative:
             lines.append("\n### No Pathogenic Variants Found")
             lines.append("| Gene | Condition | Inheritance |")
             lines.append("|------|-----------|-------------|")
             for n in negative:
-                lines.append(f"| {n['gene']} | {n['condition_name']} | {n['inheritance']} |")
+                lines.append(
+                    f"| {n['gene']} | {n['condition_name']} | {n['inheritance']} |"
+                )
 
         lines.append(
             "\n**Important:** Absence of known pathogenic variants does not guarantee "
