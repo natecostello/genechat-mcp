@@ -48,15 +48,6 @@ def pytest_collection_modifyitems(config, items):
 # (correct VCF behavior: only non-reference genotypes are stored).
 
 GROUND_TRUTH = {
-    # CYP2D6 *4 — rs3892097 — intermediate metabolizer (*1/*4)
-    # NA12878 is heterozygous for *4 allele
-    "rs3892097": {
-        "gene": "CYP2D6",
-        "chrom": "chr22",
-        "pos": 42128945,
-        "expected_zygosity": "heterozygous",
-        "notes": "CYP2D6 *4, intermediate metabolizer",
-    },
     # VKORC1 -1639G>A — rs9923231 — intermediate warfarin dose
     "rs9923231": {
         "gene": "VKORC1",
@@ -73,32 +64,40 @@ GROUND_TRUTH = {
         "expected_zygosity": "heterozygous",
         "notes": "MTHFR C677T carrier",
     },
-    # MCM6/LCT lactose tolerance — rs4988235 — heterozygous (lactose tolerant)
+    # MCM6/LCT lactose tolerance — rs4988235 — homozygous alt (lactose tolerant)
+    # Verified from GIAB v4.2.1 GRCh38: NA12878 is A/A at this position
     "rs4988235": {
         "gene": "MCM6",
         "chrom": "chr2",
         "pos": 135851076,
-        "expected_zygosity": "heterozygous",
-        "notes": "Lactose tolerance variant",
+        "expected_zygosity": "homozygous_alt",
+        "notes": "Lactose tolerance variant (homozygous)",
     },
-}
-
-# Variants expected to be homozygous reference (absent from VCF)
-GROUND_TRUTH_ABSENT = {
-    # CYP2C19 *2 — rs4244285 — NA12878 is *1/*1 (normal metabolizer)
+    # CYP2C19 *2 — rs4244285 — NA12878 is heterozygous (*1/*2)
+    # Verified from GIAB v4.2.1 GRCh38: G/A at this position
     "rs4244285": {
         "gene": "CYP2C19",
         "chrom": "chr10",
         "pos": 94781859,
-        "notes": "CYP2C19 *1/*1, normal metabolizer",
+        "expected_zygosity": "heterozygous",
+        "notes": "CYP2C19 *1/*2, intermediate metabolizer",
     },
-    # SLCO1B1 *5 — rs4149056 — NA12878 is T/T (normal function)
+    # SLCO1B1 *5 — rs4149056 — NA12878 is heterozygous (T/C)
+    # Verified from GIAB v4.2.1 GRCh38: T/C at this position
     "rs4149056": {
         "gene": "SLCO1B1",
         "chrom": "chr12",
         "pos": 21178615,
-        "notes": "SLCO1B1 normal function",
+        "expected_zygosity": "heterozygous",
+        "notes": "SLCO1B1 *5 heterozygous, decreased function",
     },
+}
+
+# CYP2D6 *4 (rs3892097) is excluded — CYP2D6 is not in GIAB high-confidence
+# regions due to structural complexity (deletions, duplications, gene conversions).
+
+# Variants expected to be homozygous reference (absent from VCF)
+GROUND_TRUTH_ABSENT = {
     # Factor V Leiden — rs6025 — NA12878 is negative
     "rs6025": {
         "gene": "F5",
