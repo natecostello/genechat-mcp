@@ -196,8 +196,9 @@ def lookup_clinvar(
         Dict with CLNSIG, CLNDN, CLNREVSTAT keys (empty dict if not found).
     """
     # ClinVar may use bare contig names (1, 2, ...) or chr-prefixed — try both
-    bare = chrom.replace("chr", "") if chrom.startswith("chr") else chrom
-    for query_chrom in (chrom, bare):
+    bare = chrom[3:] if chrom.startswith("chr") else chrom
+    query_chroms = (chrom,) if chrom == bare else (chrom, bare)
+    for query_chrom in query_chroms:
         try:
             for line in clinvar_tbx.fetch(query_chrom, pos - 1, pos):
                 fields = line.split("\t")
