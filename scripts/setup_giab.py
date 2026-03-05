@@ -195,19 +195,22 @@ def lookup_clinvar(
     Returns:
         Dict with CLNSIG, CLNDN, CLNREVSTAT keys (empty dict if not found).
     """
-    try:
-        for line in clinvar_tbx.fetch(chrom, pos - 1, pos):
-            fields = line.split("\t")
-            if len(fields) < 8:
-                continue
-            cv_pos = int(fields[1])
-            cv_ref = fields[3]
-            cv_alts = fields[4].split(",")
-            if cv_pos == pos and cv_ref == ref and alt in cv_alts:
-                return parse_clinvar_info(fields[7])
-    except ValueError:
-        # Unknown contig in ClinVar
-        pass
+    # ClinVar may use bare contig names (1, 2, ...) or chr-prefixed — try both
+    bare = chrom.replace("chr", "") if chrom.startswith("chr") else chrom
+    for query_chrom in (chrom, bare):
+        try:
+            for line in clinvar_tbx.fetch(query_chrom, pos - 1, pos):
+                fields = line.split("\t")
+                if len(fields) < 8:
+                    continue
+                cv_pos = int(fields[1])
+                cv_ref = fields[3]
+                cv_alts = fields[4].split(",")
+                if cv_pos == pos and cv_ref == ref and alt in cv_alts:
+                    return parse_clinvar_info(fields[7])
+        except ValueError:
+            # Unknown contig name — try the other format
+            continue
 
     return {}
 
