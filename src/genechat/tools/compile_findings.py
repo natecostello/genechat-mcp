@@ -149,6 +149,7 @@ def register(mcp, engine, db, config):
                                     pv_region_idx.append(pi)
 
                             pv_vcf_map: dict[int, list[dict]] = {}
+                            batch_query_ok = False
                             if pv_regions:
                                 try:
                                     all_pv = engine.query_regions(pv_regions)
@@ -161,6 +162,7 @@ def register(mcp, engine, db, config):
                                         key = f"{pv['chrom']}:{pv['pos']}"
                                         if key in pos_map:
                                             pv_vcf_map[pi] = pos_map[key]
+                                    batch_query_ok = True
                                 except (ValueError, VCFEngineError):
                                     pass
 
@@ -176,9 +178,11 @@ def register(mcp, engine, db, config):
                                         gt = pv_results[0]["genotype"]
                                         zyg = short_zygosity(gt["zygosity"])
                                         gt_display = f"{gt['display']} ({zyg})"
-                                    elif pv_regions:
+                                    elif batch_query_ok:
                                         ref = pv.get("ref", "?")
                                         gt_display = f"{ref}/{ref} (ref)"
+                                    elif pv_regions:
+                                        gt_display = "query error"
 
                                 lines.append(
                                     f"  | {pv_rsid} | {star} | {gt_display} | {impact} |"

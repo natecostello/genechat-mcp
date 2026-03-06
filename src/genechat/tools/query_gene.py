@@ -219,6 +219,7 @@ def register(mcp, engine, db, config):
 
             # Query all trait variant positions in one VCF open
             vcf_results_by_region: dict[int, list[dict]] = {}
+            batch_query_ok = False
             if tv_regions:
                 try:
                     all_results = engine.query_regions(tv_regions)
@@ -232,6 +233,7 @@ def register(mcp, engine, db, config):
                         key = f"{tv['chrom']}:{tv['pos']}"
                         if key in pos_map:
                             vcf_results_by_region[ti] = pos_map[key]
+                    batch_query_ok = True
                 except (ValueError, VCFEngineError):
                     pass  # Graceful degradation
 
@@ -250,9 +252,11 @@ def register(mcp, engine, db, config):
                         gt_display = (
                             f"{gt['display']} ({short_zygosity(gt['zygosity'])})"
                         )
-                    elif i in vcf_results_by_region or tv_regions:
+                    elif batch_query_ok:
                         ref = tv.get("ref", "?")
                         gt_display = f"{ref}/{ref} (ref)"
+                    elif tv_regions and not batch_query_ok:
+                        gt_display = "query error"
 
                 lines.append(
                     f"| {tv_rsid} | {trait} | {gt_display} | {ea} | {desc} | {evid} |"

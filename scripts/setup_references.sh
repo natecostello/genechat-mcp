@@ -57,7 +57,7 @@ echo "Step 3: gnomAD v4 exome frequencies (~8 GB)"
 GNOMAD_DIR="$OUTPUT_DIR/gnomad_exomes_v4"
 GNOMAD_BASE="https://storage.googleapis.com/gcp-public-data--gnomad/release/4.1/vcf/exomes"
 
-if [ -d "$GNOMAD_DIR" ] && [ "$(ls "$GNOMAD_DIR"/*.vcf.bgz 2>/dev/null | wc -l)" -ge 22 ]; then
+if [ -d "$GNOMAD_DIR" ] && [ "$(ls "$GNOMAD_DIR"/*.vcf.bgz 2>/dev/null | wc -l)" -ge 24 ]; then
     echo "gnomAD exome files already exist in $GNOMAD_DIR, skipping."
 else
     echo "gnomAD v4 exome VCFs provide population allele frequencies per chromosome."

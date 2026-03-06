@@ -76,6 +76,7 @@ def _format_pgx_entry(entry, engine, db, config, include_all_variants):
                 pv_region_idx.append(pi)
 
         pv_vcf_map: dict[int, list[dict]] = {}
+        batch_query_ok = False
         if pv_regions:
             try:
                 all_pv = engine.query_regions(pv_regions)
@@ -88,6 +89,7 @@ def _format_pgx_entry(entry, engine, db, config, include_all_variants):
                     key = f"{pv['chrom']}:{pv['pos']}"
                     if key in pos_map:
                         pv_vcf_map[pi] = pos_map[key]
+                batch_query_ok = True
             except (ValueError, VCFEngineError):
                 pass
 
@@ -103,8 +105,10 @@ def _format_pgx_entry(entry, engine, db, config, include_all_variants):
                     gt = pv_results[0]["genotype"]
                     zyg_short = short_zygosity(gt["zygosity"])
                     gt_display = f"{gt['display']} ({zyg_short})"
-                elif pv_regions:
+                elif batch_query_ok:
                     gt_display = f"{pv['ref']}/{pv['ref']} (ref)"
+                elif pv_regions:
+                    gt_display = "query error"
 
             lines.append(f"| {rsid} | {star} | {gt_display} | {impact} |")
 
