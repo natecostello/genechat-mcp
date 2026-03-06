@@ -33,10 +33,20 @@ def register(mcp, engine, db, config):
         except (ValueError, VCFEngineError) as e:
             return f"Error querying variants: {e}"
 
+        truncated = "_truncated" in results
+        results.pop("_truncated", None)
+
         found = {rsid for rsid, variants in results.items() if variants}
         missing = [r for r in raw_ids if r not in found]
 
         lines = [f"## Batch Variant Lookup ({len(found)}/{len(raw_ids)} found)"]
+
+        if truncated:
+            lines.append(
+                "*Warning: VCF scan was truncated due to variant cap. "
+                "Some variants may not have been reached — 'not found' results below "
+                "may be incomplete.*\n"
+            )
 
         for rsid in raw_ids:
             variants = results.get(rsid, [])

@@ -144,8 +144,8 @@ class LookupDB:
         if rsid:
             query += " AND rsid = ?"
             params.append(rsid)
-        query += " ORDER BY p_value ASC LIMIT ?"
-        params.append(str(max_results))
+        query += " ORDER BY p_value IS NULL, p_value ASC LIMIT ?"
+        params.append(max_results)
         rows = self._conn.execute(query, params).fetchall()
         return [dict(r) for r in rows]
 
@@ -159,7 +159,7 @@ class LookupDB:
                FROM gwas_associations
                WHERE UPPER(mapped_gene) LIKE '%' || UPPER(?) || '%'
                GROUP BY UPPER(trait)
-               ORDER BY best_pvalue ASC
+               ORDER BY best_pvalue IS NULL, best_pvalue ASC
                LIMIT ?""",
             (gene, max_results),
         ).fetchall()

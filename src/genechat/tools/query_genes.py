@@ -30,7 +30,14 @@ def register(mcp, engine, db, config):
         if len(gene_list) > 20:
             return "Too many genes (max 20). Please split into smaller batches."
 
-        impacts = {i.strip().upper() for i in impact_filter.split(",")}
+        allowed_impacts = {"HIGH", "MODERATE", "LOW", "MODIFIER"}
+        impacts = {i.strip().upper() for i in impact_filter.split(",") if i.strip()}
+        invalid_impacts = impacts - allowed_impacts
+        if invalid_impacts:
+            return (
+                f"Invalid impact_filter value(s): {', '.join(sorted(invalid_impacts))}. "
+                f"Allowed values are: {', '.join(sorted(allowed_impacts))}."
+            )
 
         # Resolve gene coordinates
         gene_regions: list[tuple[str, dict, str]] = []
@@ -56,14 +63,19 @@ def register(mcp, engine, db, config):
         except (ValueError, VCFEngineError) as e:
             return f"Error querying genes: {e}"
 
-        # Assign variants to genes by region overlap
+        # Assign variants to genes by padded region overlap
         gene_variants: dict[str, list[dict]] = {s: [] for s, _, _ in gene_regions}
         for symbol, gene_info, region in gene_regions:
-            chrom = gene_info["chrom"]
-            start = gene_info["start"]
-            end = gene_info["end"]
+            # Use the same padded boundaries used for querying
+            region_chrom, coords = region.split(":")
+            region_start_str, region_end_str = coords.split("-")
+            region_start = int(region_start_str)
+            region_end = int(region_end_str)
             for v in all_variants:
-                if v["chrom"] == chrom and start <= v["pos"] <= end:
+                if (
+                    v["chrom"] == region_chrom
+                    and region_start <= v["pos"] <= region_end
+                ):
                     gene_variants[symbol].append(v)
 
         lines = [f"## Multi-Gene Query ({len(gene_regions)} genes)"]

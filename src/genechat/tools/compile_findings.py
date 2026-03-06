@@ -1,5 +1,7 @@
 """Compile a structured summary of genomic findings from a session."""
 
+from genechat.vcf_engine import VCFEngineError
+
 
 def register(mcp, engine, db, config):
     @mcp.tool()
@@ -35,8 +37,11 @@ def register(mcp, engine, db, config):
             lines.append("## Variant Details")
             try:
                 results = engine.query_rsids(rsid_list)
-            except Exception:
+            except (ValueError, VCFEngineError) as e:
+                lines.append(f"\n*Error querying variants: {e}*")
                 results = {}
+
+            results.pop("_truncated", None)
 
             for rsid in rsid_list:
                 variant_list = results.get(rsid, [])
@@ -62,15 +67,16 @@ def register(mcp, engine, db, config):
                         lines.append(f"- **Effect:** {ann['effect']}{impact}")
                     if ann.get("hgvs_p"):
                         lines.append(f"- **Protein:** {ann['hgvs_p']}")
-                    clin = v.get("clinvar", {})
-                    if clin:
-                        sig = clin.get("significance", "")
-                        cond = clin.get("condition", "")
-                        if sig:
-                            clin_str = sig
-                            if cond:
-                                clin_str += f" — {cond}"
-                            lines.append(f"- **ClinVar:** {clin_str}")
+                    if include_clinvar:
+                        clin = v.get("clinvar", {})
+                        if clin:
+                            sig = clin.get("significance", "")
+                            cond = clin.get("condition", "")
+                            if sig:
+                                clin_str = sig
+                                if cond:
+                                    clin_str += f" — {cond}"
+                                lines.append(f"- **ClinVar:** {clin_str}")
                     freq = v.get("population_freq", {})
                     if freq:
                         freq_parts = []
@@ -82,8 +88,8 @@ def register(mcp, engine, db, config):
                             lines.append(f"- **Frequency:** {' | '.join(freq_parts)}")
 
                     # Cross-reference: trait associations for this rsID
-                    if include_traits:
-                        traits = db.get_trait_variants(gene=ann.get("gene"))
+                    if include_traits and ann.get("gene"):
+                        traits = db.get_trait_variants(gene=ann["gene"])
                         rsid_traits = [t for t in traits if t.get("rsid") == rsid]
                         if rsid_traits:
                             for t in rsid_traits:
@@ -95,6 +101,12 @@ def register(mcp, engine, db, config):
         # --- Gene Summaries ---
         if gene_list:
             lines.append("\n## Gene Summaries")
+
+            # Load carrier info once for all genes
+            carrier_lookup = {}
+            for cg in db.get_carrier_genes():
+                carrier_lookup[cg["gene"].upper()] = cg
+
             for symbol in gene_list:
                 gene_info = db.get_gene(symbol)
                 if not gene_info:
@@ -115,14 +127,12 @@ def register(mcp, engine, db, config):
                         lines.append(f"- **PGx drugs:** {', '.join(drug_names)}")
 
                 # Carrier screening
-                carrier_info = db.get_carrier_genes()
-                for cg in carrier_info:
-                    if cg["gene"].upper() == symbol:
-                        lines.append(
-                            f"- **Carrier screening:** {cg['condition_name']} "
-                            f"({cg['inheritance']})"
-                        )
-                        break
+                cg = carrier_lookup.get(symbol)
+                if cg:
+                    lines.append(
+                        f"- **Carrier screening:** {cg['condition_name']} "
+                        f"({cg['inheritance']})"
+                    )
 
                 # Trait associations
                 if include_traits:

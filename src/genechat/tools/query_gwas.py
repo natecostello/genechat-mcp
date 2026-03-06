@@ -31,9 +31,19 @@ def register(mcp, engine, db, config):
                 "`uv run python scripts/build_gwas_db.py` to build the GWAS database."
             )
 
-        results = db.search_gwas(
-            trait=trait, gene=gene, rsid=rsid, max_results=max_results
-        )
+        # Clamp max_results to a safe range
+        max_results = max(1, min(max_results, 200))
+
+        try:
+            results = db.search_gwas(
+                trait=trait, gene=gene, rsid=rsid, max_results=max_results
+            )
+        except Exception:
+            return (
+                "Failed to query the GWAS Catalog due to an internal database error. "
+                "Try rebuilding the GWAS database with "
+                "`uv run python scripts/build_gwas_db.py`."
+            )
 
         if not results:
             parts = []

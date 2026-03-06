@@ -150,6 +150,7 @@ class VCFEngine:
         target_set = set(rsids)
         results: dict[str, list[dict]] = {r: [] for r in rsids}
         found_count = 0
+        truncated = False
 
         try:
             with pysam.VariantFile(str(self.vcf_path)) as vcf:
@@ -161,9 +162,21 @@ class VCFEngine:
                             results[record.id].append(parsed)
                             found_count += 1
                     if found_count >= self.max_variants:
+                        truncated = True
                         break
         except Exception as e:
             raise VCFEngineError(f"Error querying rsIDs: {e}") from e
+
+        if truncated:
+            results["_truncated"] = [
+                {
+                    "_truncated": True,
+                    "_truncation_notice": (
+                        f"Results capped at {self.max_variants} variants. "
+                        "Some rsIDs may not have been reached."
+                    ),
+                }
+            ]
 
         return results
 

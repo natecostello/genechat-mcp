@@ -130,6 +130,7 @@ def build_gwas_db(zip_path: Path, db_path: Path) -> int:
         )
         sys.exit(1)
 
+    db_path.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(str(db_path))
     conn.execute("DROP TABLE IF EXISTS gwas_associations")
     conn.execute(CREATE_TABLE)
