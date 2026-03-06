@@ -3,10 +3,11 @@
 # Usage: ./scripts/annotate.sh input.vcf.gz [output_dir]
 #
 # Prerequisites:
-#   - SnpEff/SnpSift >= 5.2
-#   - ClinVar VCF (set CLINVAR_VCF env var)
-#   - gnomAD VCF (set GNOMAD_VCF env var)
-#   - bgzip and tabix (htslib)
+#   macOS:  brew install bcftools brewsci/bio/snpeff
+#   Linux:  conda install -c bioconda bcftools snpsift
+#   Also:   CLINVAR_VCF and GNOMAD_VCF env vars pointing to reference VCFs
+#
+# Optional: SNPEFF_DB — SnpEff database name (auto-detected if not set)
 set -euo pipefail
 
 INPUT_VCF="$1"
@@ -29,8 +30,19 @@ fi
 
 mkdir -p "$OUTPUT_DIR"
 
+# Auto-detect SnpEff database if not specified
+if [ -z "${SNPEFF_DB:-}" ]; then
+    SNPEFF_VERSION=$(snpEff -version 2>&1 | head -1 || true)
+    if echo "$SNPEFF_VERSION" | grep -q "4\.3"; then
+        SNPEFF_DB="GRCh38.86"
+    else
+        SNPEFF_DB="GRCh38.p14"
+    fi
+    echo "Auto-detected SnpEff database: $SNPEFF_DB"
+fi
+
 echo "Step 1: SnpEff functional annotation..."
-snpEff ann -v GRCh38.p14 "$INPUT_VCF" > "$OUTPUT_DIR/step1_snpeff.vcf"
+snpEff ann -v "$SNPEFF_DB" "$INPUT_VCF" > "$OUTPUT_DIR/step1_snpeff.vcf"
 
 echo "Step 2: ClinVar annotation..."
 SnpSift annotate "$CLINVAR_VCF" "$OUTPUT_DIR/step1_snpeff.vcf" > "$OUTPUT_DIR/step2_clinvar.vcf"

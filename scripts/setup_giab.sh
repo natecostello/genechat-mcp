@@ -14,12 +14,14 @@
 #   bash scripts/setup_giab.sh [OUTPUT_DIR]
 #
 # Prerequisites:
-#   - bcftools >= 1.17 (conda install -c bioconda bcftools)
-#   - Java 8+ (for SnpEff/SnpSift)
-#   - SnpEff/SnpSift >= 5.2 (https://pcingola.github.io/SnpEff/)
-#   - htslib (bgzip, tabix — usually comes with bcftools)
+#   macOS:  brew install bcftools brewsci/bio/snpeff
+#   Linux:  conda install -c bioconda bcftools snpsift
+#   Manual: bcftools >= 1.17, Java 8+, SnpEff/SnpSift >= 4.3
 #
 # Optional environment variables:
+#   SNPEFF_DB    — SnpEff database name (default: auto-detect)
+#                  brew SnpEff 4.3t → GRCh38.86, SnpEff 5.x → GRCh38.p14
+#   JAVA_MEM     — Java heap size for SnpEff (default: -Xmx4g)
 #   GNOMAD_VCF   — Path to gnomAD af-only VCF for frequency annotation
 #   SNPEFF_JAR   — Path to snpEff.jar (default: snpEff in PATH)
 #   SNPSIFT_JAR  — Path to SnpSift.jar (default: SnpSift in PATH)
@@ -65,18 +67,35 @@ check_cmd java
 check_cmd curl
 
 # Determine SnpEff/SnpSift commands
+# Per-chromosome annotation needs ~4 GB heap. Override with JAVA_MEM env var.
+JAVA_MEM="${JAVA_MEM:--Xmx4g}"
 if [ -n "${SNPEFF_JAR:-}" ]; then
-    SNPEFF_CMD="java -Xmx4g -jar $SNPEFF_JAR"
+    SNPEFF_CMD="java $JAVA_MEM -jar $SNPEFF_JAR"
 else
     check_cmd snpEff
-    SNPEFF_CMD="snpEff"
+    SNPEFF_CMD="snpEff $JAVA_MEM"
 fi
 
 if [ -n "${SNPSIFT_JAR:-}" ]; then
-    SNPSIFT_CMD="java -Xmx4g -jar $SNPSIFT_JAR"
+    SNPSIFT_CMD="java $JAVA_MEM -jar $SNPSIFT_JAR"
+    SNPSIFT_CONFIG_FLAG=""
 else
     check_cmd SnpSift
     SNPSIFT_CMD="SnpSift"
+    # Homebrew SnpSift wrapper doesn't auto-add -c snpEff.config (unlike snpEff).
+    # Detect the config path and pass via -c flag AFTER the subcommand.
+    SNPSIFT_CONFIG=""
+    if command -v snpEff &>/dev/null; then
+        SNPSIFT_CONFIG=$(grep -o '\-c [^ "]*snpEff.config' "$(command -v snpEff)" 2>/dev/null | head -1 | sed 's/-c //' || true)
+    fi
+    if [ -z "$SNPSIFT_CONFIG" ]; then
+        SNPSIFT_CONFIG="/opt/homebrew/Cellar/snpeff/4.3t/share/snpeff/snpEff.config"
+    fi
+    if [ -f "$SNPSIFT_CONFIG" ]; then
+        SNPSIFT_CONFIG_FLAG="-c $SNPSIFT_CONFIG"
+    else
+        SNPSIFT_CONFIG_FLAG=""
+    fi
 fi
 
 log "All prerequisites found."
@@ -137,32 +156,94 @@ download_if_missing \
     "https://ftp.ncbi.nlm.nih.gov/snp/latest_release/VCF/GCF_000001405.40.gz.tbi" \
     "$DBSNP_VCF.tbi"
 
-# SnpEff database
-log "Downloading SnpEff GRCh38 database (if not cached)..."
-$SNPEFF_CMD download -v GRCh38.p14 || log "WARNING: SnpEff download may have failed. Continuing..."
+# SnpEff database — auto-detect name if not specified
+if [ -z "${SNPEFF_DB:-}" ]; then
+    SNPEFF_VERSION=$($SNPEFF_CMD -version 2>&1 | head -1 || true)
+    if echo "$SNPEFF_VERSION" | grep -q "4\.3"; then
+        SNPEFF_DB="GRCh38.86"
+    else
+        SNPEFF_DB="GRCh38.p14"
+    fi
+    log "Auto-detected SnpEff database: $SNPEFF_DB (version: $SNPEFF_VERSION)"
+fi
 
-# --- Step 4: SnpEff functional annotation ---
+# Check if SnpEff database is already installed (avoid re-downloading ~1.6 GB)
+SNPEFF_DATA_DIR=$($SNPEFF_CMD -version 2>&1 | grep -o "Reading config file: [^ ]*" | sed 's|Reading config file: ||;s|/snpEff.config||' || true)
+if [ -z "$SNPEFF_DATA_DIR" ]; then
+    # Fallback: try common locations
+    SNPEFF_DATA_DIR="/opt/homebrew/Cellar/snpeff/4.3t/share/snpeff"
+fi
 
-STEP1_VCF="$WORK_DIR/step1_snpeff.vcf"
+if [ -d "$SNPEFF_DATA_DIR/data/$SNPEFF_DB" ] && [ -f "$SNPEFF_DATA_DIR/data/$SNPEFF_DB/snpEffectPredictor.bin" ]; then
+    log "SnpEff $SNPEFF_DB database already installed."
+else
+    log "Downloading SnpEff $SNPEFF_DB database..."
+    $SNPEFF_CMD download -v "$SNPEFF_DB" || log "WARNING: SnpEff download may have failed. Continuing..."
+fi
+
+# --- Step 4: SnpEff functional annotation (per-chromosome) ---
+#
+# SnpEff loads chromosome sequences cumulatively and never releases them,
+# causing OOM on whole-genome VCFs. We split by chromosome, annotate each
+# independently (fresh JVM per chromosome), then concatenate. If any
+# chromosome fails, only that one needs to be re-run.
+
+SNPEFF_DIR="$WORK_DIR/snpeff_by_chr"
+STEP1_VCF="$WORK_DIR/step1_snpeff.vcf.gz"
+
 if [ -f "$STEP1_VCF" ] || [ -f "$WORK_DIR/step2_dbsnp.vcf" ]; then
     log "Step 4/6: SnpEff annotation already done."
 else
-    log "Step 4/6: Running SnpEff functional annotation (this takes ~15 min)..."
-    $SNPEFF_CMD ann -v GRCh38.p14 "$CHR_FIXED" > "$STEP1_VCF"
+    mkdir -p "$SNPEFF_DIR"
+    CHROMS="chr1 chr2 chr3 chr4 chr5 chr6 chr7 chr8 chr9 chr10 chr11 chr12 chr13 chr14 chr15 chr16 chr17 chr18 chr19 chr20 chr21 chr22 chrX"
+    TOTAL=$(echo $CHROMS | wc -w | tr -d ' ')
+    COUNT=0
+
+    STEP4_START=$(date +%s)
+    for CHR in $CHROMS; do
+        COUNT=$((COUNT + 1))
+        CHR_OUT="$SNPEFF_DIR/${CHR}_snpeff.vcf.gz"
+        if [ -f "$CHR_OUT" ]; then
+            log "Step 4/6: [$COUNT/$TOTAL] $CHR already annotated, skipping."
+            continue
+        fi
+        CHR_VARIANTS=$(bcftools view -r "$CHR" -H "$CHR_FIXED" | wc -l | tr -d ' ')
+        log "Step 4/6: [$COUNT/$TOTAL] Annotating $CHR ($CHR_VARIANTS variants)..."
+        CHR_START=$(date +%s)
+        bcftools view -r "$CHR" "$CHR_FIXED" \
+            | $SNPEFF_CMD ann "$SNPEFF_DB" \
+            | bgzip -c > "${CHR_OUT}.tmp"
+        mv "${CHR_OUT}.tmp" "$CHR_OUT"
+        CHR_ELAPSED=$(( $(date +%s) - CHR_START ))
+        log "Step 4/6: [$COUNT/$TOTAL] $CHR done in ${CHR_ELAPSED}s"
+    done
+    STEP4_ELAPSED=$(( $(date +%s) - STEP4_START ))
+    log "Step 4/6: All chromosomes annotated in ${STEP4_ELAPSED}s"
+
+    # Concatenate all chromosomes
+    log "Step 4/6: Concatenating per-chromosome results..."
+    CHR_FILES=""
+    for CHR in $CHROMS; do
+        CHR_FILES="$CHR_FILES $SNPEFF_DIR/${CHR}_snpeff.vcf.gz"
+    done
+    bcftools concat $CHR_FILES -Oz -o "$STEP1_VCF"
+    tabix -p vcf "$STEP1_VCF"
+    log "Step 4/6: SnpEff annotation complete."
 fi
 
 # --- Step 5: dbSNP rsID annotation ---
 
-STEP2_VCF="$WORK_DIR/step2_dbsnp.vcf"
+STEP2_VCF="$WORK_DIR/step2_dbsnp.vcf.gz"
 if [ -f "$STEP2_VCF" ] || [ -f "$WORK_DIR/step3_clinvar.vcf" ]; then
     log "Step 5a/6: dbSNP annotation already done."
 else
-    log "Step 5a/6: Annotating rsIDs from dbSNP (this takes ~10 min)..."
+    log "Step 5a/6: Annotating rsIDs from dbSNP..."
+    STEP5A_START=$(date +%s)
     # dbSNP uses RefSeq contig names (NC_000001.11 etc.), need to remap
     # First check if dbSNP uses chr prefix or RefSeq names
     FIRST_CONTIG=$(bcftools view -h "$DBSNP_VCF" | grep "^##contig" | head -1 || true)
     if echo "$FIRST_CONTIG" | grep -q "NC_"; then
-        # dbSNP uses RefSeq names — need chr-name mapping for SnpSift
+        # dbSNP uses RefSeq names — need chr-name mapping
         log "   dbSNP uses RefSeq contig names, creating mapping..."
         DBSNP_CHR_MAP="$WORK_DIR/dbsnp_chr_rename.txt"
         # Map RefSeq accessions to chr names
@@ -197,52 +278,88 @@ CHRMAP
         DBSNP_RENAMED="$WORK_DIR/dbsnp_chrfixed.vcf.gz"
         if [ ! -f "$DBSNP_RENAMED" ]; then
             log "   Renaming dbSNP contigs to chr prefix..."
-            bcftools annotate --rename-chrs "$DBSNP_CHR_MAP" "$DBSNP_VCF" -Oz -o "$DBSNP_RENAMED"
+            bcftools annotate --rename-chrs "$DBSNP_CHR_MAP" "$DBSNP_VCF" -Oz -o "${DBSNP_RENAMED}.tmp"
+            mv "${DBSNP_RENAMED}.tmp" "$DBSNP_RENAMED"
             tabix -p vcf "$DBSNP_RENAMED"
         fi
         rm -f "$DBSNP_CHR_MAP"
-        $SNPSIFT_CMD annotate -id "$DBSNP_RENAMED" "$STEP1_VCF" > "$STEP2_VCF"
+        # Use bcftools annotate (not SnpSift) for rsID — much faster, avoids
+        # SnpSift 4.3t CLNHGVS parsing errors with modern dbSNP/ClinVar.
+        bcftools annotate -a "$DBSNP_RENAMED" -c ID "$STEP1_VCF" -Oz -o "${STEP2_VCF}.tmp"
     else
-        $SNPSIFT_CMD annotate -id "$DBSNP_VCF" "$STEP1_VCF" > "$STEP2_VCF"
+        bcftools annotate -a "$DBSNP_VCF" -c ID "$STEP1_VCF" -Oz -o "${STEP2_VCF}.tmp"
     fi
+    mv "${STEP2_VCF}.tmp" "$STEP2_VCF"
+    tabix -p vcf "$STEP2_VCF"
+    STEP5A_ELAPSED=$(( $(date +%s) - STEP5A_START ))
+    log "Step 5a/6: dbSNP annotation done in ${STEP5A_ELAPSED}s"
 fi
 
 # --- Step 5b: ClinVar annotation ---
+# Use bcftools annotate (not SnpSift) to avoid CLNHGVS parsing errors with SnpSift 4.3t.
 
-STEP3_VCF="$WORK_DIR/step3_clinvar.vcf"
+STEP3_VCF="$WORK_DIR/step3_clinvar.vcf.gz"
 if [ -f "$STEP3_VCF" ]; then
     log "Step 5b/6: ClinVar annotation already done."
 else
     log "Step 5b/6: Annotating with ClinVar..."
-    $SNPSIFT_CMD annotate "$CLINVAR_VCF" "$STEP2_VCF" > "$STEP3_VCF"
+    STEP5B_START=$(date +%s)
+    # ClinVar uses bare chromosome names (1, 2, ...) — rename to chr prefix
+    CLINVAR_RENAMED="$WORK_DIR/clinvar_chrfixed.vcf.gz"
+    if [ ! -f "$CLINVAR_RENAMED" ]; then
+        log "   Renaming ClinVar contigs to chr prefix..."
+        CLINVAR_CHR_MAP="$WORK_DIR/clinvar_chr_rename.txt"
+        for i in $(seq 1 22); do
+            echo "$i chr$i"
+        done > "$CLINVAR_CHR_MAP"
+        echo "X chrX" >> "$CLINVAR_CHR_MAP"
+        echo "Y chrY" >> "$CLINVAR_CHR_MAP"
+        echo "MT chrMT" >> "$CLINVAR_CHR_MAP"
+        bcftools annotate --rename-chrs "$CLINVAR_CHR_MAP" "$CLINVAR_VCF" -Oz -o "${CLINVAR_RENAMED}.tmp"
+        mv "${CLINVAR_RENAMED}.tmp" "$CLINVAR_RENAMED"
+        tabix -p vcf "$CLINVAR_RENAMED"
+        rm -f "$CLINVAR_CHR_MAP"
+    fi
+    bcftools annotate -a "$CLINVAR_RENAMED" \
+        -c INFO/CLNSIG,INFO/CLNDN,INFO/CLNREVSTAT,INFO/CLNVC \
+        "$STEP2_VCF" -Oz -o "${STEP3_VCF}.tmp"
+    mv "${STEP3_VCF}.tmp" "$STEP3_VCF"
+    tabix -p vcf "$STEP3_VCF"
+    STEP5B_ELAPSED=$(( $(date +%s) - STEP5B_START ))
+    log "Step 5b/6: ClinVar annotation done in ${STEP5B_ELAPSED}s"
 fi
 
 # --- Step 5c: Optional gnomAD annotation ---
 
-FINAL_VCF="$WORK_DIR/annotated.vcf"
+FINAL_VCF="$WORK_DIR/annotated.vcf.gz"
 if [ -n "${GNOMAD_VCF:-}" ] && [ -f "${GNOMAD_VCF}" ]; then
     log "Step 5c/6: Annotating with gnomAD frequencies..."
-    $SNPSIFT_CMD annotate -info AF,AF_popmax "$GNOMAD_VCF" "$STEP3_VCF" > "$FINAL_VCF"
+    bcftools annotate -a "$GNOMAD_VCF" \
+        -c INFO/AF,INFO/AF_popmax \
+        "$STEP3_VCF" -Oz -o "${FINAL_VCF}.tmp"
+    mv "${FINAL_VCF}.tmp" "$FINAL_VCF"
+    tabix -p vcf "$FINAL_VCF"
 else
     log "Step 5c/6: Skipping gnomAD (GNOMAD_VCF not set). Copying ClinVar output..."
     cp "$STEP3_VCF" "$FINAL_VCF"
+    cp "$STEP3_VCF.tbi" "$FINAL_VCF.tbi" 2>/dev/null || tabix -p vcf "$FINAL_VCF"
 fi
 
-# --- Step 6: Compress, index, and finalize ---
+# --- Step 6: Finalize ---
 
 OUTPUT_VCF="$OUTPUT_DIR/HG001_annotated.vcf.gz"
 if [ -f "$OUTPUT_VCF" ]; then
     log "Step 6/6: Output already exists: $OUTPUT_VCF"
 else
-    log "Step 6/6: Compressing and indexing final VCF..."
-    bgzip -c "$FINAL_VCF" > "$OUTPUT_VCF"
-    tabix -p vcf "$OUTPUT_VCF"
+    log "Step 6/6: Copying final VCF to output..."
+    cp "$FINAL_VCF" "$OUTPUT_VCF"
+    cp "$FINAL_VCF.tbi" "$OUTPUT_VCF.tbi" 2>/dev/null || tabix -p vcf "$OUTPUT_VCF"
 fi
 
 # --- Cleanup intermediate files (optional) ---
 
 log "Cleaning up intermediate files..."
-rm -f "$STEP1_VCF" "$STEP2_VCF" "$STEP3_VCF" "$FINAL_VCF"
+rm -f "$STEP1_VCF" "$STEP1_VCF.tbi" "$STEP2_VCF" "$STEP2_VCF.tbi" "$STEP3_VCF" "$STEP3_VCF.tbi" "$FINAL_VCF" "$FINAL_VCF.tbi"
 
 # --- Done ---
 

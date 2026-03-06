@@ -43,12 +43,22 @@ Your genome data stays on your machine. GeneChat only reads from local files. No
 ## Prerequisites
 
 - Python 3.11+
-- [SnpEff/SnpSift](https://pcingola.github.io/SnpEff/) >= 5.2 (for one-time annotation only)
-- [bcftools](https://samtools.github.io/bcftools/) >= 1.17 (for one-time annotation only)
 - A consumer WGS VCF file (from Nucleus Genomics, Nebula, Sequencing.com, etc.)
 - ~15 GB disk for reference databases, ~2 GB for your annotated VCF
 
-VCF reading at runtime is handled by [pysam](https://pysam.readthedocs.io/), which is installed automatically via `uv sync`.
+**For full annotation** (recommended — adds SnpEff functional annotation):
+
+```bash
+# macOS (Homebrew)
+brew install bcftools brewsci/bio/snpeff
+
+# Linux (conda)
+conda install -c bioconda bcftools snpsift
+```
+
+This installs bcftools, SnpEff, and SnpSift. Java is required by SnpEff — Homebrew handles this automatically. On Linux, ensure `java` is available.
+
+VCF reading at runtime is handled by [pysam](https://pysam.readthedocs.io/), which is installed automatically via `uv sync`. No external tools are needed at runtime.
 
 ## Quickstart
 
@@ -60,23 +70,29 @@ cd genechat-mcp
 uv sync
 ```
 
-### 2. Download reference databases
+### 2. Install annotation tools
 
 ```bash
-bash scripts/setup_references.sh ./references
+# macOS
+brew install bcftools brewsci/bio/snpeff
+
+# Linux
+conda install -c bioconda bcftools snpsift
 ```
 
-This downloads ClinVar and SnpEff databases. gnomAD must be downloaded separately due to size (see script output for instructions).
-
-### 3. Annotate your VCF
+### 3. Download reference databases and annotate your VCF
 
 ```bash
+# Download ClinVar + SnpEff database
+bash scripts/setup_references.sh ./references
+
+# Annotate your VCF (~20-30 minutes)
 CLINVAR_VCF=./references/clinvar_GRCh38.vcf.gz \
 GNOMAD_VCF=./references/gnomad.exomes.v4.sites.vcf.bgz \
 bash scripts/annotate.sh /path/to/your/raw.vcf.gz ./data
 ```
 
-This runs SnpEff + ClinVar + gnomAD annotation (~20–30 minutes) and produces `data/annotated.vcf.gz`.
+This runs SnpEff functional annotation + ClinVar + gnomAD and produces `data/annotated.vcf.gz`. gnomAD must be downloaded separately due to size (see script output).
 
 ### 4. Build lookup tables
 
@@ -137,16 +153,93 @@ Add to your Claude Desktop or Claude Code MCP config.
 
 Open Claude and ask about your genetics. GeneChat's tools will appear automatically.
 
-## Data Sources
+## Architecture & Components
 
-All open-source, publicly available:
+GeneChat has three phases — each with different tools and data sources. No network calls happen at runtime.
 
-- [ClinVar](https://www.ncbi.nlm.nih.gov/clinvar/) — clinical variant significance
-- [gnomAD](https://gnomad.broadinstitute.org/) — population allele frequencies
-- [SnpEff](https://pcingola.github.io/SnpEff/) — functional variant annotation
-- [CPIC](https://cpicpgx.org/) — pharmacogenomics guidelines
-- [PharmVar](https://www.pharmvar.org/) — pharmacogene variation
-- [PGS Catalog](https://www.pgscatalog.org/) — polygenic risk scores
+```
+┌─── YOUR MACHINE (Local Only) ─────────────────────────────────┐
+│                                                                │
+│  Raw VCF from Sequencing Provider                              │
+│      ↓                                                         │
+│  ANNOTATION (one-time)                                         │
+│      SnpEff → functional impact    (ANN field)                 │
+│      ClinVar → clinical significance (CLNSIG, CLNDN)          │
+│      dbSNP → rsID identifiers      (ID column)                │
+│      gnomAD → population frequency  (AF, AF_popmax)            │
+│      ↓                                                         │
+│  annotated.vcf.gz                                              │
+│      ↓                                                         │
+│  RUNTIME (no network)                                          │
+│      pysam reads VCF  ←→  SQLite lookup tables                 │
+│      ↓                                                         │
+│  MCP Server ←──── Claude asks questions via MCP protocol       │
+│                                                                │
+└────────────────────────────────────────────────────────────────┘
+```
+
+### Annotation Pipeline (one-time setup)
+
+These tools annotate your raw VCF once. They are **not** needed at runtime.
+
+| Tool | What it adds to your VCF | Install |
+|------|--------------------------|---------|
+| [SnpEff](https://pcingola.github.io/SnpEff/) | **Functional annotation** — gene name, effect type (missense, synonymous, etc.), impact level (HIGH/MODERATE/LOW), protein change (HGVS notation) | `brew install brewsci/bio/snpeff` |
+| [SnpSift](https://pcingola.github.io/SnpEff/ss_introduction/) | **Database overlay** — transfers ClinVar/gnomAD fields onto your VCF | Installed with SnpEff |
+| [bcftools](https://samtools.github.io/bcftools/) | **VCF manipulation** — chromosome renaming, compression (bgzip), indexing (tabix), region extraction | `brew install bcftools` |
+
+### Reference Databases (downloaded once)
+
+| Database | What it provides | Size | How GeneChat uses it |
+|----------|-----------------|------|---------------------|
+| [ClinVar](https://www.ncbi.nlm.nih.gov/clinvar/) | Clinical significance (Pathogenic, Benign, drug_response, etc.), disease/condition name, review status | ~100 MB | `query_clinvar` filters by significance; `query_variant` shows clinical interpretation; `query_carrier` finds pathogenic variants |
+| [dbSNP](https://www.ncbi.nlm.nih.gov/snp/) | rsID identifiers (rs4149056, etc.) for each genomic position | ~20 GB | Enables `query_variant` by rsID — without dbSNP, the VCF ID column is `.` and rsID lookups fail |
+| [gnomAD](https://gnomad.broadinstitute.org/) | Population allele frequencies (global + per-population) | ~30 GB | `query_variant` shows how common a variant is; helps distinguish rare vs common findings |
+| [SnpEff DB](https://pcingola.github.io/SnpEff/) | Gene/transcript models for functional impact prediction | ~1.6 GB | Used by SnpEff during annotation to determine which gene/transcript a variant affects |
+
+### Seed Data Pipeline (build-time)
+
+These scripts build the SQLite lookup tables that map gene names, drug names, and trait categories to genomic coordinates. Run once, requires internet. The generated database is committed to git.
+
+| Source | What it provides | Script |
+|--------|-----------------|--------|
+| [HGNC](https://www.genenames.org/) | All ~19,000 human protein-coding gene symbols | `fetch_gene_coords.py` |
+| [Ensembl REST API](https://rest.ensembl.org/) | GRCh38 coordinates for genes and variants | `fetch_gene_coords.py`, `fetch_variant_coords.py`, `fetch_prs_coords.py` |
+| [CPIC](https://cpicpgx.org/) | Pharmacogenomics drug-gene guidelines, star-allele definitions | Curated in `data/seed/pgx_drugs.tsv`, `pgx_variants.tsv` |
+| [PharmVar](https://www.pharmvar.org/) | Pharmacogene star-allele variant coordinates | Curated in `data/seed/pgx_variants.tsv` |
+| [PGS Catalog](https://www.pgscatalog.org/) | Polygenic risk score weights | Curated in `data/seed/curated/prs_scores.tsv` |
+| Published GWAS | Trait-associated variants (caffeine metabolism, lactose tolerance, etc.) | Curated in `data/seed/curated/trait_metadata.tsv` |
+| [ACMG](https://www.acmg.net/) / [GeneReviews](https://www.ncbi.nlm.nih.gov/books/NBK1116/) | Carrier screening gene panels, inheritance patterns | Curated in `data/seed/curated/carrier_metadata.tsv` |
+
+**Pipeline flow:** `uv run python scripts/build_seed_data.py` runs the full pipeline:
+1. Downloads all approved gene symbols from HGNC
+2. Batch-queries Ensembl for GRCh38 coordinates (genes + variants)
+3. Merges curated clinical metadata with Ensembl coordinates
+4. Builds SQLite database (`lookup_tables.db`) with 6 tables: `genes`, `pgx_drugs`, `pgx_variants`, `trait_variants`, `carrier_genes`, `prs_weights`
+
+### Runtime Dependencies
+
+At runtime, GeneChat uses **only** local files — no external tools, no network calls.
+
+| Library | What it does |
+|---------|-------------|
+| [pysam](https://pysam.readthedocs.io/) | Reads your annotated VCF via tabix index — replaces bcftools at runtime |
+| [mcp](https://github.com/anthropics/python-sdk) | Implements the MCP server protocol (stdio transport) |
+| SQLite (stdlib) | Queries lookup tables for gene coordinates, drug info, trait associations |
+| [pydantic](https://docs.pydantic.dev/) | Validates tool inputs and config |
+
+### What Each Tool Question Uses
+
+| Question type | VCF fields read | Lookup tables queried |
+|--------------|----------------|----------------------|
+| "Tell me about rs4149056" | genotype, ANN, CLNSIG, CLNDN, AF | — |
+| "Variants in BRCA1?" | genotype, ANN (impact filter) | `genes` (coordinates) |
+| "Prescribed simvastatin — concerns?" | genotype at PGx positions | `pgx_drugs`, `pgx_variants`, `genes` |
+| "ClinVar pathogenic variants?" | CLNSIG, CLNDN, CLNREVSTAT | `genes` (if gene filter) |
+| "Caffeine metabolism?" | genotype at trait positions | `trait_variants` |
+| "Carrier for anything?" | CLNSIG (pathogenic filter) | `carrier_genes`, `genes` |
+| "Coronary artery disease risk?" | genotype at PRS positions | `prs_weights` |
+| Genome overview | variant counts, CLNSIG summary | `pgx_variants` |
 
 ## Privacy
 
@@ -190,7 +283,7 @@ There are two setup paths:
 
 \*Claude already knows functional consequences for well-characterized variants. Missing SnpEff annotation has minimal practical impact on conversation quality.
 
-**Option A: Python-only setup** (recommended — no external tools needed):
+**Option A: Python-only setup** (no external tools needed):
 
 ```bash
 uv run python scripts/setup_giab.py ./giab
@@ -198,10 +291,18 @@ uv run python scripts/setup_giab.py ./giab
 
 Add `--skip-rsid` to skip the ~15 GB dbSNP download (ClinVar still works, but rsID-based lookups won't).
 
-**Option B: Full setup** (requires bcftools, Java, SnpEff/SnpSift):
+**Option B: Full setup** (recommended — adds SnpEff functional annotation):
+
+Requires bcftools, SnpEff, and SnpSift. Install via Homebrew or conda (see [Prerequisites](#prerequisites)).
 
 ```bash
 bash scripts/setup_giab.sh ./giab
+```
+
+The script auto-detects the correct SnpEff database version. To override, set `SNPEFF_DB`:
+
+```bash
+SNPEFF_DB=GRCh38.86 bash scripts/setup_giab.sh ./giab
 ```
 
 **Run e2e tests:**
