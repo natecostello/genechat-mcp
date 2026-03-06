@@ -253,8 +253,7 @@ def register(mcp, engine, db, config):
                             f"{gt['display']} ({short_zygosity(gt['zygosity'])})"
                         )
                     elif batch_query_ok:
-                        ref = tv.get("ref", "?")
-                        gt_display = f"{ref}/{ref} (ref)"
+                        gt_display = "ref or not covered"
                     elif tv_regions and not batch_query_ok:
                         gt_display = "query error"
 

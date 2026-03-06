@@ -106,7 +106,7 @@ def _format_pgx_entry(entry, engine, db, config, include_all_variants):
                     zyg_short = short_zygosity(gt["zygosity"])
                     gt_display = f"{gt['display']} ({zyg_short})"
                 elif batch_query_ok:
-                    gt_display = f"{pv['ref']}/{pv['ref']} (ref)"
+                    gt_display = "ref or not covered"
                 elif pv_regions:
                     gt_display = "query error"
 

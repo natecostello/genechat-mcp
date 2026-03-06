@@ -71,9 +71,6 @@ echo "Step 3: gnomAD frequency annotation..."
 if [ -n "${GNOMAD_DIR:-}" ] && [ -d "${GNOMAD_DIR}" ]; then
     # Per-chromosome gnomAD v4 exome annotation
     echo "  Using per-chromosome gnomAD exomes from: $GNOMAD_DIR"
-    CHROMS=$(bcftools view -h "$OUTPUT_DIR/step2_clinvar.vcf.gz" \
-        | grep "^##contig" | sed 's/.*ID=\([^,>]*\).*/\1/' | sort -V)
-
     # Inject AF/AF_grpmax headers into source so all per-chrom outputs share
     # the same header, even chromosomes without a gnomAD file.
     AF_HEADERS="$OUTPUT_DIR/gnomad_headers.txt"
@@ -84,11 +81,16 @@ if [ -n "${GNOMAD_DIR:-}" ] && [ -d "${GNOMAD_DIR}" ]; then
     tabix -p vcf "$STEP2_WITH_HEADERS"
     rm -f "$AF_HEADERS"
 
+    # Extract contig IDs and validate (only allow alphanumeric, underscore, dash, dot)
+    mapfile -t CHROMS < <(bcftools view -h "$STEP2_WITH_HEADERS" \
+        | grep "^##contig" | sed 's/.*ID=\([^,>]*\).*/\1/' \
+        | grep -E '^[A-Za-z0-9._-]+$' | sort -V)
+
     # First pass: annotate per-chrom into temp files, then concat
     GNOMAD_WORK="$OUTPUT_DIR/gnomad_work"
     mkdir -p "$GNOMAD_WORK"
-    CHR_FILES=""
-    for CHR in $CHROMS; do
+    CHR_FILES=()
+    for CHR in "${CHROMS[@]}"; do
         # Map chrN → gnomAD filename (gnomAD uses chrN in v4 exome filenames)
         GNOMAD_CHR_VCF="$GNOMAD_DIR/gnomad.exomes.v4.1.sites.${CHR}.vcf.bgz"
         CHR_OUT="$GNOMAD_WORK/${CHR}.vcf.gz"
@@ -102,9 +104,9 @@ if [ -n "${GNOMAD_DIR:-}" ] && [ -d "${GNOMAD_DIR}" ]; then
             echo "  No gnomAD file for $CHR, passing through unannotated."
             bcftools view -r "$CHR" "$STEP2_WITH_HEADERS" -Oz -o "$CHR_OUT"
         fi
-        CHR_FILES="$CHR_FILES $CHR_OUT"
+        CHR_FILES+=("$CHR_OUT")
     done
-    bcftools concat $CHR_FILES -Oz -o "$OUTPUT_DIR/annotated.vcf.gz"
+    bcftools concat "${CHR_FILES[@]}" -Oz -o "$OUTPUT_DIR/annotated.vcf.gz"
     rm -rf "$GNOMAD_WORK"
     rm -f "$STEP2_WITH_HEADERS" "$STEP2_WITH_HEADERS.tbi"
 

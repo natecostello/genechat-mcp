@@ -312,12 +312,14 @@ if [ -n "${GNOMAD_DIR:-}" ] && [ -d "${GNOMAD_DIR}" ]; then
     tabix -p vcf "$STEP3_WITH_HEADERS"
     rm -f "$AF_HEADERS"
 
+    # Extract contig IDs and validate (only allow alphanumeric, underscore, dash, dot)
     GNOMAD_WORK="$WORK_DIR/gnomad_work"
     mkdir -p "$GNOMAD_WORK"
-    VCF_CHROMS=$(bcftools view -h "$STEP3_WITH_HEADERS" \
-        | grep "^##contig" | sed 's/.*ID=\([^,>]*\).*/\1/' | sort -V)
-    CHR_FILES=""
-    for CHR in $VCF_CHROMS; do
+    mapfile -t VCF_CHROMS < <(bcftools view -h "$STEP3_WITH_HEADERS" \
+        | grep "^##contig" | sed 's/.*ID=\([^,>]*\).*/\1/' \
+        | grep -E '^[A-Za-z0-9._-]+$' | sort -V)
+    CHR_FILES=()
+    for CHR in "${VCF_CHROMS[@]}"; do
         GNOMAD_CHR_VCF="$GNOMAD_DIR/gnomad.exomes.v4.1.sites.${CHR}.vcf.bgz"
         CHR_OUT="$GNOMAD_WORK/${CHR}.vcf.gz"
         if [ -f "$GNOMAD_CHR_VCF" ]; then
@@ -330,9 +332,9 @@ if [ -n "${GNOMAD_DIR:-}" ] && [ -d "${GNOMAD_DIR}" ]; then
             log "   No gnomAD file for $CHR, passing through."
             bcftools view -r "$CHR" "$STEP3_WITH_HEADERS" -Oz -o "$CHR_OUT"
         fi
-        CHR_FILES="$CHR_FILES $CHR_OUT"
+        CHR_FILES+=("$CHR_OUT")
     done
-    bcftools concat $CHR_FILES -Oz -o "${FINAL_VCF}.tmp"
+    bcftools concat "${CHR_FILES[@]}" -Oz -o "${FINAL_VCF}.tmp"
     mv "${FINAL_VCF}.tmp" "$FINAL_VCF"
     tabix -p vcf "$FINAL_VCF"
     rm -rf "$GNOMAD_WORK"

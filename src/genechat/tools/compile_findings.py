@@ -179,8 +179,7 @@ def register(mcp, engine, db, config):
                                         zyg = short_zygosity(gt["zygosity"])
                                         gt_display = f"{gt['display']} ({zyg})"
                                     elif batch_query_ok:
-                                        ref = pv.get("ref", "?")
-                                        gt_display = f"{ref}/{ref} (ref)"
+                                        gt_display = "ref or not covered"
                                     elif pv_regions:
                                         gt_display = "query error"
 

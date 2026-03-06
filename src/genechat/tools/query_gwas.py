@@ -1,7 +1,11 @@
 """Search GWAS Catalog for trait-variant associations."""
 
+import re
+
 from genechat.tools.formatting import short_zygosity
 from genechat.vcf_engine import VCFEngineError
+
+_RSID_RE = re.compile(r"^rs\d+$")
 
 DISCLAIMER = (
     "\n\n---\n*NOTE: This is informational only and not a medical diagnosis. "
@@ -86,7 +90,7 @@ def register(mcp, engine, db, config):
             rsids_to_check = [
                 r["rsid"]
                 for r in results
-                if r.get("rsid") and r["rsid"].startswith("rs")
+                if r.get("rsid") and _RSID_RE.match(r["rsid"])
             ]
             if rsids_to_check:
                 try:
