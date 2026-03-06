@@ -11,5 +11,6 @@ src/genechat/data/lookup_tables.db
 *.vcf.gz.tbi
 .pytest_cache/
 giab/
+data/gwas_catalog/
 snpEff_genes.txt
 snpEff_summary.html

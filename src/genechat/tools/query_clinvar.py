@@ -77,10 +77,25 @@ def register(mcp, engine, db, config):
                 f"*Results capped at {cap}. Narrow your query for complete results.*\n"
             )
 
+        # Preload carrier gene info for inheritance cross-reference
+        carrier_lookup = {}
+        for cg in db.get_carrier_genes(condition=None, acmg_only=False):
+            carrier_lookup[cg["gene"].upper()] = cg
+
         for gene_name, gene_variants in sorted(by_gene.items()):
-            lines.append(f"### {gene_name}")
-            lines.append("| rsID | Position | Genotype | Significance | Condition |")
-            lines.append("|------|----------|----------|-------------|-----------|")
+            carrier = carrier_lookup.get(gene_name.upper())
+            gene_header = f"### {gene_name}"
+            if carrier:
+                inh = carrier.get("inheritance", "")
+                if inh:
+                    gene_header += f" ({inh})"
+            lines.append(gene_header)
+            lines.append(
+                "| rsID | Position | Genotype | Significance | Condition | Inheritance |"
+            )
+            lines.append(
+                "|------|----------|----------|-------------|-----------|-------------|"
+            )
             for v in gene_variants:
                 rsid = v["rsid"] or "."
                 pos = f"{v['chrom']}:{v['pos']}"
@@ -88,7 +103,8 @@ def register(mcp, engine, db, config):
                 clin = v.get("clinvar", {})
                 sig = clin.get("significance", ".") if clin else "."
                 cond = clin.get("condition", ".") if clin else "."
-                lines.append(f"| {rsid} | {pos} | {gt} | {sig} | {cond} |")
+                inh = carrier_lookup.get(gene_name.upper(), {}).get("inheritance", ".")
+                lines.append(f"| {rsid} | {pos} | {gt} | {sig} | {cond} | {inh} |")
             lines.append("")
 
         return "\n".join(lines) + DISCLAIMER

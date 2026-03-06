@@ -32,13 +32,17 @@ Your genome data stays on your machine. GeneChat only reads from local files. No
 | Tool | Purpose |
 |------|---------|
 | `query_variant` | Look up a single variant by rsID or position |
-| `query_gene` | List notable variants you carry in a gene |
+| `query_variants` | Batch lookup of multiple rsIDs in a single VCF scan |
+| `query_gene` | List notable variants in a gene, with trait overlay |
+| `query_genes` | Batch query variants across multiple genes at once |
 | `query_pgx` | Pharmacogenomics lookup by drug or gene |
-| `query_clinvar` | Find clinically significant variants |
+| `query_clinvar` | Find clinically significant variants (with inheritance info) |
+| `query_gwas` | Search the GWAS Catalog by trait, gene, or variant |
 | `query_trait` | Nutrigenomics, exercise, metabolism variants |
 | `query_carrier` | Carrier screening panel |
 | `calculate_prs` | Polygenic risk scores |
 | `genome_summary` | High-level overview of your genome |
+| `compile_findings` | Generate a structured summary report for your provider |
 
 ## Prerequisites
 
@@ -99,6 +103,19 @@ This runs SnpEff functional annotation + ClinVar + gnomAD and produces `data/ann
 ```bash
 python scripts/build_lookup_db.py
 ```
+
+### 4b. (Optional) Load GWAS Catalog
+
+Download the GWAS Catalog associations file (~58 MB compressed) and build the GWAS search database:
+
+```bash
+mkdir -p data/gwas_catalog
+curl -o data/gwas_catalog/gwas-catalog-associations.zip \
+  https://ftp.ebi.ac.uk/pub/databases/gwas/releases/latest/gwas-catalog-associations_ontology-annotated-full.zip
+uv run python scripts/build_gwas_db.py
+```
+
+This enables the `query_gwas` tool, which searches 1M+ genome-wide association study findings by trait, gene, or variant. Without this step, the tool will prompt users to run the setup.
 
 ### 5. Configure
 
@@ -195,6 +212,7 @@ These tools annotate your raw VCF once. They are **not** needed at runtime.
 | [dbSNP](https://www.ncbi.nlm.nih.gov/snp/) | rsID identifiers (rs4149056, etc.) for each genomic position | ~20 GB | Enables `query_variant` by rsID — without dbSNP, the VCF ID column is `.` and rsID lookups fail |
 | [gnomAD](https://gnomad.broadinstitute.org/) | Population allele frequencies (global + per-population) | ~30 GB | `query_variant` shows how common a variant is; helps distinguish rare vs common findings |
 | [SnpEff DB](https://pcingola.github.io/SnpEff/) | Gene/transcript models for functional impact prediction | ~1.6 GB | Used by SnpEff during annotation to determine which gene/transcript a variant affects |
+| [GWAS Catalog](https://www.ebi.ac.uk/gwas/) | 1M+ genome-wide association study findings | ~58 MB | `query_gwas` searches by trait, gene, or variant (optional) |
 
 ### Seed Data Pipeline (build-time)
 
@@ -232,13 +250,17 @@ At runtime, GeneChat uses **only** local files — no external tools, no network
 | Question type | VCF fields read | Lookup tables queried |
 |--------------|----------------|----------------------|
 | "Tell me about rs4149056" | genotype, ANN, CLNSIG, CLNDN, AF | — |
-| "Variants in BRCA1?" | genotype, ANN (impact filter) | `genes` (coordinates) |
+| "Check rs4149056 and rs1801133" | genotype (batch scan) | — |
+| "Variants in BRCA1?" | genotype, ANN (impact filter) | `genes`, `trait_variants` |
+| "Check BRCA1, BRCA2, and TP53" | genotype (batch regions) | `genes` |
 | "Prescribed simvastatin — concerns?" | genotype at PGx positions | `pgx_drugs`, `pgx_variants`, `genes` |
-| "ClinVar pathogenic variants?" | CLNSIG, CLNDN, CLNREVSTAT | `genes` (if gene filter) |
+| "ClinVar pathogenic variants?" | CLNSIG, CLNDN, CLNREVSTAT | `genes`, `carrier_genes` (inheritance) |
+| "GWAS findings for FTO?" | — | `gwas_associations` |
 | "Caffeine metabolism?" | genotype at trait positions | `trait_variants` |
 | "Carrier for anything?" | CLNSIG (pathogenic filter) | `carrier_genes`, `genes` |
 | "Coronary artery disease risk?" | genotype at PRS positions | `prs_weights` |
 | Genome overview | variant counts, CLNSIG summary | `pgx_variants` |
+| "Summarize what we found" | genotype (batch) | `genes`, `pgx_drugs`, `trait_variants`, `carrier_genes` |
 
 ## Privacy
 

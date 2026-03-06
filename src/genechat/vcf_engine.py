@@ -137,6 +137,49 @@ class VCFEngine:
             )
         return variants
 
+    def query_rsids(self, rsids: list[str]) -> dict[str, list[dict]]:
+        """Query multiple rsIDs in a single VCF scan.
+
+        Returns a dict mapping each rsID to its list of variant dicts.
+        Much more efficient than calling query_rsid() repeatedly.
+        """
+        for rsid in rsids:
+            if not RSID_PATTERN.match(rsid):
+                raise ValueError(f"Invalid rsID format: {rsid}. Expected rs<digits>")
+
+        target_set = set(rsids)
+        results: dict[str, list[dict]] = {r: [] for r in rsids}
+        found_count = 0
+        truncated = False
+
+        try:
+            with pysam.VariantFile(str(self.vcf_path)) as vcf:
+                sample_idx = self._get_sample_index()
+                for record in vcf:
+                    if record.id and record.id in target_set:
+                        parsed = self._record_to_dict(record, sample_idx)
+                        if parsed:
+                            results[record.id].append(parsed)
+                            found_count += 1
+                    if found_count >= self.max_variants:
+                        truncated = True
+                        break
+        except Exception as e:
+            raise VCFEngineError(f"Error querying rsIDs: {e}") from e
+
+        if truncated:
+            results["_truncated"] = [
+                {
+                    "_truncated": True,
+                    "_truncation_notice": (
+                        f"Results capped at {self.max_variants} variants. "
+                        "Some rsIDs may not have been reached."
+                    ),
+                }
+            ]
+
+        return results
+
     def query_clinvar(self, significance: str, region: str | None = None) -> list[dict]:
         """Query variants by ClinVar clinical significance."""
         if region and not REGION_PATTERN.match(region):
