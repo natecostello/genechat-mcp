@@ -4,7 +4,7 @@
 #
 # Downloads:
 #   - ClinVar VCF (GRCh38)
-#   - SnpEff database (GRCh38.p14)
+#   - SnpEff database (auto-detected version)
 #
 # NOTE: gnomAD must be downloaded manually due to size (~30GB).
 # See: https://gnomad.broadinstitute.org/downloads
@@ -31,13 +31,23 @@ fi
 
 # SnpEff database
 echo ""
-echo "Step 2: Downloading SnpEff database (GRCh38.p14)..."
+echo "Step 2: Downloading SnpEff database..."
 if command -v snpEff &>/dev/null; then
-    snpEff download -v GRCh38.p14
+    if [ -z "${SNPEFF_DB:-}" ]; then
+        SNPEFF_VERSION=$(snpEff -version 2>&1 | head -1 || true)
+        if echo "$SNPEFF_VERSION" | grep -q "4\.3"; then
+            SNPEFF_DB="GRCh38.86"
+        else
+            SNPEFF_DB="GRCh38.p14"
+        fi
+        echo "Auto-detected SnpEff database: $SNPEFF_DB"
+    fi
+    snpEff download -v "$SNPEFF_DB"
     echo "SnpEff database downloaded."
 else
-    echo "WARNING: snpEff not found in PATH. Install SnpEff first:"
-    echo "  conda install -c bioconda snpsift"
+    echo "WARNING: snpEff not found in PATH. Install first:"
+    echo "  macOS:  brew install brewsci/bio/snpeff"
+    echo "  Linux:  conda install -c bioconda snpsift"
 fi
 
 # gnomAD
