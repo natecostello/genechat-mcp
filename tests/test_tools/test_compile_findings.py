@@ -61,3 +61,61 @@ class TestCompileFindings:
 
         assert "Variant Details" in result
         assert "Gene Summaries" in result
+
+
+class TestCompileFindingsPgxDetail:
+    def test_pgx_variant_table_in_gene_summary(self, mock_engine, test_db, test_config):
+        """Gene summary for PGx gene should include variant-level genotype table."""
+        # Mock the VCF query for PGx variant positions
+        mock_engine.query_rsids.return_value = {}
+        mock_engine.query_region.return_value = [
+            {
+                "genotype": {"display": "T/C", "zygosity": "heterozygous"},
+                "chrom": "chr12",
+                "pos": 21178615,
+                "rsid": "rs4149056",
+                "ref": "T",
+                "alt": "C",
+                "annotation": {},
+                "clinvar": {},
+                "population_freq": {},
+            }
+        ]
+        fn = _setup_tool(mock_engine, test_db, test_config)
+        result = fn(genes="SLCO1B1")
+
+        assert "PGx Variants" in result
+        assert "Star Allele" in result
+        assert "Your Genotype" in result
+        assert "Function Impact" in result
+
+    def test_pgx_variant_shows_genotype(self, mock_engine, test_db, test_config):
+        """PGx variant table should show actual genotype from VCF."""
+        mock_engine.query_rsids.return_value = {}
+        mock_engine.query_region.return_value = [
+            {
+                "genotype": {"display": "C/T", "zygosity": "heterozygous"},
+                "chrom": "chr22",
+                "pos": 42128945,
+                "rsid": "rs3892097",
+                "ref": "C",
+                "alt": "T",
+                "annotation": {},
+                "clinvar": {},
+                "population_freq": {},
+            }
+        ]
+        fn = _setup_tool(mock_engine, test_db, test_config)
+        result = fn(genes="CYP2D6")
+
+        assert "CYP2D6 PGx Variants" in result
+        assert "het" in result
+
+    def test_no_pgx_when_disabled(self, mock_engine, test_db, test_config):
+        """include_pgx=False should omit PGx section."""
+        mock_engine.query_rsids.return_value = {}
+        fn = _setup_tool(mock_engine, test_db, test_config)
+        result = fn(genes="SLCO1B1", include_pgx=False)
+
+        assert "PGx Variants" not in result
+        assert "PGx drugs" not in result

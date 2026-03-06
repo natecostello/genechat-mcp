@@ -155,8 +155,28 @@ class TestStats:
         engine = VCFEngine(test_config)
         result = engine.stats()
         assert isinstance(result, dict)
-        assert result["Total variants"] == 24
+        assert result["Total variants"] == 26
         assert result["SNPs"] > 0
+
+
+class TestAfGrpmaxFallback:
+    """Test gnomAD v4 AF_grpmax → popmax fallback."""
+
+    def test_af_grpmax_fallback(self, test_config):
+        engine = VCFEngine(test_config)
+        # rs6053810 has AF_grpmax=0.18 but no AF_popmax
+        variants = engine.query_rsid("rs6053810")
+        assert len(variants) == 1
+        v = variants[0]
+        assert v["population_freq"]["popmax"] == pytest.approx(0.18)
+        assert v["population_freq"]["global"] == pytest.approx(0.15)
+
+    def test_af_popmax_preferred_over_grpmax(self, test_config):
+        engine = VCFEngine(test_config)
+        # rs4149056 has AF_popmax=0.21 — should use that, not AF_grpmax
+        variants = engine.query_rsid("rs4149056")
+        assert len(variants) == 1
+        assert variants[0]["population_freq"]["popmax"] == pytest.approx(0.21)
 
 
 class TestMaxVariantsCap:

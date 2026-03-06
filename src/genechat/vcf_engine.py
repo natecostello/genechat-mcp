@@ -352,6 +352,8 @@ class VCFEngine:
         # Population frequencies
         af = self._get_info_float(record, "AF")
         af_popmax = self._get_info_float(record, "AF_popmax")
+        if af_popmax is None:
+            af_popmax = self._get_info_float(record, "AF_grpmax")
         population_freq = _parse_freq(af, af_popmax)
 
         return {

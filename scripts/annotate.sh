@@ -5,9 +5,15 @@
 # Prerequisites:
 #   macOS:  brew install bcftools brewsci/bio/snpeff
 #   Linux:  conda install -c bioconda bcftools snpeff
-#   Also:   CLINVAR_VCF and GNOMAD_VCF env vars pointing to reference VCFs
+#   Also:   CLINVAR_VCF env var pointing to ClinVar reference VCF
 #
-# Optional: SNPEFF_DB — SnpEff database name (auto-detected if not set)
+# Optional environment variables:
+#   SNPEFF_DB  — SnpEff database name (auto-detected if not set)
+#   GNOMAD_DIR — Directory of per-chromosome gnomAD v4 exome VCFs (preferred)
+#   GNOMAD_VCF — Path to single gnomAD VCF (legacy fallback)
+#
+# gnomAD is optional — if neither GNOMAD_DIR nor GNOMAD_VCF is set, the
+# pipeline skips frequency annotation and produces a VCF without AF fields.
 set -euo pipefail
 
 INPUT_VCF="$1"
@@ -20,11 +26,6 @@ fi
 
 if [ -z "${CLINVAR_VCF:-}" ]; then
     echo "Error: Set CLINVAR_VCF environment variable to ClinVar VCF path"
-    exit 1
-fi
-
-if [ -z "${GNOMAD_VCF:-}" ]; then
-    echo "Error: Set GNOMAD_VCF environment variable to gnomAD VCF path"
     exit 1
 fi
 
@@ -67,9 +68,47 @@ bcftools annotate -a "$CLINVAR_USE" \
     "$OUTPUT_DIR/step1_snpeff.vcf" -Oz -o "$OUTPUT_DIR/step2_clinvar.vcf.gz"
 
 echo "Step 3: gnomAD frequency annotation..."
-bcftools annotate -a "$GNOMAD_VCF" \
-    -c INFO/AF,INFO/AF_popmax \
-    "$OUTPUT_DIR/step2_clinvar.vcf.gz" -Oz -o "$OUTPUT_DIR/annotated.vcf.gz"
+if [ -n "${GNOMAD_DIR:-}" ] && [ -d "${GNOMAD_DIR}" ]; then
+    # Per-chromosome gnomAD v4 exome annotation
+    echo "  Using per-chromosome gnomAD exomes from: $GNOMAD_DIR"
+    CHROMS=$(bcftools view -h "$OUTPUT_DIR/step2_clinvar.vcf.gz" \
+        | grep "^##contig" | sed 's/.*ID=\([^,>]*\).*/\1/' | sort -V)
+
+    # First pass: annotate per-chrom into temp files, then concat
+    GNOMAD_WORK="$OUTPUT_DIR/gnomad_work"
+    mkdir -p "$GNOMAD_WORK"
+    CHR_FILES=""
+    for CHR in $CHROMS; do
+        # Map chrN → gnomAD filename (gnomAD uses chrN in v4 exome filenames)
+        GNOMAD_CHR_VCF="$GNOMAD_DIR/gnomad.exomes.v4.1.sites.${CHR}.vcf.bgz"
+        CHR_OUT="$GNOMAD_WORK/${CHR}.vcf.gz"
+        if [ -f "$GNOMAD_CHR_VCF" ]; then
+            echo "  Annotating $CHR with gnomAD..."
+            bcftools annotate -a "$GNOMAD_CHR_VCF" \
+                -c INFO/AF,INFO/AF_grpmax \
+                <(bcftools view -r "$CHR" "$OUTPUT_DIR/step2_clinvar.vcf.gz") \
+                -Oz -o "$CHR_OUT"
+        else
+            echo "  No gnomAD file for $CHR, passing through unannotated."
+            bcftools view -r "$CHR" "$OUTPUT_DIR/step2_clinvar.vcf.gz" -Oz -o "$CHR_OUT"
+        fi
+        CHR_FILES="$CHR_FILES $CHR_OUT"
+    done
+    bcftools concat $CHR_FILES -Oz -o "$OUTPUT_DIR/annotated.vcf.gz"
+    rm -rf "$GNOMAD_WORK"
+
+elif [ -n "${GNOMAD_VCF:-}" ] && [ -f "${GNOMAD_VCF}" ]; then
+    # Legacy: single gnomAD VCF
+    echo "  Using single gnomAD VCF: $GNOMAD_VCF"
+    bcftools annotate -a "$GNOMAD_VCF" \
+        -c INFO/AF,INFO/AF_popmax \
+        "$OUTPUT_DIR/step2_clinvar.vcf.gz" -Oz -o "$OUTPUT_DIR/annotated.vcf.gz"
+
+else
+    echo "  WARNING: No gnomAD data (neither GNOMAD_DIR nor GNOMAD_VCF set)."
+    echo "  Skipping frequency annotation. smart_filter in query_gene will use ClinVar-only mode."
+    cp "$OUTPUT_DIR/step2_clinvar.vcf.gz" "$OUTPUT_DIR/annotated.vcf.gz"
+fi
 
 echo "Step 4: Indexing..."
 tabix -p vcf "$OUTPUT_DIR/annotated.vcf.gz"

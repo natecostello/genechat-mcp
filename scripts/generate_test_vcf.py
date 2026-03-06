@@ -22,6 +22,7 @@ VCF_HEADER = """\
 ##INFO=<ID=CLNREVSTAT,Number=.,Type=String,Description="ClinVar review status">
 ##INFO=<ID=AF,Number=A,Type=Float,Description="Allele frequency">
 ##INFO=<ID=AF_popmax,Number=A,Type=Float,Description="Maximum allele frequency across populations">
+##INFO=<ID=AF_grpmax,Number=A,Type=Float,Description="Maximum allele frequency across genetic ancestry groups (gnomAD v4)">
 ##contig=<ID=chr1,length=248956422>
 ##contig=<ID=chr2,length=242193529>
 ##contig=<ID=chr4,length=190214555>
@@ -364,6 +365,32 @@ VARIANTS = [
         "ANN=T|splice_variant|HIGH|CYP2D6|ENSG00000100197|transcript|ENST00000360608|protein_coding||c.506-1G>A|||||||;"
         "CLNSIG=drug_response;CLNDN=CYP2D6_poor_metabolizer;"
         "CLNREVSTAT=criteria_provided,_single_submitter;AF=0.12;AF_popmax=0.22",
+        "0/1",
+    ),
+    # AF_grpmax-only variant (no AF_popmax) — tests gnomAD v4 fallback (chr20)
+    (
+        "chr20",
+        31022959,
+        "rs6053810",
+        "A",
+        "G",
+        ".",
+        "PASS",
+        "ANN=G|missense_variant|MODERATE|ASIP|ENSG00000101440|transcript|ENST00000216877|protein_coding||c.113A>G|p.Asn38Ser||||||;"
+        "AF=0.15;AF_grpmax=0.18",
+        "0/1",
+    ),
+    # Common benign variant for smart_filter testing (chr13)
+    (
+        "chr13",
+        32355250,
+        "rs1799950",
+        "G",
+        "A",
+        ".",
+        "PASS",
+        "ANN=A|missense_variant|MODERATE|BRCA2|ENSG00000139618|transcript|ENST00000380152|protein_coding||c.1114G>A|p.Ala372Thr||||||;"
+        "AF=0.30;AF_popmax=0.35",
         "0/1",
     ),
 ]

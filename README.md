@@ -33,7 +33,7 @@ Your genome data stays on your machine. GeneChat only reads from local files. No
 |------|---------|
 | `query_variant` | Look up a single variant by rsID or position |
 | `query_variants` | Batch lookup of multiple rsIDs in a single VCF scan |
-| `query_gene` | List notable variants in a gene, with trait overlay |
+| `query_gene` | List notable variants in a gene, with smart filter and trait overlay |
 | `query_genes` | Batch query variants across multiple genes at once |
 | `query_pgx` | Pharmacogenomics lookup by drug or gene |
 | `query_clinvar` | Find clinically significant variants (with inheritance info) |
@@ -87,16 +87,21 @@ conda install -c bioconda bcftools snpsift
 ### 3. Download reference databases and annotate your VCF
 
 ```bash
-# Download ClinVar + SnpEff database
+# Download ClinVar + SnpEff database + gnomAD exome frequencies (~8 GB, optional)
 bash scripts/setup_references.sh ./references
 
 # Annotate your VCF (~20-30 minutes)
-CLINVAR_VCF=./references/clinvar_GRCh38.vcf.gz \
-GNOMAD_VCF=./references/gnomad.exomes.v4.sites.vcf.bgz \
+# With per-chromosome gnomAD v4 exomes (recommended):
+CLINVAR_VCF=./references/clinvar.vcf.gz \
+GNOMAD_DIR=./references/gnomad_exomes_v4 \
+bash scripts/annotate.sh /path/to/your/raw.vcf.gz ./data
+
+# Or without gnomAD (ClinVar + SnpEff only):
+CLINVAR_VCF=./references/clinvar.vcf.gz \
 bash scripts/annotate.sh /path/to/your/raw.vcf.gz ./data
 ```
 
-This runs SnpEff functional annotation + ClinVar + gnomAD and produces `data/annotated.vcf.gz`. gnomAD must be downloaded separately due to size (see script output).
+This runs SnpEff functional annotation + ClinVar + optional gnomAD and produces `data/annotated.vcf.gz`. gnomAD provides population allele frequencies that enable the `smart_filter` in `query_gene` to suppress common benign variants. Without gnomAD, smart_filter falls back to ClinVar-only mode.
 
 ### 4. Build lookup tables
 
@@ -183,7 +188,7 @@ GeneChat has three phases — each with different tools and data sources. No net
 │      SnpEff → functional impact    (ANN field)                 │
 │      ClinVar → clinical significance (CLNSIG, CLNDN)          │
 │      dbSNP → rsID identifiers      (ID column)                │
-│      gnomAD → population frequency  (AF, AF_popmax)            │
+│      gnomAD → population frequency  (AF, AF_popmax/AF_grpmax)  │
 │      ↓                                                         │
 │  annotated.vcf.gz                                              │
 │      ↓                                                         │
@@ -210,7 +215,7 @@ These tools annotate your raw VCF once. They are **not** needed at runtime.
 |----------|-----------------|------|---------------------|
 | [ClinVar](https://www.ncbi.nlm.nih.gov/clinvar/) | Clinical significance (Pathogenic, Benign, drug_response, etc.), disease/condition name, review status | ~100 MB | `query_clinvar` filters by significance; `query_variant` shows clinical interpretation; `query_carrier` finds pathogenic variants |
 | [dbSNP](https://www.ncbi.nlm.nih.gov/snp/) | rsID identifiers (rs4149056, etc.) for each genomic position | ~20 GB | Enables `query_variant` by rsID — without dbSNP, the VCF ID column is `.` and rsID lookups fail |
-| [gnomAD](https://gnomad.broadinstitute.org/) | Population allele frequencies (global + per-population) | ~30 GB | `query_variant` shows how common a variant is; helps distinguish rare vs common findings |
+| [gnomAD](https://gnomad.broadinstitute.org/) | Population allele frequencies (global + per-population) | ~8 GB (exomes) or ~30 GB (genomes) | `query_variant` shows how common a variant is; `query_gene` smart_filter uses AF to suppress common benign variants |
 | [SnpEff DB](https://pcingola.github.io/SnpEff/) | Gene/transcript models for functional impact prediction | ~1.6 GB | Used by SnpEff during annotation to determine which gene/transcript a variant affects |
 | [GWAS Catalog](https://www.ebi.ac.uk/gwas/) | 1M+ genome-wide association study findings | ~58 MB | `query_gwas` searches by trait, gene, or variant (optional) |
 

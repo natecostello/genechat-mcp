@@ -74,3 +74,89 @@ class TestQueryGwas:
         fn = _setup_tool(mock_engine, mock_db, test_config)
         result = fn(trait="nonexistent_trait_xyz")
         assert "No GWAS associations" in result
+
+
+class TestGwasDeduplicate:
+    def test_dedup_keeps_first_per_rsid(self, mock_engine, test_config):
+        """Deduplication keeps the first (best p-value) per rsid."""
+        mock_db = MagicMock()
+        mock_db.has_gwas_table.return_value = True
+        r1 = dict(SAMPLE_GWAS_RESULT, p_value=1e-120, trait="Body mass index")
+        r2 = dict(SAMPLE_GWAS_RESULT, p_value=1e-50, trait="Obesity")
+        r3 = {
+            "rsid": "rs1421085",
+            "mapped_gene": "FTO",
+            "trait": "Waist circumference",
+            "risk_allele": "C",
+            "p_value": 1e-80,
+            "or_beta": 0.25,
+            "first_author": "Shungin D",
+        }
+        mock_db.search_gwas.return_value = [r1, r2, r3]
+        fn = _setup_tool(mock_engine, mock_db, test_config)
+        result = fn(trait="body mass", deduplicate=True)
+
+        # rs9939609 should appear once (first occurrence)
+        assert result.count("rs9939609") == 1
+        # rs1421085 should also appear
+        assert "rs1421085" in result
+
+    def test_dedup_disabled_shows_all(self, mock_engine, test_config):
+        """With deduplicate=False, duplicate rsIDs show."""
+        mock_db = MagicMock()
+        mock_db.has_gwas_table.return_value = True
+        r1 = dict(SAMPLE_GWAS_RESULT, trait="Body mass index")
+        r2 = dict(SAMPLE_GWAS_RESULT, trait="Obesity")
+        mock_db.search_gwas.return_value = [r1, r2]
+        fn = _setup_tool(mock_engine, mock_db, test_config)
+        result = fn(trait="body mass", deduplicate=False)
+
+        # rs9939609 should appear twice
+        assert result.count("rs9939609") == 2
+
+
+class TestGwasCheckVcf:
+    def test_check_vcf_adds_genotype_column(self, mock_engine, test_config):
+        """check_vcf=True should add Your Genotype column."""
+        mock_db = MagicMock()
+        mock_db.has_gwas_table.return_value = True
+        mock_db.search_gwas.return_value = [SAMPLE_GWAS_RESULT]
+        mock_engine.query_rsids.return_value = {
+            "rs9939609": [
+                {
+                    "genotype": {"display": "T/A", "zygosity": "heterozygous"},
+                }
+            ]
+        }
+        fn = _setup_tool(mock_engine, mock_db, test_config)
+        result = fn(trait="body mass index", check_vcf=True)
+
+        assert "Your Genotype" in result
+        assert "T/A (het)" in result
+        # Author column should NOT be present when check_vcf is active with results
+        assert "Locke AE" not in result
+
+    def test_check_vcf_no_match_shows_dash(self, mock_engine, test_config):
+        """check_vcf=True with no VCF match should show dash."""
+        mock_db = MagicMock()
+        mock_db.has_gwas_table.return_value = True
+        mock_db.search_gwas.return_value = [SAMPLE_GWAS_RESULT]
+        mock_engine.query_rsids.return_value = {"rs9939609": []}
+        fn = _setup_tool(mock_engine, mock_db, test_config)
+        result = fn(trait="body mass index", check_vcf=True)
+
+        assert "Your Genotype" in result
+        # Should show dash for missing genotype
+        assert "—" in result
+
+    def test_check_vcf_false_shows_author(self, mock_engine, test_config):
+        """check_vcf=False should show Author column, not Genotype."""
+        mock_db = MagicMock()
+        mock_db.has_gwas_table.return_value = True
+        mock_db.search_gwas.return_value = [SAMPLE_GWAS_RESULT]
+        fn = _setup_tool(mock_engine, mock_db, test_config)
+        result = fn(trait="body mass index", check_vcf=False)
+
+        assert "Author" in result
+        assert "Locke AE" in result
+        assert "Your Genotype" not in result

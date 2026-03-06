@@ -3,6 +3,16 @@
 from genechat.vcf_engine import VCFEngineError
 
 
+def _short_zygosity(zygosity: str) -> str:
+    """Abbreviate zygosity for table display."""
+    return {
+        "homozygous_ref": "ref",
+        "heterozygous": "het",
+        "homozygous_alt": "hom alt",
+        "no_call": "no call",
+    }.get(zygosity, zygosity)
+
+
 def register(mcp, engine, db, config):
     @mcp.tool()
     def compile_findings(
@@ -119,12 +129,48 @@ def register(mcp, engine, db, config):
                     f"- **Location:** {gene_info['chrom']}:{gene_info['start']}-{gene_info['end']}"
                 )
 
-                # PGx associations
+                # PGx associations with variant-level detail
                 if include_pgx:
                     pgx_drugs = db.search_pgx_by_gene(symbol)
                     if pgx_drugs:
                         drug_names = [d["drug_name"] for d in pgx_drugs]
                         lines.append(f"- **PGx drugs:** {', '.join(drug_names)}")
+
+                        # Variant-level genotype table
+                        pgx_variants = db.get_pgx_variants(symbol)
+                        if pgx_variants:
+                            lines.append(f"\n  **{symbol} PGx Variants:**")
+                            lines.append(
+                                "  | Variant | Star Allele | Your Genotype | Function Impact |"
+                            )
+                            lines.append(
+                                "  |---------|------------|---------------|-----------------|"
+                            )
+                            for pv in pgx_variants:
+                                pv_rsid = pv.get("rsid") or "."
+                                star = pv.get("star_allele") or "."
+                                impact = pv.get("function_impact") or "."
+
+                                gt_display = "not found"
+                                if pv.get("chrom") and pv.get("pos"):
+                                    try:
+                                        pv_region = (
+                                            f"{pv['chrom']}:{pv['pos']}-{pv['pos'] + 1}"
+                                        )
+                                        pv_results = engine.query_region(pv_region)
+                                        if pv_results:
+                                            gt = pv_results[0]["genotype"]
+                                            zyg = _short_zygosity(gt["zygosity"])
+                                            gt_display = f"{gt['display']} ({zyg})"
+                                        else:
+                                            ref = pv.get("ref", "?")
+                                            gt_display = f"{ref}/{ref} (ref)"
+                                    except (ValueError, VCFEngineError):
+                                        gt_display = "query error"
+
+                                lines.append(
+                                    f"  | {pv_rsid} | {star} | {gt_display} | {impact} |"
+                                )
 
                 # Carrier screening
                 cg = carrier_lookup.get(symbol)
