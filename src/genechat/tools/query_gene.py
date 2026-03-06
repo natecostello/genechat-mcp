@@ -50,6 +50,17 @@ def register(mcp, engine, db, config):
                 or v["annotation"]["impact"].upper() in impacts
             ]
 
+        # Quality filter: for unannotated variants, only keep those with
+        # rsID or ClinVar to reduce noise from novel/unknown variants
+        filtered = []
+        for v in variants:
+            has_ann = bool(v.get("annotation", {}).get("impact"))
+            has_clinvar = bool(v.get("clinvar", {}))
+            has_rsid = bool(v.get("rsid"))
+            if has_ann or has_clinvar or has_rsid:
+                filtered.append(v)
+        variants = filtered
+
         # Cap results
         truncated = len(variants) > max_results
         variants = variants[:max_results]
@@ -88,5 +99,20 @@ def register(mcp, engine, db, config):
             clin = v.get("clinvar", {})
             sig = clin.get("significance", ".") if clin else "."
             lines.append(f"| {rsid} | {pos} | {gt} | {effect} | {impact} | {sig} |")
+
+        # Trait overlay: show known trait associations for this gene
+        trait_variants = db.get_trait_variants(gene=gene.upper())
+        if trait_variants:
+            lines.append("")
+            lines.append(f"### Known Trait Associations for {gene.upper()}")
+            lines.append("| rsID | Trait | Effect Allele | Description | Evidence |")
+            lines.append("|------|-------|---------------|-------------|----------|")
+            for tv in trait_variants:
+                tv_rsid = tv.get("rsid", ".")
+                trait = tv.get("trait", ".")
+                ea = tv.get("effect_allele", ".")
+                desc = tv.get("effect_description", ".")
+                evid = tv.get("evidence_level", ".")
+                lines.append(f"| {tv_rsid} | {trait} | {ea} | {desc} | {evid} |")
 
         return "\n".join(lines) + DISCLAIMER

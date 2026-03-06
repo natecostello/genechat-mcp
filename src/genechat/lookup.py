@@ -112,3 +112,55 @@ class LookupDB:
             params.append(prs_id)
         rows = self._conn.execute(query, params).fetchall()
         return [dict(r) for r in rows]
+
+    def has_gwas_table(self) -> bool:
+        """Check if GWAS associations table exists."""
+        row = self._conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='gwas_associations'"
+        ).fetchone()
+        return row is not None
+
+    def search_gwas(
+        self,
+        trait: str | None = None,
+        gene: str | None = None,
+        rsid: str | None = None,
+        max_results: int = 50,
+    ) -> list[dict]:
+        """Search GWAS Catalog associations by trait, gene, or rsID.
+
+        Returns results ordered by p-value (most significant first).
+        """
+        if not self.has_gwas_table():
+            return []
+        query = "SELECT * FROM gwas_associations WHERE 1=1"
+        params: list[str] = []
+        if trait:
+            query += " AND (UPPER(trait) LIKE '%' || UPPER(?) || '%' OR UPPER(mapped_trait) LIKE '%' || UPPER(?) || '%')"
+            params.extend([trait, trait])
+        if gene:
+            query += " AND UPPER(mapped_gene) LIKE '%' || UPPER(?) || '%'"
+            params.append(gene)
+        if rsid:
+            query += " AND rsid = ?"
+            params.append(rsid)
+        query += " ORDER BY p_value ASC LIMIT ?"
+        params.append(str(max_results))
+        rows = self._conn.execute(query, params).fetchall()
+        return [dict(r) for r in rows]
+
+    def gwas_traits_for_gene(self, gene: str, max_results: int = 20) -> list[dict]:
+        """Get distinct GWAS traits associated with a gene, ordered by significance."""
+        if not self.has_gwas_table():
+            return []
+        rows = self._conn.execute(
+            """SELECT trait, mapped_trait, MIN(p_value) as best_pvalue,
+                      COUNT(*) as n_associations
+               FROM gwas_associations
+               WHERE UPPER(mapped_gene) LIKE '%' || UPPER(?) || '%'
+               GROUP BY UPPER(trait)
+               ORDER BY best_pvalue ASC
+               LIMIT ?""",
+            (gene, max_results),
+        ).fetchall()
+        return [dict(r) for r in rows]
