@@ -1,5 +1,6 @@
 """Pharmacogenomics query — look up drug-gene interactions and your genotypes."""
 
+from genechat.tools.formatting import short_zygosity
 from genechat.vcf_engine import VCFEngineError
 
 DISCLAIMER = (
@@ -66,24 +67,44 @@ def _format_pgx_entry(entry, engine, db, config, include_all_variants):
         lines.append("| Variant | Star Allele | Your Genotype | Function Impact |")
         lines.append("|---------|------------|---------------|-----------------|")
 
-        for pv in pgx_variants:
+        # Batch VCF lookup for all PGx variant positions
+        pv_regions = []
+        pv_region_idx = []
+        for pi, pv in enumerate(pgx_variants):
+            if pv.get("chrom") and pv.get("pos"):
+                pv_regions.append(f"{pv['chrom']}:{pv['pos']}-{pv['pos'] + 1}")
+                pv_region_idx.append(pi)
+
+        pv_vcf_map: dict[int, list[dict]] = {}
+        if pv_regions:
+            try:
+                all_pv = engine.query_regions(pv_regions)
+                pos_map: dict[str, list[dict]] = {}
+                for v in all_pv:
+                    key = f"{v['chrom']}:{v['pos']}"
+                    pos_map.setdefault(key, []).append(v)
+                for ri, pi in enumerate(pv_region_idx):
+                    pv = pgx_variants[pi]
+                    key = f"{pv['chrom']}:{pv['pos']}"
+                    if key in pos_map:
+                        pv_vcf_map[pi] = pos_map[key]
+            except (ValueError, VCFEngineError):
+                pass
+
+        for pi, pv in enumerate(pgx_variants):
             rsid = pv["rsid"] or "."
             star = pv.get("star_allele") or "."
             impact = pv.get("function_impact") or "."
 
-            # Query user's VCF for this specific position
             gt_display = "not found"
-            try:
-                region = f"{pv['chrom']}:{pv['pos']}-{pv['pos'] + 1}"
-                user_variants = engine.query_region(region)
-                if user_variants:
-                    gt = user_variants[0]["genotype"]
-                    zyg_short = _short_zygosity(gt["zygosity"])
+            if pv.get("chrom") and pv.get("pos"):
+                pv_results = pv_vcf_map.get(pi)
+                if pv_results:
+                    gt = pv_results[0]["genotype"]
+                    zyg_short = short_zygosity(gt["zygosity"])
                     gt_display = f"{gt['display']} ({zyg_short})"
-                else:
+                elif pv_regions:
                     gt_display = f"{pv['ref']}/{pv['ref']} (ref)"
-            except (ValueError, VCFEngineError):
-                gt_display = "query error"
 
             lines.append(f"| {rsid} | {star} | {gt_display} | {impact} |")
 
@@ -116,13 +137,3 @@ def _format_pgx_entry(entry, engine, db, config, include_all_variants):
         lines.append(f"\n[CPIC Guideline]({entry['guideline_url']})")
 
     return "\n".join(lines)
-
-
-def _short_zygosity(zygosity: str) -> str:
-    """Abbreviate zygosity for table display."""
-    return {
-        "homozygous_ref": "ref",
-        "heterozygous": "het",
-        "homozygous_alt": "hom alt",
-        "no_call": "no call",
-    }.get(zygosity, zygosity)

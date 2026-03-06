@@ -66,9 +66,9 @@ class TestCompileFindings:
 class TestCompileFindingsPgxDetail:
     def test_pgx_variant_table_in_gene_summary(self, mock_engine, test_db, test_config):
         """Gene summary for PGx gene should include variant-level genotype table."""
-        # Mock the VCF query for PGx variant positions
+        # Mock the VCF query for PGx variant positions (batched via query_regions)
         mock_engine.query_rsids.return_value = {}
-        mock_engine.query_region.return_value = [
+        mock_engine.query_regions.return_value = [
             {
                 "genotype": {"display": "T/C", "zygosity": "heterozygous"},
                 "chrom": "chr12",
@@ -92,7 +92,7 @@ class TestCompileFindingsPgxDetail:
     def test_pgx_variant_shows_genotype(self, mock_engine, test_db, test_config):
         """PGx variant table should show actual genotype from VCF."""
         mock_engine.query_rsids.return_value = {}
-        mock_engine.query_region.return_value = [
+        mock_engine.query_regions.return_value = [
             {
                 "genotype": {"display": "C/T", "zygosity": "heterozygous"},
                 "chrom": "chr22",

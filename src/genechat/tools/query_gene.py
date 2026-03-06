@@ -1,5 +1,6 @@
 """Query all variants in a gene region."""
 
+from genechat.tools.formatting import short_zygosity
 from genechat.vcf_engine import VCFEngineError
 
 DISCLAIMER = (
@@ -19,16 +20,6 @@ _PROTECTED_CLINVAR = {
     "conflicting_interpretations_of_pathogenicity",
     "conflicting interpretations of pathogenicity",
 }
-
-
-def _short_zygosity(zygosity: str) -> str:
-    """Abbreviate zygosity for table display."""
-    return {
-        "homozygous_ref": "ref",
-        "heterozygous": "het",
-        "homozygous_alt": "hom alt",
-        "no_call": "no call",
-    }.get(zygosity, zygosity)
 
 
 def _should_suppress(variant: dict, protected_rsids: set[str]) -> bool:
@@ -217,29 +208,51 @@ def register(mcp, engine, db, config):
             lines.append(
                 "|------|-------|---------------|---------------|-------------|----------|"
             )
-            for tv in trait_variants:
+
+            # Batch VCF lookup: collect all regions, query once
+            tv_regions = []
+            tv_region_idx = []  # maps region index → trait_variant index
+            for i, tv in enumerate(trait_variants):
+                if tv.get("chrom") and tv.get("pos"):
+                    tv_regions.append(f"{tv['chrom']}:{tv['pos']}-{tv['pos'] + 1}")
+                    tv_region_idx.append(i)
+
+            # Query all trait variant positions in one VCF open
+            vcf_results_by_region: dict[int, list[dict]] = {}
+            if tv_regions:
+                try:
+                    all_results = engine.query_regions(tv_regions)
+                    # Map results back by position
+                    pos_map: dict[str, list[dict]] = {}
+                    for v in all_results:
+                        key = f"{v['chrom']}:{v['pos']}"
+                        pos_map.setdefault(key, []).append(v)
+                    for ri, ti in enumerate(tv_region_idx):
+                        tv = trait_variants[ti]
+                        key = f"{tv['chrom']}:{tv['pos']}"
+                        if key in pos_map:
+                            vcf_results_by_region[ti] = pos_map[key]
+                except (ValueError, VCFEngineError):
+                    pass  # Graceful degradation
+
+            for i, tv in enumerate(trait_variants):
                 tv_rsid = tv.get("rsid", ".")
                 trait = tv.get("trait", ".")
                 ea = tv.get("effect_allele", ".")
                 desc = tv.get("effect_description", ".")
                 evid = tv.get("evidence_level", ".")
 
-                # Cross-reference with VCF for genotype
                 gt_display = "—"
                 if tv.get("chrom") and tv.get("pos"):
-                    try:
-                        tv_region = f"{tv['chrom']}:{tv['pos']}-{tv['pos'] + 1}"
-                        tv_results = engine.query_region(tv_region)
-                        if tv_results:
-                            gt = tv_results[0]["genotype"]
-                            gt_display = (
-                                f"{gt['display']} ({_short_zygosity(gt['zygosity'])})"
-                            )
-                        else:
-                            ref = tv.get("ref", "?")
-                            gt_display = f"{ref}/{ref} (ref)"
-                    except (ValueError, VCFEngineError):
-                        gt_display = "query error"
+                    tv_results = vcf_results_by_region.get(i)
+                    if tv_results:
+                        gt = tv_results[0]["genotype"]
+                        gt_display = (
+                            f"{gt['display']} ({short_zygosity(gt['zygosity'])})"
+                        )
+                    elif i in vcf_results_by_region or tv_regions:
+                        ref = tv.get("ref", "?")
+                        gt_display = f"{ref}/{ref} (ref)"
 
                 lines.append(
                     f"| {tv_rsid} | {trait} | {gt_display} | {ea} | {desc} | {evid} |"

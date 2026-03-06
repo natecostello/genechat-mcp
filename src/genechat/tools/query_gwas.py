@@ -1,21 +1,12 @@
 """Search GWAS Catalog for trait-variant associations."""
 
+from genechat.tools.formatting import short_zygosity
 from genechat.vcf_engine import VCFEngineError
 
 DISCLAIMER = (
     "\n\n---\n*NOTE: This is informational only and not a medical diagnosis. "
     "Discuss findings with a healthcare provider before making health decisions.*"
 )
-
-
-def _short_zygosity(zygosity: str) -> str:
-    """Abbreviate zygosity for table display."""
-    return {
-        "homozygous_ref": "ref",
-        "heterozygous": "het",
-        "homozygous_alt": "hom alt",
-        "no_call": "no call",
-    }.get(zygosity, zygosity)
 
 
 def register(mcp, engine, db, config):
@@ -104,7 +95,7 @@ def register(mcp, engine, db, config):
                     for rs, vlist in vcf_results.items():
                         if vlist:
                             gt = vlist[0]["genotype"]
-                            zyg = _short_zygosity(gt["zygosity"])
+                            zyg = short_zygosity(gt["zygosity"])
                             genotype_map[rs] = f"{gt['display']} ({zyg})"
                 except (ValueError, VCFEngineError):
                     pass  # Graceful degradation — just omit genotypes

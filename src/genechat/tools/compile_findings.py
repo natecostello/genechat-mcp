@@ -1,16 +1,7 @@
 """Compile a structured summary of genomic findings from a session."""
 
+from genechat.tools.formatting import short_zygosity
 from genechat.vcf_engine import VCFEngineError
-
-
-def _short_zygosity(zygosity: str) -> str:
-    """Abbreviate zygosity for table display."""
-    return {
-        "homozygous_ref": "ref",
-        "heterozygous": "het",
-        "homozygous_alt": "hom alt",
-        "no_call": "no call",
-    }.get(zygosity, zygosity)
 
 
 def register(mcp, engine, db, config):
@@ -146,27 +137,48 @@ def register(mcp, engine, db, config):
                             lines.append(
                                 "  |---------|------------|---------------|-----------------|"
                             )
-                            for pv in pgx_variants:
+
+                            # Batch VCF lookup for all PGx variant positions
+                            pv_regions = []
+                            pv_region_idx = []
+                            for pi, pv in enumerate(pgx_variants):
+                                if pv.get("chrom") and pv.get("pos"):
+                                    pv_regions.append(
+                                        f"{pv['chrom']}:{pv['pos']}-{pv['pos'] + 1}"
+                                    )
+                                    pv_region_idx.append(pi)
+
+                            pv_vcf_map: dict[int, list[dict]] = {}
+                            if pv_regions:
+                                try:
+                                    all_pv = engine.query_regions(pv_regions)
+                                    pos_map: dict[str, list[dict]] = {}
+                                    for v in all_pv:
+                                        key = f"{v['chrom']}:{v['pos']}"
+                                        pos_map.setdefault(key, []).append(v)
+                                    for ri, pi in enumerate(pv_region_idx):
+                                        pv = pgx_variants[pi]
+                                        key = f"{pv['chrom']}:{pv['pos']}"
+                                        if key in pos_map:
+                                            pv_vcf_map[pi] = pos_map[key]
+                                except (ValueError, VCFEngineError):
+                                    pass
+
+                            for pi, pv in enumerate(pgx_variants):
                                 pv_rsid = pv.get("rsid") or "."
                                 star = pv.get("star_allele") or "."
                                 impact = pv.get("function_impact") or "."
 
                                 gt_display = "not found"
                                 if pv.get("chrom") and pv.get("pos"):
-                                    try:
-                                        pv_region = (
-                                            f"{pv['chrom']}:{pv['pos']}-{pv['pos'] + 1}"
-                                        )
-                                        pv_results = engine.query_region(pv_region)
-                                        if pv_results:
-                                            gt = pv_results[0]["genotype"]
-                                            zyg = _short_zygosity(gt["zygosity"])
-                                            gt_display = f"{gt['display']} ({zyg})"
-                                        else:
-                                            ref = pv.get("ref", "?")
-                                            gt_display = f"{ref}/{ref} (ref)"
-                                    except (ValueError, VCFEngineError):
-                                        gt_display = "query error"
+                                    pv_results = pv_vcf_map.get(pi)
+                                    if pv_results:
+                                        gt = pv_results[0]["genotype"]
+                                        zyg = short_zygosity(gt["zygosity"])
+                                        gt_display = f"{gt['display']} ({zyg})"
+                                    elif pv_regions:
+                                        ref = pv.get("ref", "?")
+                                        gt_display = f"{ref}/{ref} (ref)"
 
                                 lines.append(
                                     f"  | {pv_rsid} | {star} | {gt_display} | {impact} |"
