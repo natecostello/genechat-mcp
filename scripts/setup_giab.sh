@@ -15,8 +15,8 @@
 #
 # Prerequisites:
 #   macOS:  brew install bcftools brewsci/bio/snpeff
-#   Linux:  conda install -c bioconda bcftools snpsift
-#   Manual: bcftools >= 1.17, Java 8+, SnpEff/SnpSift >= 4.3
+#   Linux:  conda install -c bioconda bcftools snpeff
+#   Manual: bcftools >= 1.17, Java 8+, SnpEff >= 4.3
 #
 # Optional environment variables:
 #   SNPEFF_DB    — SnpEff database name (default: auto-detect)
@@ -24,7 +24,6 @@
 #   JAVA_MEM     — Java heap size for SnpEff (default: -Xmx4g)
 #   GNOMAD_VCF   — Path to gnomAD af-only VCF for frequency annotation
 #   SNPEFF_JAR   — Path to snpEff.jar (default: snpEff in PATH)
-#   SNPSIFT_JAR  — Path to SnpSift.jar (default: SnpSift in PATH)
 #
 # Output: $OUTPUT_DIR/HG001_annotated.vcf.gz + .tbi (~5 GB downloads, ~30 min annotation)
 
@@ -74,28 +73,6 @@ if [ -n "${SNPEFF_JAR:-}" ]; then
 else
     check_cmd snpEff
     SNPEFF_CMD="snpEff $JAVA_MEM"
-fi
-
-if [ -n "${SNPSIFT_JAR:-}" ]; then
-    SNPSIFT_CMD="java $JAVA_MEM -jar $SNPSIFT_JAR"
-    SNPSIFT_CONFIG_FLAG=""
-else
-    check_cmd SnpSift
-    SNPSIFT_CMD="SnpSift"
-    # Homebrew SnpSift wrapper doesn't auto-add -c snpEff.config (unlike snpEff).
-    # Detect the config path and pass via -c flag AFTER the subcommand.
-    SNPSIFT_CONFIG=""
-    if command -v snpEff &>/dev/null; then
-        SNPSIFT_CONFIG=$(grep -o '\-c [^ "]*snpEff.config' "$(command -v snpEff)" 2>/dev/null | head -1 | sed 's/-c //' || true)
-    fi
-    if [ -z "$SNPSIFT_CONFIG" ]; then
-        SNPSIFT_CONFIG="/opt/homebrew/Cellar/snpeff/4.3t/share/snpeff/snpEff.config"
-    fi
-    if [ -f "$SNPSIFT_CONFIG" ]; then
-        SNPSIFT_CONFIG_FLAG="-c $SNPSIFT_CONFIG"
-    else
-        SNPSIFT_CONFIG_FLAG=""
-    fi
 fi
 
 log "All prerequisites found."
@@ -167,19 +144,9 @@ if [ -z "${SNPEFF_DB:-}" ]; then
     log "Auto-detected SnpEff database: $SNPEFF_DB (version: $SNPEFF_VERSION)"
 fi
 
-# Check if SnpEff database is already installed (avoid re-downloading ~1.6 GB)
-SNPEFF_DATA_DIR=$($SNPEFF_CMD -version 2>&1 | grep -o "Reading config file: [^ ]*" | sed 's|Reading config file: ||;s|/snpEff.config||' || true)
-if [ -z "$SNPEFF_DATA_DIR" ]; then
-    # Fallback: try common locations
-    SNPEFF_DATA_DIR="/opt/homebrew/Cellar/snpeff/4.3t/share/snpeff"
-fi
-
-if [ -d "$SNPEFF_DATA_DIR/data/$SNPEFF_DB" ] && [ -f "$SNPEFF_DATA_DIR/data/$SNPEFF_DB/snpEffectPredictor.bin" ]; then
-    log "SnpEff $SNPEFF_DB database already installed."
-else
-    log "Downloading SnpEff $SNPEFF_DB database..."
-    $SNPEFF_CMD download -v "$SNPEFF_DB" || log "WARNING: SnpEff download may have failed. Continuing..."
-fi
+# Download SnpEff database if not already installed (no-op if present)
+log "Ensuring SnpEff $SNPEFF_DB database is available..."
+$SNPEFF_CMD download -v "$SNPEFF_DB" || log "WARNING: SnpEff download may have failed. Continuing..."
 
 # --- Step 4: SnpEff functional annotation (per-chromosome) ---
 #
@@ -191,7 +158,7 @@ fi
 SNPEFF_DIR="$WORK_DIR/snpeff_by_chr"
 STEP1_VCF="$WORK_DIR/step1_snpeff.vcf.gz"
 
-if [ -f "$STEP1_VCF" ] || [ -f "$WORK_DIR/step2_dbsnp.vcf" ]; then
+if [ -f "$STEP1_VCF" ] || [ -f "$WORK_DIR/step2_dbsnp.vcf.gz" ]; then
     log "Step 4/6: SnpEff annotation already done."
 else
     mkdir -p "$SNPEFF_DIR"
@@ -207,8 +174,7 @@ else
             log "Step 4/6: [$COUNT/$TOTAL] $CHR already annotated, skipping."
             continue
         fi
-        CHR_VARIANTS=$(bcftools view -r "$CHR" -H "$CHR_FIXED" | wc -l | tr -d ' ')
-        log "Step 4/6: [$COUNT/$TOTAL] Annotating $CHR ($CHR_VARIANTS variants)..."
+        log "Step 4/6: [$COUNT/$TOTAL] Annotating $CHR..."
         CHR_START=$(date +%s)
         bcftools view -r "$CHR" "$CHR_FIXED" \
             | $SNPEFF_CMD ann "$SNPEFF_DB" \
@@ -234,7 +200,7 @@ fi
 # --- Step 5: dbSNP rsID annotation ---
 
 STEP2_VCF="$WORK_DIR/step2_dbsnp.vcf.gz"
-if [ -f "$STEP2_VCF" ] || [ -f "$WORK_DIR/step3_clinvar.vcf" ]; then
+if [ -f "$STEP2_VCF" ] || [ -f "$WORK_DIR/step3_clinvar.vcf.gz" ]; then
     log "Step 5a/6: dbSNP annotation already done."
 else
     log "Step 5a/6: Annotating rsIDs from dbSNP..."
@@ -360,6 +326,9 @@ fi
 
 log "Cleaning up intermediate files..."
 rm -f "$STEP1_VCF" "$STEP1_VCF.tbi" "$STEP2_VCF" "$STEP2_VCF.tbi" "$STEP3_VCF" "$STEP3_VCF.tbi" "$FINAL_VCF" "$FINAL_VCF.tbi"
+rm -rf "$SNPEFF_DIR"
+rm -f "$WORK_DIR/clinvar_chrfixed.vcf.gz" "$WORK_DIR/clinvar_chrfixed.vcf.gz.tbi"
+rm -f "$WORK_DIR/dbsnp_chrfixed.vcf.gz" "$WORK_DIR/dbsnp_chrfixed.vcf.gz.tbi"
 
 # --- Done ---
 

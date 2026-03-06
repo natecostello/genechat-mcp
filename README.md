@@ -53,10 +53,10 @@ Your genome data stays on your machine. GeneChat only reads from local files. No
 brew install bcftools brewsci/bio/snpeff
 
 # Linux (conda)
-conda install -c bioconda bcftools snpsift
+conda install -c bioconda bcftools snpeff
 ```
 
-This installs bcftools, SnpEff, and SnpSift. Java is required by SnpEff — Homebrew handles this automatically. On Linux, ensure `java` is available.
+This installs bcftools and SnpEff. Java is required by SnpEff — Homebrew handles this automatically. On Linux, ensure `java` is available.
 
 VCF reading at runtime is handled by [pysam](https://pysam.readthedocs.io/), which is installed automatically via `uv sync`. No external tools are needed at runtime.
 
@@ -185,8 +185,7 @@ These tools annotate your raw VCF once. They are **not** needed at runtime.
 | Tool | What it adds to your VCF | Install |
 |------|--------------------------|---------|
 | [SnpEff](https://pcingola.github.io/SnpEff/) | **Functional annotation** — gene name, effect type (missense, synonymous, etc.), impact level (HIGH/MODERATE/LOW), protein change (HGVS notation) | `brew install brewsci/bio/snpeff` |
-| [SnpSift](https://pcingola.github.io/SnpEff/ss_introduction/) | **Database overlay** — transfers ClinVar/gnomAD fields onto your VCF | Installed with SnpEff |
-| [bcftools](https://samtools.github.io/bcftools/) | **VCF manipulation** — chromosome renaming, compression (bgzip), indexing (tabix), region extraction | `brew install bcftools` |
+| [bcftools](https://samtools.github.io/bcftools/) | **Database annotation + VCF manipulation** — transfers ClinVar/gnomAD/dbSNP fields onto your VCF, chromosome renaming, compression (bgzip), indexing (tabix) | `brew install bcftools` |
 
 ### Reference Databases (downloaded once)
 
@@ -293,7 +292,7 @@ Add `--skip-rsid` to skip the ~15 GB dbSNP download (ClinVar still works, but rs
 
 **Option B: Full setup** (recommended — adds SnpEff functional annotation):
 
-Requires bcftools, SnpEff, and SnpSift. Install via Homebrew or conda (see [Prerequisites](#prerequisites)).
+Requires bcftools and SnpEff. Install via Homebrew or conda (see [Prerequisites](#prerequisites)).
 
 ```bash
 bash scripts/setup_giab.sh ./giab
