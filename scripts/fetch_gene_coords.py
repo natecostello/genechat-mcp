@@ -1,15 +1,13 @@
 #!/usr/bin/env python3
 """Fetch gene coordinates from Ensembl REST API for ALL human protein-coding genes.
 
-Downloads the complete HGNC protein-coding gene list (~19,000 genes), merges with
-any additional genes from data/seed/curated/gene_lists.tsv, then batch-queries
-Ensembl for GRCh38 coordinates.
+Downloads the complete HGNC protein-coding gene list (~19,000 genes) and
+batch-queries Ensembl for GRCh38 coordinates.
 
 Output: data/seed/genes_grch38.tsv (symbol, name, chrom, start, end, strand)
 
 This ensures the LLM is never blocked by "gene not found" — every protein-coding
-gene has coordinates in the database. The curated gene_lists.tsv is for documenting
-clinical categories, not for limiting which genes are queryable.
+gene has coordinates in the database.
 """
 
 import csv
@@ -235,35 +233,6 @@ def main():
         print(f"  Missing: {', '.join(not_found)}")
     elif not_found:
         print(f"  First 50 missing: {', '.join(not_found[:50])}...")
-
-    # Validate that all genes referenced by other curated files are present
-    found_lower = {r["symbol"].lower() for r in results}
-
-    critical_files = [
-        CURATED_DIR / "carrier_metadata.tsv",
-        CURATED_DIR / "trait_metadata.tsv",
-    ]
-    missing_critical = []
-    for fpath in critical_files:
-        if not fpath.exists():
-            continue
-        with open(fpath, encoding="utf-8") as f:
-            lines = [line for line in f if not line.startswith("#")]
-        reader = csv.DictReader(io.StringIO("".join(lines)), delimiter="\t")
-        gene_col = "gene" if "gene" in reader.fieldnames else "symbol"
-        for row in reader:
-            gene = row.get(gene_col, "").strip()
-            if gene and gene.lower() not in found_lower:
-                missing_critical.append(f"{gene} (from {fpath.name})")
-
-    if missing_critical:
-        print(
-            "\nWARNING: Genes referenced by other curated files but not found in Ensembl:"
-        )
-        for m in missing_critical:
-            print(f"  - {m}")
-        print("ERROR: Critical genes missing — aborting.")
-        return 1
 
     print(f"\nOutput: {output_path}")
     return 0

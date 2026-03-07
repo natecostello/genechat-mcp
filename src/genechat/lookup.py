@@ -40,12 +40,10 @@ class LookupDB:
         return f"{gene['chrom']}:{start}-{end}"
 
     def search_pgx_by_drug(self, drug_name: str) -> list[dict]:
-        """Search PGx drug entries by drug name or alias (case-insensitive)."""
+        """Search PGx drug entries by drug name (case-insensitive)."""
         rows = self._conn.execute(
-            "SELECT * FROM pgx_drugs WHERE "
-            "UPPER(drug_name) = UPPER(?) OR "
-            "UPPER(drug_aliases) LIKE '%' || UPPER(?) || '%'",
-            (drug_name, drug_name),
+            "SELECT * FROM pgx_drugs WHERE UPPER(drug_name) = UPPER(?)",
+            (drug_name,),
         ).fetchall()
         return [dict(r) for r in rows]
 
@@ -63,41 +61,6 @@ class LookupDB:
         ).fetchall()
         return [dict(r) for r in rows]
 
-    def get_trait_variants(
-        self,
-        category: str | None = None,
-        trait: str | None = None,
-        gene: str | None = None,
-    ) -> list[dict]:
-        """Get trait variants, optionally filtered."""
-        query = "SELECT * FROM trait_variants WHERE 1=1"
-        params: list[str] = []
-        if category:
-            query += " AND UPPER(trait_category) = UPPER(?)"
-            params.append(category)
-        if trait:
-            query += " AND UPPER(trait) LIKE '%' || UPPER(?) || '%'"
-            params.append(trait)
-        if gene:
-            query += " AND UPPER(gene) = UPPER(?)"
-            params.append(gene)
-        rows = self._conn.execute(query, params).fetchall()
-        return [dict(r) for r in rows]
-
-    def get_carrier_genes(
-        self, condition: str | None = None, acmg_only: bool = False
-    ) -> list[dict]:
-        """Get carrier screening genes."""
-        query = "SELECT * FROM carrier_genes WHERE 1=1"
-        params: list = []
-        if condition:
-            query += " AND UPPER(condition_name) LIKE '%' || UPPER(?) || '%'"
-            params.append(condition)
-        if acmg_only:
-            query += " AND acmg_recommended = 1"
-        rows = self._conn.execute(query, params).fetchall()
-        return [dict(r) for r in rows]
-
     def get_prs_weights(
         self, trait: str | None = None, prs_id: str | None = None
     ) -> list[dict]:
@@ -111,6 +74,13 @@ class LookupDB:
             query += " AND prs_id = ?"
             params.append(prs_id)
         rows = self._conn.execute(query, params).fetchall()
+        return [dict(r) for r in rows]
+
+    def list_prs_traits(self) -> list[dict]:
+        """List available PRS traits with their PGS IDs."""
+        rows = self._conn.execute(
+            "SELECT DISTINCT prs_id, trait FROM prs_weights ORDER BY trait, prs_id"
+        ).fetchall()
         return [dict(r) for r in rows]
 
     def has_gwas_table(self) -> bool:

@@ -11,7 +11,7 @@ You get your genome sequenced ($250–$900 from providers like Nucleus Genomics 
 - "I do heavy lifting and kiteboarding — any genetic injury risk factors?"
 - "How should I think about my diet based on my genetics?"
 - "I have surgery next month. What should I tell my anesthesiologist?"
-- "Am I a carrier for anything concerning?"
+- "Am I a carrier for anything concerning?" *(uses ClinVar annotations + LLM knowledge)*
 
 The LLM calls GeneChat's tools behind the scenes, gets your specific genotypes and annotations, and interprets the results in context.
 
@@ -33,16 +33,14 @@ Your genome data stays on your machine. GeneChat only reads from local files. No
 |------|---------|
 | `query_variant` | Look up a single variant by rsID or position |
 | `query_variants` | Batch lookup of multiple rsIDs in a single VCF scan |
-| `query_gene` | List notable variants in a gene, with smart filter and trait overlay |
+| `query_gene` | List notable variants in a gene with smart filter |
 | `query_genes` | Batch query variants across multiple genes at once |
-| `query_pgx` | Pharmacogenomics lookup by drug or gene |
-| `query_clinvar` | Find clinically significant variants (with inheritance info) |
+| `query_pgx` | Pharmacogenomics lookup by drug or gene (CPIC data) |
+| `query_clinvar` | Find clinically significant variants |
 | `query_gwas` | Search the GWAS Catalog by trait, gene, or variant |
-| `query_trait` | Nutrigenomics, exercise, metabolism variants |
-| `query_carrier` | Carrier screening panel |
-| `calculate_prs` | Polygenic risk scores |
+| `calculate_prs` | Polygenic risk scores (PGS Catalog data) |
 | `genome_summary` | High-level overview of your genome |
-| `compile_findings` | Generate a structured summary report for your provider |
+| `rebuild_database` | Rebuild SQLite from existing seed TSVs |
 
 ## Prerequisites
 
@@ -213,7 +211,7 @@ These tools annotate your raw VCF once. They are **not** needed at runtime.
 
 | Database | What it provides | Size | How GeneChat uses it |
 |----------|-----------------|------|---------------------|
-| [ClinVar](https://www.ncbi.nlm.nih.gov/clinvar/) | Clinical significance (Pathogenic, Benign, drug_response, etc.), disease/condition name, review status | ~100 MB | `query_clinvar` filters by significance; `query_variant` shows clinical interpretation; `query_carrier` finds pathogenic variants |
+| [ClinVar](https://www.ncbi.nlm.nih.gov/clinvar/) | Clinical significance (Pathogenic, Benign, drug_response, etc.), disease/condition name, review status | ~100 MB | `query_clinvar` filters by significance; `query_variant` shows clinical interpretation |
 | [dbSNP](https://www.ncbi.nlm.nih.gov/snp/) | rsID identifiers (rs4149056, etc.) for each genomic position | ~20 GB | Enables `query_variant` by rsID — without dbSNP, the VCF ID column is `.` and rsID lookups fail |
 | [gnomAD](https://gnomad.broadinstitute.org/) | Population allele frequencies (global + per-population) | ~8 GB (exomes) or ~30 GB (genomes) | `query_variant` shows how common a variant is; `query_gene` smart_filter uses AF to suppress common benign variants |
 | [SnpEff DB](https://pcingola.github.io/SnpEff/) | Gene/transcript models for functional impact prediction | ~1.6 GB | Used by SnpEff during annotation to determine which gene/transcript a variant affects |
@@ -226,18 +224,15 @@ These scripts build the SQLite lookup tables that map gene names, drug names, an
 | Source | What it provides | Script |
 |--------|-----------------|--------|
 | [HGNC](https://www.genenames.org/) | All ~19,000 human protein-coding gene symbols | `fetch_gene_coords.py` |
-| [Ensembl REST API](https://rest.ensembl.org/) | GRCh38 coordinates for genes and variants | `fetch_gene_coords.py`, `fetch_variant_coords.py`, `fetch_prs_coords.py` |
-| [CPIC](https://cpicpgx.org/) | Pharmacogenomics drug-gene guidelines, star-allele definitions | Curated in `data/seed/pgx_drugs.tsv`, `pgx_variants.tsv` |
-| [PharmVar](https://www.pharmvar.org/) | Pharmacogene star-allele variant coordinates | Curated in `data/seed/pgx_variants.tsv` |
-| [PGS Catalog](https://www.pgscatalog.org/) | Polygenic risk score weights | Curated in `data/seed/curated/prs_scores.tsv` |
-| Published GWAS | Trait-associated variants (caffeine metabolism, lactose tolerance, etc.) | Curated in `data/seed/curated/trait_metadata.tsv` |
-| [ACMG](https://www.acmg.net/) / [GeneReviews](https://www.ncbi.nlm.nih.gov/books/NBK1116/) | Carrier screening gene panels, inheritance patterns | Curated in `data/seed/curated/carrier_metadata.tsv` |
+| [Ensembl REST API](https://rest.ensembl.org/) | GRCh38 coordinates for genes | `fetch_gene_coords.py` |
+| [CPIC](https://cpicpgx.org/) via [ClinPGx API](https://api.cpicpgx.org/v1/) | Pharmacogenomics drug-gene guidelines, star-allele definitions, variant positions | `fetch_cpic_data.py` |
+| [PGS Catalog](https://www.pgscatalog.org/) | Polygenic risk score weights (harmonized GRCh38) | `fetch_prs_data.py` |
 
 **Pipeline flow:** `uv run python scripts/build_seed_data.py` runs the full pipeline:
-1. Downloads all approved gene symbols from HGNC
-2. Batch-queries Ensembl for GRCh38 coordinates (genes + variants)
-3. Merges curated clinical metadata with Ensembl coordinates
-4. Builds SQLite database (`lookup_tables.db`) with 6 tables: `genes`, `pgx_drugs`, `pgx_variants`, `trait_variants`, `carrier_genes`, `prs_weights`
+1. Downloads all approved gene symbols from HGNC + Ensembl coordinates
+2. Fetches CPIC Level A/B drug-gene pairs, star alleles, and variant positions
+3. Downloads PRS scoring files from PGS Catalog FTP
+4. Builds SQLite database (`lookup_tables.db`) with 4 tables: `genes`, `pgx_drugs`, `pgx_variants`, `prs_weights`
 
 ### Runtime Dependencies
 
@@ -247,7 +242,7 @@ At runtime, GeneChat uses **only** local files — no external tools, no network
 |---------|-------------|
 | [pysam](https://pysam.readthedocs.io/) | Reads your annotated VCF via tabix index — replaces bcftools at runtime |
 | [mcp](https://github.com/anthropics/python-sdk) | Implements the MCP server protocol (stdio transport) |
-| SQLite (stdlib) | Queries lookup tables for gene coordinates, drug info, trait associations |
+| SQLite (stdlib) | Queries lookup tables for gene coordinates, drug info, PRS weights |
 | [pydantic](https://docs.pydantic.dev/) | Validates tool inputs and config |
 
 ### What Each Tool Question Uses
@@ -256,16 +251,13 @@ At runtime, GeneChat uses **only** local files — no external tools, no network
 |--------------|----------------|----------------------|
 | "Tell me about rs4149056" | genotype, ANN, CLNSIG, CLNDN, AF | — |
 | "Check rs4149056 and rs1801133" | genotype (batch scan) | — |
-| "Variants in BRCA1?" | genotype, ANN (impact filter) | `genes`, `trait_variants` |
+| "Variants in BRCA1?" | genotype, ANN (impact filter) | `genes`, `pgx_variants` |
 | "Check BRCA1, BRCA2, and TP53" | genotype (batch regions) | `genes` |
 | "Prescribed simvastatin — concerns?" | genotype at PGx positions | `pgx_drugs`, `pgx_variants`, `genes` |
-| "ClinVar pathogenic variants?" | CLNSIG, CLNDN, CLNREVSTAT | `genes`, `carrier_genes` (inheritance) |
+| "ClinVar pathogenic variants?" | CLNSIG, CLNDN, CLNREVSTAT | `genes` |
 | "GWAS findings for FTO?" | — | `gwas_associations` |
-| "Caffeine metabolism?" | genotype at trait positions | `trait_variants` |
-| "Carrier for anything?" | CLNSIG (pathogenic filter) | `carrier_genes`, `genes` |
 | "Coronary artery disease risk?" | genotype at PRS positions | `prs_weights` |
 | Genome overview | variant counts, CLNSIG summary | `pgx_variants` |
-| "Summarize what we found" | genotype (batch) | `genes`, `pgx_drugs`, `trait_variants`, `carrier_genes` |
 
 ## TODO: Incremental Annotation Updates
 
@@ -280,7 +272,7 @@ The current annotation pipeline (`annotate.sh`) is a linear chain that must be r
 | SnpEff | Gene models, transcript definitions | Tied to Ensembl (~2/year) | Full pipeline (~30 min) |
 | dbSNP | rsID assignments for new variants | Quarterly | `setup_giab.sh` test data only (~30 min) |
 | GWAS Catalog | New association study results | Weekly | `build_gwas_db.py` (~2 min, already incremental) |
-| Seed data | Curated PGx/trait/carrier metadata | As we edit it | `build_seed_data.py` (~5 min, already incremental) |
+| Seed data | PGx (CPIC) + PRS (PGS Catalog) | When APIs update | `build_seed_data.py` (~5 min, already incremental) |
 
 ### Design: Layer-Independent Re-annotation
 
@@ -390,7 +382,7 @@ Default (no flags): --clinvar only (the most common update).
 | What | How often | Script | Time |
 |------|-----------|--------|------|
 | ClinVar | Every 3–6 months | `update_clinvar.sh` | ~3 min |
-| Seed data | When you add genes/traits/drugs | `build_seed_data.py` | ~5 min |
+| Seed data | When CPIC/PGS sources update | `build_seed_data.py` | ~5 min |
 | GWAS Catalog | Every 6–12 months | `build_gwas_db.py` | ~2 min |
 | gnomAD | On major releases only | `update_gnomad.sh` | ~15 min |
 | SnpEff | Annually | `update_snpeff.sh` | ~20 min |

@@ -92,7 +92,7 @@ def register(mcp, engine, db, config):
 
         lines.append(
             "\n---\n*Use specific tools (query_variant, query_gene, query_pgx, "
-            "query_trait, query_carrier, calculate_prs) for detailed analysis.*"
+            "query_clinvar, query_gwas, calculate_prs) for detailed analysis.*"
         )
 
         result = "\n".join(lines)

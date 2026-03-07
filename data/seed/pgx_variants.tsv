@@ -1,25 +1,2557 @@
-# Source: PharmVar, CPIC, dbSNP (GRCh38.p14). Coordinates verified via Ensembl REST API.
-# Note: rs8175347 (UGT1A1 *28) was merged into rs3064744 in dbSNP Build 152.
-# Note: TPMT is on the minus strand; ref/alt alleles are given on the genomic plus strand per VCF convention.
+# Source: CPIC via API. Coordinates from CPIC sequence_location.
 gene	rsid	chrom	pos	ref	alt	star_allele	function_impact	notes
-CYP2D6	rs35742686	chr22	42128242	T	del	*3	No function	Frameshift 2549delA; common null allele
-CYP2D6	rs3892097	chr22	42128945	C	T	*4	No function	Most common null allele in Europeans; splice defect c.506-1G>A
-CYP2D6	rs5030655	chr22	42129084	A	del	*6	No function	Frameshift deletion c.454delT (p.Trp152fs)
-CYP2D6	rs1065852	chr22	42130692	C	T	*10	Decreased function	Most common decreased-function allele in East Asians
-CYP2D6	rs28371706	chr22	42129770	G	T	*17	Decreased function	Common in African populations
-CYP2D6	rs28371725	chr22	42127803	C	T	*41	Decreased function	Reduced splicing efficiency
-CYP2C19	rs4244285	chr10	94781859	G	A	*2	No function	Most common loss-of-function allele; c.681G>A splice variant
-CYP2C19	rs4986893	chr10	94780653	G	A	*3	No function	Common in East Asian populations; c.636G>A (p.Trp212Ter)
-CYP2C19	rs12248560	chr10	94761900	C	T	*17	Increased function	Ultra-rapid metabolizer allele; promoter variant
-CYP2C9	rs1799853	chr10	94942290	C	T	*2	Decreased function	~30% reduced metabolism; Arg144Cys
-CYP2C9	rs1057910	chr10	94981296	A	C	*3	Decreased function	~80% reduced metabolism; Ile359Leu
-SLCO1B1	rs4149056	chr12	21178615	T	C	*5	Decreased function	Val174Ala; increased statin plasma levels and myopathy risk
-SLCO1B1	rs2306283	chr12	21176804	A	G	*1B	Increased function	Asn130Asp; generally considered normal-to-increased function
-DPYD	rs3918290	chr1	97450058	C	T	*2A	No function	IVS14+1G>A splice site variant; risk of fatal fluoropyrimidine toxicity
-VKORC1	rs9923231	chr16	31096368	C	T	.	Reduced expression	-1639G>A promoter variant (minus strand); major warfarin dose determinant
-TPMT	rs1800462	chr6	18143724	C	G	*2	No function	Ala80Pro (c.238G>C on coding strand); 100-fold reduced activity
-TPMT	rs1800460	chr6	18138997	C	T	*3B	No function	Ala154Thr (c.460G>A on coding strand); component of *3A haplotype
-TPMT	rs1142345	chr6	18130687	T	C	*3C	No function	Tyr240Cys (c.719A>G on coding strand); most common in Africans; also component of *3A
-NUDT15	rs116855232	chr13	48045719	C	T	*3	No function	Arg139Cys; prevalent in East Asians; risk of thiopurine toxicity
-UGT1A1	rs887829	chr2	233759924	C	T	*6	Decreased function	Associated with Gilbert syndrome; linked to UGT1A1*28
-UGT1A1	rs3064744	chr2	233760234	TA	TAn	*28	Decreased function	(TA)7 promoter repeat (formerly rs8175347); Gilbert syndrome; reduced UGT1A1 expression
+ABCG2	rs2231142	chr4	88131171	G	T	rs2231142 reference (G)	Normal function	.
+ABCG2	rs2231142	chr4	88131171	G	T	rs2231142 variant (T)	Decreased function	.
+CACNA1S	rs1800559	chr1	201060815	C	T	Reference	Normal function	.
+CACNA1S	rs1800559	chr1	201060815	C	T	c.3257G>A	Malignant Hyperthermia associated	.
+CACNA1S	rs772226819	chr1	201091993	G	A	Reference	Normal function	.
+CACNA1S	rs772226819	chr1	201091993	G	A	c.520C>T	Malignant Hyperthermia associated	.
+CFTR	rs113993958	chr7	117530953	G	C	D110H	ivacaftor responsive	.
+CFTR	rs113993958	chr7	117530953	G	C	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs115545701	chr7	117509089	C	T	R74W	ivacaftor responsive	.
+CFTR	rs115545701	chr7	117509089	C	T	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs11971167	chr7	117642528	G	A	D1270N	ivacaftor responsive	.
+CFTR	rs11971167	chr7	117642528	G	A	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs121908752	chr7	117535285	T	G	L206W	ivacaftor responsive	.
+CFTR	rs121908752	chr7	117535285	T	G	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs121908753	chr7	117540285	G	A	R352Q	ivacaftor responsive	.
+CFTR	rs121908753	chr7	117540285	G	A	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs121908755	chr7	117587800	G	A	S549N	ivacaftor responsive	.
+CFTR	rs121908755	chr7	117587800	G	A	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs121908757	chr7	117587799	A	C	S549R(A>C)	ivacaftor responsive	.
+CFTR	rs121908757	chr7	117587799	A	C	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs121909005	chr7	117587801	T	G	S549R(T>G)	ivacaftor responsive	.
+CFTR	rs121909005	chr7	117587801	T	G	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs121909013	chr7	117587805	G	A	G551S	ivacaftor responsive	.
+CFTR	rs121909013	chr7	117587805	G	A	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs121909020	chr7	117611640	G	A	A1067T	ivacaftor responsive	.
+CFTR	rs121909020	chr7	117611640	G	A	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs121909021	chr7	117540276	C	T	A349V	ivacaftor responsive	.
+CFTR	rs121909021	chr7	117540276	C	T	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs121909041	chr7	117642483	T	C	S1255P	ivacaftor responsive	.
+CFTR	rs121909041	chr7	117642483	T	C	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs121909044	chr7	117587812	G	A	R553Q	ivacaftor responsive	.
+CFTR	rs121909044	chr7	117587812	G	A	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs140883683	chr7	117611599	C	T	T1053I	ivacaftor responsive	.
+CFTR	rs140883683	chr7	117611599	C	T	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs141033578	chr7	117606695	C	T	S977F	ivacaftor responsive	.
+CFTR	rs141033578	chr7	117606695	C	T	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs142773283	chr7	117603729	T	C	M952T	ivacaftor responsive	.
+CFTR	rs142773283	chr7	117603729	T	C	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs144055758	chr7	117610625	A	G	Y1032C	ivacaftor responsive	.
+CFTR	rs144055758	chr7	117610625	A	G	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs144476686	chr7	117540188	T	G	L320V	ivacaftor responsive	.
+CFTR	rs144476686	chr7	117540188	T	G	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs145449046	chr7	117592541	C	G	R792G	ivacaftor responsive	.
+CFTR	rs145449046	chr7	117592541	C	G	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs149279509	chr7	117610571	A	G	Y1014C	ivacaftor responsive	.
+CFTR	rs149279509	chr7	117610571	A	G	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs150157202	chr7	117592427	G	A	V754M	ivacaftor responsive	.
+CFTR	rs150157202	chr7	117592427	G	A	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs150212784	chr7	117611595	T	G	F1052V	ivacaftor responsive	.
+CFTR	rs150212784	chr7	117611595	T	G	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs151048781	chr7	117603730	G	A	M952I(G>A)	ivacaftor responsive	.
+CFTR	rs151048781	chr7	117603730	G	A	M952I(G>C)	ivacaftor responsive	.
+CFTR	rs151048781	chr7	117603730	G	A	M952I(G>T)	ivacaftor responsive	.
+CFTR	rs151048781	chr7	117603730	G	A	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs1800076	chr7	117509093	G	A	R75Q	ivacaftor responsive	.
+CFTR	rs1800076	chr7	117509093	G	A	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs1800079	chr7	117534295	G	A	R170H	ivacaftor responsive	.
+CFTR	rs1800079	chr7	117534295	G	A	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs1800097	chr7	117590357	G	A	V562I	ivacaftor responsive	.
+CFTR	rs1800097	chr7	117590357	G	A	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs1800098	chr7	117590400	G	C	G576A	ivacaftor responsive	.
+CFTR	rs1800098	chr7	117590400	G	C	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs1800100	chr7	117592169	C	T	R668C	ivacaftor responsive	.
+CFTR	rs1800100	chr7	117592169	C	T	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs1800103	chr7	117592588	A	G	I807M	ivacaftor responsive	.
+CFTR	rs1800103	chr7	117592588	A	G	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs1800110	chr7	117603774	T	C	L967S	ivacaftor responsive	.
+CFTR	rs1800110	chr7	117603774	T	C	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs1800111	chr7	117610521	G	C	L997F(G>C)	ivacaftor responsive	.
+CFTR	rs1800111	chr7	117610521	G	C	L997F(G>T)	ivacaftor responsive	.
+CFTR	rs1800111	chr7	117610521	G	C	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs1800112	chr7	117610610	T	C	I1027T	ivacaftor responsive	.
+CFTR	rs1800112	chr7	117610610	T	C	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs1800120	chr7	117627538	G	T	R1162L	ivacaftor responsive	.
+CFTR	rs1800120	chr7	117627538	G	T	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs186045772	chr7	117611663	T	A	F1074L	ivacaftor responsive	.
+CFTR	rs186045772	chr7	117611663	T	A	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs186089140	chr7	117592377	C	T	S737F	ivacaftor responsive	.
+CFTR	rs186089140	chr7	117592377	C	T	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs193922525	chr7	117664770	G	A	G1349D	ivacaftor responsive	.
+CFTR	rs193922525	chr7	117664770	G	A	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs200321110	chr7	117611646	G	A	G1069R	ivacaftor responsive	.
+CFTR	rs200321110	chr7	117611646	G	A	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs201759207	chr7	117603644	G	A	D924N	ivacaftor responsive	.
+CFTR	rs201759207	chr7	117603644	G	A	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs201958172	chr7	117530983	G	A	A120T	ivacaftor responsive	.
+CFTR	rs201958172	chr7	117530983	G	A	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs202179988	chr7	117611649	C	T	R1070W	ivacaftor responsive	.
+CFTR	rs202179988	chr7	117611649	C	T	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs2116683801	chr7	117540161	T	C	F311L	ivacaftor responsive	.
+CFTR	rs2116683801	chr7	117540161	T	C	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs267606723	chr7	117642451	G	A	G1244E	ivacaftor responsive	.
+CFTR	rs267606723	chr7	117642451	G	A	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs35516286	chr7	117531068	T	C	I148T	ivacaftor responsive	.
+CFTR	rs35516286	chr7	117531068	T	C	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs368505753	chr7	117509069	C	T	P67L	ivacaftor responsive	.
+CFTR	rs368505753	chr7	117509069	C	T	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs376008630	chr7	117535248	G	A	G194R(G>A)	ivacaftor responsive	.
+CFTR	rs376008630	chr7	117535248	G	A	G194R(G>C)	ivacaftor responsive	.
+CFTR	rs376008630	chr7	117535248	G	A	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs386134230	chr7	117606674	G	A	G970D	ivacaftor responsive	.
+CFTR	rs386134230	chr7	117606674	G	A	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs397508153	chr7	117540306	A	G	Q359R	ivacaftor responsive	.
+CFTR	rs397508153	chr7	117540306	A	G	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs397508256	chr7	117509035	G	A	E56K	ivacaftor responsive	.
+CFTR	rs397508256	chr7	117509035	G	A	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs397508288	chr7	117590409	A	G	D579G	ivacaftor responsive	.
+CFTR	rs397508288	chr7	117590409	A	G	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs397508300	chr7	117590439	G	A	S589N	ivacaftor responsive	.
+CFTR	rs397508300	chr7	117590439	G	A	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs397508378	chr7	117592631	G	A	E822K	ivacaftor responsive	.
+CFTR	rs397508378	chr7	117592631	G	A	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs397508387	chr7	117594930	G	T	E831X	ivacaftor responsive	.
+CFTR	rs397508387	chr7	117594930	G	T	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs397508436	chr7	117603671	A	G	R933G	ivacaftor responsive	.
+CFTR	rs397508436	chr7	117603671	A	G	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs397508440	chr7	117603690	A	G	H939R	ivacaftor responsive	.
+CFTR	rs397508440	chr7	117603690	A	G	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs397508442	chr7	117603708	C	T	S945L	ivacaftor responsive	.
+CFTR	rs397508442	chr7	117603708	C	T	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs397508513	chr7	117611620	A	C	K1060T	ivacaftor responsive	.
+CFTR	rs397508513	chr7	117611620	A	C	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs397508537	chr7	117530955	C	A	D110E	ivacaftor responsive	.
+CFTR	rs397508537	chr7	117530955	C	A	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs397508556	chr7	117614660	A	G	I1139V	ivacaftor responsive	.
+CFTR	rs397508556	chr7	117614660	A	G	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs397508572	chr7	117627528	T	C	S1159P	ivacaftor responsive	.
+CFTR	rs397508572	chr7	117627528	T	C	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs397508573	chr7	117627529	C	T	S1159F	ivacaftor responsive	.
+CFTR	rs397508573	chr7	117627529	C	T	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs397508602	chr7	117642465	G	A	G1249R(G>A)	ivacaftor responsive	.
+CFTR	rs397508602	chr7	117642465	G	A	G1249R(G>C)	ivacaftor responsive	.
+CFTR	rs397508602	chr7	117642465	G	A	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs397508616	chr7	117642564	T	C	W1282R	ivacaftor responsive	.
+CFTR	rs397508616	chr7	117642564	T	C	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs397508621	chr7	117642592	A	G	Q1291R	ivacaftor responsive	.
+CFTR	rs397508621	chr7	117642592	A	G	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs397508678	chr7	117664848	A	C	H1375P	ivacaftor responsive	.
+CFTR	rs397508678	chr7	117664848	A	C	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs397508721	chr7	117531079	A	G	M152V	ivacaftor responsive	.
+CFTR	rs397508721	chr7	117531079	A	G	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs397508744	chr7	117534309	A	G	I175V	ivacaftor responsive	.
+CFTR	rs397508744	chr7	117534309	A	G	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs397508748	chr7	117534319	G	A	G178E	ivacaftor responsive	.
+CFTR	rs397508748	chr7	117534319	G	A	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs397508758	chr7	117534361	A	G	D192G	ivacaftor responsive	.
+CFTR	rs397508758	chr7	117534361	A	G	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs397508759	chr7	117534363	G	A	E193K	ivacaftor responsive	.
+CFTR	rs397508759	chr7	117534363	G	A	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs397508761	chr7	117534368	A	G	711+3A->G	ivacaftor responsive	.
+CFTR	rs397508761	chr7	117534368	A	G	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs397508783	chr7	117535363	T	A	V232D	ivacaftor responsive	.
+CFTR	rs397508783	chr7	117535363	T	A	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs397508784	chr7	117535377	C	G	Q237E	ivacaftor responsive	.
+CFTR	rs397508784	chr7	117535377	C	G	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs397508785	chr7	117535379	G	C	Q237H	ivacaftor responsive	.
+CFTR	rs397508785	chr7	117535379	G	C	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs74503330	chr7	117642472	G	A	F508C,S1251N	ivacaftor responsive	.
+CFTR	rs74503330	chr7	117642472	G	A	S1251N	ivacaftor responsive	.
+CFTR	rs74503330	chr7	117642472	G	A	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs74551128	chr7	117548795	C	A	A455E	ivacaftor responsive	.
+CFTR	rs74551128	chr7	117548795	C	A	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs74571530	chr7	117559594	T	C	F508C	ivacaftor responsive	.
+CFTR	rs74571530	chr7	117559594	T	C	F508C,S1251N	ivacaftor responsive	.
+CFTR	rs74571530	chr7	117559594	T	C	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs75039782	chr7	117639961	C	T	3849+10kbC->T	ivacaftor responsive	.
+CFTR	rs75039782	chr7	117639961	C	T	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs75527207	chr7	117587806	G	A	G551D	ivacaftor responsive	.
+CFTR	rs75527207	chr7	117587806	G	A	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs75541969	chr7	117614699	G	C	D1152H	ivacaftor responsive	.
+CFTR	rs75541969	chr7	117614699	G	C	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs75763344	chr7	117540171	G	A	G314E	ivacaftor responsive	.
+CFTR	rs75763344	chr7	117540171	G	A	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs758818611	chr7	117667104	T	C	L1480P	ivacaftor responsive	.
+CFTR	rs758818611	chr7	117667104	T	C	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs76151804	chr7	117611555	A	G	3272-26A->G	ivacaftor responsive	.
+CFTR	rs76151804	chr7	117611555	A	G	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs769016520	chr7	117535369	C	A	A234D	ivacaftor responsive	.
+CFTR	rs769016520	chr7	117535369	C	A	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs77409459	chr7	117540243	C	T	T338I	ivacaftor responsive	.
+CFTR	rs77409459	chr7	117540243	C	T	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs77834169	chr7	117530974	C	T	R117C	ivacaftor responsive	.
+CFTR	rs77834169	chr7	117530974	C	T	R117G	ivacaftor responsive	.
+CFTR	rs77834169	chr7	117530974	C	T	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs77902683	chr7	117642568	G	T	R1283M	ivacaftor responsive	.
+CFTR	rs77902683	chr7	117642568	G	T	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs77932196	chr7	117540270	G	A	R347H	ivacaftor responsive	.
+CFTR	rs77932196	chr7	117540270	G	A	R347L	ivacaftor responsive	.
+CFTR	rs77932196	chr7	117540270	G	A	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs78655421	chr7	117530975	G	A	R117H	ivacaftor responsive	.
+CFTR	rs78655421	chr7	117530975	G	A	R117L	ivacaftor responsive	.
+CFTR	rs78655421	chr7	117530975	G	A	R117P	ivacaftor responsive	.
+CFTR	rs78655421	chr7	117530975	G	A	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs78769542	chr7	117611650	G	A	R1070Q	ivacaftor responsive	.
+CFTR	rs78769542	chr7	117611650	G	A	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs80224560	chr7	117602868	G	A	2789+5G->A	ivacaftor responsive	.
+CFTR	rs80224560	chr7	117602868	G	A	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CFTR	rs80282562	chr7	117534318	G	A	G178R	ivacaftor responsive	.
+CFTR	rs80282562	chr7	117534318	G	A	ivacaftor non-responsive CFTR sequence	ivacaftor non-responsive	.
+CYP2B6	rs117872433	chr19	41016741	G	A	*1	Normal function	.
+CYP2B6	rs117872433	chr19	41016741	G	A	*43	Decreased function	.
+CYP2B6	rs12721655	chr19	41004377	A	G	*1	Normal function	.
+CYP2B6	rs12721655	chr19	41004377	A	G	*13	No function	.
+CYP2B6	rs12721655	chr19	41004377	A	G	*8	No function	.
+CYP2B6	rs139029625	chr19	41010006	G	C	*1	Normal function	.
+CYP2B6	rs139029625	chr19	41010006	G	C	*35	Uncertain function	.
+CYP2B6	rs139801276	chr19	41004303	T	C	*1	Normal function	.
+CYP2B6	rs139801276	chr19	41004303	T	C	*35	Uncertain function	.
+CYP2B6	rs141666881	chr19	41004435	G	A	*1	Normal function	.
+CYP2B6	rs141666881	chr19	41004435	G	A	*50	.	.
+CYP2B6	rs145884402	chr19	41004406	G	T	*1	Normal function	.
+CYP2B6	rs145884402	chr19	41004406	G	T	*35	Uncertain function	.
+CYP2B6	rs148009906	chr19	41004133	G	A	*1	Normal function	.
+CYP2B6	rs148009906	chr19	41004133	G	A	*44	Uncertain function	.
+CYP2B6	rs186335453	chr19	41004158	G	T	*1	Normal function	.
+CYP2B6	rs186335453	chr19	41004158	G	T	*35	Uncertain function	.
+CYP2B6	rs193922917	chr19	41010108	C	A	*1	Normal function	.
+CYP2B6	rs193922917	chr19	41010108	C	A	*31	Normal function	.
+CYP2B6	rs193922918	chr19	41012740	G	A	*1	Normal function	.
+CYP2B6	rs193922918	chr19	41012740	G	A	*32	Normal function	.
+CYP2B6	rs200238771	chr19	41012478	T	A	*1	Normal function	.
+CYP2B6	rs200238771	chr19	41012478	T	A	*48	Uncertain function	.
+CYP2B6	rs200458614	chr19	41012466	G	A	*1	Normal function	.
+CYP2B6	rs200458614	chr19	41012466	G	A	*40	Decreased function	.
+CYP2B6	rs201500445	chr19	41012471	T	C	*1	Normal function	.
+CYP2B6	rs201500445	chr19	41012471	T	C	*41	Decreased function	.
+CYP2B6	rs2279343	chr19	41009358	A	G	*1	Normal function	.
+CYP2B6	rs2279343	chr19	41009358	A	G	*13	No function	.
+CYP2B6	rs2279343	chr19	41009358	A	G	*18	No function	.
+CYP2B6	rs2279343	chr19	41009358	A	G	*19	Decreased function	.
+CYP2B6	rs2279343	chr19	41009358	A	G	*20	Decreased function	.
+CYP2B6	rs2279343	chr19	41009358	A	G	*26	Decreased function	.
+CYP2B6	rs2279343	chr19	41009358	A	G	*34	Decreased function	.
+CYP2B6	rs2279343	chr19	41009358	A	G	*36	Decreased function	.
+CYP2B6	rs2279343	chr19	41009358	A	G	*37	Decreased function	.
+CYP2B6	rs2279343	chr19	41009358	A	G	*38	No function	.
+CYP2B6	rs2279343	chr19	41009358	A	G	*39	Decreased function	.
+CYP2B6	rs2279343	chr19	41009358	A	G	*4	Increased function	.
+CYP2B6	rs2279343	chr19	41009358	A	G	*40	Decreased function	.
+CYP2B6	rs2279343	chr19	41009358	A	G	*41	Decreased function	.
+CYP2B6	rs2279343	chr19	41009358	A	G	*42	Decreased function	.
+CYP2B6	rs2279343	chr19	41009358	A	G	*43	Decreased function	.
+CYP2B6	rs2279343	chr19	41009358	A	G	*6	Decreased function	.
+CYP2B6	rs2279343	chr19	41009358	A	G	*7	Decreased function	.
+CYP2B6	rs2516199080	chr19	41016805	A	T	*1	Normal function	.
+CYP2B6	rs2516199080	chr19	41016805	A	T	*25	Uncertain function	.
+CYP2B6	rs281864907	chr19	41004015	T	A	*1	Normal function	.
+CYP2B6	rs281864907	chr19	41004015	T	A	*38	No function	.
+CYP2B6	rs28399499	chr19	41012316	T	C	*1	Normal function	.
+CYP2B6	rs28399499	chr19	41012316	T	C	*18	No function	.
+CYP2B6	rs3211369	chr19	41016726	A	G	*1	Normal function	.
+CYP2B6	rs3211369	chr19	41016726	A	G	*23	Uncertain function	.
+CYP2B6	rs3211371	chr19	41016810	C	A	*1	Normal function	.
+CYP2B6	rs3211371	chr19	41016810	C	A	*33	Uncertain function	.
+CYP2B6	rs3211371	chr19	41016810	C	A	*34	Decreased function	.
+CYP2B6	rs3211371	chr19	41016810	C	A	*5	Normal function	.
+CYP2B6	rs3211371	chr19	41016810	C	A	*7	Decreased function	.
+CYP2B6	rs33926104	chr19	40991390	C	A	*1	Normal function	.
+CYP2B6	rs33926104	chr19	40991390	C	A	*17	Normal function	.
+CYP2B6	rs33973337	chr19	40991381	A	T	*1	Normal function	.
+CYP2B6	rs33973337	chr19	40991381	A	T	*17	Normal function	.
+CYP2B6	rs33980385	chr19	40991388	A	G	*1	Normal function	.
+CYP2B6	rs33980385	chr19	40991388	A	G	*17	Normal function	.
+CYP2B6	rs34097093	chr19	41012465	C	T	*1	Normal function	.
+CYP2B6	rs34097093	chr19	41012465	C	T	*28	No function	.
+CYP2B6	rs34223104	chr19	40991224	T	C	*1	Normal function	.
+CYP2B6	rs34223104	chr19	40991224	T	C	*22	Uncertain function	.
+CYP2B6	rs34223104	chr19	40991224	T	C	*34	Decreased function	.
+CYP2B6	rs34223104	chr19	40991224	T	C	*35	Uncertain function	.
+CYP2B6	rs34223104	chr19	40991224	T	C	*36	Decreased function	.
+CYP2B6	rs34223104	chr19	40991224	T	C	*50	.	.
+CYP2B6	rs34284776	chr19	40991391	G	C	*1	Normal function	.
+CYP2B6	rs34284776	chr19	40991391	G	C	*17	Normal function	.
+CYP2B6	rs34698757	chr19	41010088	C	G	*1	Normal function	.
+CYP2B6	rs34698757	chr19	41010088	C	G	*28	No function	.
+CYP2B6	rs34826503	chr19	41012339	C	T	*1	Normal function	.
+CYP2B6	rs34826503	chr19	41012339	C	T	*19	Decreased function	.
+CYP2B6	rs34883432	chr19	40991367	A	T	*1	Normal function	.
+CYP2B6	rs34883432	chr19	40991367	A	T	*10	Uncertain function	.
+CYP2B6	rs35010098	chr19	41012803	C	A	*1	Normal function	.
+CYP2B6	rs35010098	chr19	41012803	C	A	*21	Uncertain function	.
+CYP2B6	rs35303484	chr19	40991441	A	G	*1	Normal function	.
+CYP2B6	rs35303484	chr19	40991441	A	G	*11	Uncertain function	.
+CYP2B6	rs35773040	chr19	41004381	G	A	*1	Normal function	.
+CYP2B6	rs35773040	chr19	41004381	G	A	*14	Uncertain function	.
+CYP2B6	rs35979566	chr19	41012693	T	A	*1	Normal function	.
+CYP2B6	rs35979566	chr19	41012693	T	A	*15	Uncertain function	.
+CYP2B6	rs36056539	chr19	41006923	C	T	*1	Normal function	.
+CYP2B6	rs36056539	chr19	41006923	C	T	*20	Decreased function	.
+CYP2B6	rs36060847	chr19	41004125	G	A	*1	Normal function	.
+CYP2B6	rs36060847	chr19	41004125	G	A	*12	No function	.
+CYP2B6	rs36079186	chr19	41007013	T	C	*1	Normal function	.
+CYP2B6	rs36079186	chr19	41007013	T	C	*27	Uncertain function	.
+CYP2B6	rs36079186	chr19	41007013	T	C	*35	Uncertain function	.
+CYP2B6	rs373489637	chr19	41006968	T	G	*1	Normal function	.
+CYP2B6	rs373489637	chr19	41006968	T	G	*37	Decreased function	.
+CYP2B6	rs374099483	chr19	41016679	G	A	*1	Normal function	.
+CYP2B6	rs374099483	chr19	41016679	G	A	*42	Decreased function	.
+CYP2B6	rs3745274	chr19	41006936	G	T	*1	Normal function	.
+CYP2B6	rs3745274	chr19	41006936	G	T	*13	No function	.
+CYP2B6	rs3745274	chr19	41006936	G	T	*19	Decreased function	.
+CYP2B6	rs3745274	chr19	41006936	G	T	*20	Decreased function	.
+CYP2B6	rs3745274	chr19	41006936	G	T	*26	Decreased function	.
+CYP2B6	rs3745274	chr19	41006936	G	T	*34	Decreased function	.
+CYP2B6	rs3745274	chr19	41006936	G	T	*36	Decreased function	.
+CYP2B6	rs3745274	chr19	41006936	G	T	*37	Decreased function	.
+CYP2B6	rs3745274	chr19	41006936	G	T	*38	No function	.
+CYP2B6	rs3745274	chr19	41006936	G	T	*39	Decreased function	.
+CYP2B6	rs3745274	chr19	41006936	G	T	*40	Decreased function	.
+CYP2B6	rs3745274	chr19	41006936	G	T	*41	Decreased function	.
+CYP2B6	rs3745274	chr19	41006936	G	T	*42	Decreased function	.
+CYP2B6	rs3745274	chr19	41006936	G	T	*43	Decreased function	.
+CYP2B6	rs3745274	chr19	41006936	G	T	*6	Decreased function	.
+CYP2B6	rs3745274	chr19	41006936	G	T	*7	Decreased function	.
+CYP2B6	rs3745274	chr19	41006936	G	T	*9	Decreased function	.
+CYP2B6	rs3826711	chr19	41006919	C	G	*1	Normal function	.
+CYP2B6	rs3826711	chr19	41006919	C	G	*26	Decreased function	.
+CYP2B6	rs45482602	chr19	41009350	C	A	*1	Normal function	.
+CYP2B6	rs45482602	chr19	41009350	C	A	*3	Uncertain function	.
+CYP2B6	rs535039125	chr19	41004380	C	T	*1	Normal function	.
+CYP2B6	rs535039125	chr19	41004380	C	T	*39	Decreased function	.
+CYP2B6	rs564083989	chr19	41016778	G	A	*1	Normal function	.
+CYP2B6	rs564083989	chr19	41016778	G	A	*24	Uncertain function	.
+CYP2B6	rs58871670	chr19	41006967	G	A	*1	Normal function	.
+CYP2B6	rs58871670	chr19	41006967	G	A	*45	Uncertain function	.
+CYP2B6	rs754621576	chr19	41012393	T	C	*1	Normal function	.
+CYP2B6	rs754621576	chr19	41012393	T	C	*47	Uncertain function	.
+CYP2B6	rs764288403	chr19	41016652	G	A	*1	Normal function	.
+CYP2B6	rs764288403	chr19	41016652	G	A	*49	Uncertain function	.
+CYP2B6	rs780991919	chr19	41012394	A	G	*1	Normal function	.
+CYP2B6	rs780991919	chr19	41012394	A	G	*47	Uncertain function	.
+CYP2B6	rs8192709	chr19	40991369	C	T	*1	Normal function	.
+CYP2B6	rs8192709	chr19	40991369	C	T	*10	Uncertain function	.
+CYP2B6	rs8192709	chr19	40991369	C	T	*2	Normal function	.
+CYP2C19	rs113934938	chr10	94842995	G	A	*28	Normal function	.
+CYP2C19	rs113934938	chr10	94842995	G	A	*38	Normal function	.
+CYP2C19	rs118203756	chr10	94775160	G	C	*23	Uncertain function	.
+CYP2C19	rs118203756	chr10	94775160	G	C	*38	Normal function	.
+CYP2C19	rs118203757	chr10	94842879	G	A	*24	No function	.
+CYP2C19	rs118203757	chr10	94842879	G	A	*38	Normal function	.
+CYP2C19	rs118203759	chr10	94852785	C	G	*25	Decreased function	.
+CYP2C19	rs118203759	chr10	94852785	C	G	*38	Normal function	.
+CYP2C19	rs12248560	chr10	94761900	C	T	*17	Increased function	.
+CYP2C19	rs12248560	chr10	94761900	C	T	*38	Normal function	.
+CYP2C19	rs12248560	chr10	94761900	C	T	*4	No function	.
+CYP2C19	rs12769205	chr10	94775367	A	G	*2	No function	.
+CYP2C19	rs12769205	chr10	94775367	A	G	*35	No function	.
+CYP2C19	rs12769205	chr10	94775367	A	G	*38	Normal function	.
+CYP2C19	rs1288601658	chr10	94775185	A	G	*32	Uncertain function	.
+CYP2C19	rs1288601658	chr10	94775185	A	G	*38	Normal function	.
+CYP2C19	rs138142612	chr10	94842861	G	A	*18	Normal function	.
+CYP2C19	rs138142612	chr10	94842861	G	A	*38	Normal function	.
+CYP2C19	rs140278421	chr10	94780574	G	C	*22	No function	.
+CYP2C19	rs140278421	chr10	94780574	G	C	*38	Normal function	.
+CYP2C19	rs145328984	chr10	94775106	C	T	*30	Uncertain function	.
+CYP2C19	rs145328984	chr10	94775106	C	T	*38	Normal function	.
+CYP2C19	rs1564656981	chr10	94762788	A	T	*29	Uncertain function	.
+CYP2C19	rs1564656981	chr10	94762788	A	T	*38	Normal function	.
+CYP2C19	rs1564657013	chr10	94762856	A	G	*19	Decreased function	.
+CYP2C19	rs1564657013	chr10	94762856	A	G	*38	Normal function	.
+CYP2C19	rs1564660997	chr10	94775121	C	T	*31	Uncertain function	.
+CYP2C19	rs1564660997	chr10	94775121	C	T	*38	Normal function	.
+CYP2C19	rs17879685	chr10	94849995	C	T	*13	Normal function	.
+CYP2C19	rs17879685	chr10	94849995	C	T	*38	Normal function	.
+CYP2C19	rs17882687	chr10	94762760	A	C	*15	Normal function	.
+CYP2C19	rs17882687	chr10	94762760	A	C	*28	Normal function	.
+CYP2C19	rs17882687	chr10	94762760	A	C	*35	No function	.
+CYP2C19	rs17882687	chr10	94762760	A	C	*38	Normal function	.
+CYP2C19	rs17882687	chr10	94762760	A	C	*39	Uncertain function	.
+CYP2C19	rs17884712	chr10	94775489	G	A	*38	Normal function	.
+CYP2C19	rs17884712	chr10	94775489	G	A	*9	Decreased function	.
+CYP2C19	rs17885179	chr10	94775423	A	C	*38	Normal function	.
+CYP2C19	rs17885179	chr10	94775423	A	C	*39	Uncertain function	.
+CYP2C19	rs192154563	chr10	94852765	C	T	*16	Decreased function	.
+CYP2C19	rs192154563	chr10	94852765	C	T	*38	Normal function	.
+CYP2C19	rs28399504	chr10	94762706	A	G	*38	Normal function	.
+CYP2C19	rs28399504	chr10	94762706	A	G	*4	No function	.
+CYP2C19	rs367543002	chr10	94762712	C	T	*34	Uncertain function	.
+CYP2C19	rs367543002	chr10	94762712	C	T	*38	Normal function	.
+CYP2C19	rs367543002	chr10	94762712	C	T	*40	.	.
+CYP2C19	rs367543003	chr10	94762715	T	C	*34	Uncertain function	.
+CYP2C19	rs367543003	chr10	94762715	T	C	*38	Normal function	.
+CYP2C19	rs367543003	chr10	94762715	T	C	*40	.	.
+CYP2C19	rs370803989	chr10	94780579	G	A	*33	Uncertain function	.
+CYP2C19	rs370803989	chr10	94780579	G	A	*38	Normal function	.
+CYP2C19	rs375781227	chr10	94781944	G	A	*26	Decreased function	.
+CYP2C19	rs375781227	chr10	94781944	G	A	*38	Normal function	.
+CYP2C19	rs3758581	chr10	94842866	A	G	*1	Normal function	.
+CYP2C19	rs3758581	chr10	94842866	A	G	*10	Decreased function	.
+CYP2C19	rs3758581	chr10	94842866	A	G	*11	Normal function	.
+CYP2C19	rs3758581	chr10	94842866	A	G	*12	Uncertain function	.
+CYP2C19	rs3758581	chr10	94842866	A	G	*13	Normal function	.
+CYP2C19	rs3758581	chr10	94842866	A	G	*14	Uncertain function	.
+CYP2C19	rs3758581	chr10	94842866	A	G	*15	Normal function	.
+CYP2C19	rs3758581	chr10	94842866	A	G	*17	Increased function	.
+CYP2C19	rs3758581	chr10	94842866	A	G	*18	Normal function	.
+CYP2C19	rs3758581	chr10	94842866	A	G	*19	Decreased function	.
+CYP2C19	rs3758581	chr10	94842866	A	G	*2	No function	.
+CYP2C19	rs3758581	chr10	94842866	A	G	*22	No function	.
+CYP2C19	rs3758581	chr10	94842866	A	G	*23	Uncertain function	.
+CYP2C19	rs3758581	chr10	94842866	A	G	*24	No function	.
+CYP2C19	rs3758581	chr10	94842866	A	G	*25	Decreased function	.
+CYP2C19	rs3758581	chr10	94842866	A	G	*26	Decreased function	.
+CYP2C19	rs3758581	chr10	94842866	A	G	*28	Normal function	.
+CYP2C19	rs3758581	chr10	94842866	A	G	*29	Uncertain function	.
+CYP2C19	rs3758581	chr10	94842866	A	G	*3	No function	.
+CYP2C19	rs3758581	chr10	94842866	A	G	*31	Uncertain function	.
+CYP2C19	rs3758581	chr10	94842866	A	G	*32	Uncertain function	.
+CYP2C19	rs3758581	chr10	94842866	A	G	*33	Uncertain function	.
+CYP2C19	rs3758581	chr10	94842866	A	G	*35	No function	.
+CYP2C19	rs3758581	chr10	94842866	A	G	*38	Normal function	.
+CYP2C19	rs3758581	chr10	94842866	A	G	*39	Uncertain function	.
+CYP2C19	rs3758581	chr10	94842866	A	G	*4	No function	.
+CYP2C19	rs3758581	chr10	94842866	A	G	*40	.	.
+CYP2C19	rs3758581	chr10	94842866	A	G	*41	.	.
+CYP2C19	rs3758581	chr10	94842866	A	G	*5	No function	.
+CYP2C19	rs3758581	chr10	94842866	A	G	*6	No function	.
+CYP2C19	rs3758581	chr10	94842866	A	G	*7	No function	.
+CYP2C19	rs3758581	chr10	94842866	A	G	*8	No function	.
+CYP2C19	rs3758581	chr10	94842866	A	G	*9	Decreased function	.
+CYP2C19	rs41291556	chr10	94775416	T	C	*38	Normal function	.
+CYP2C19	rs41291556	chr10	94775416	T	C	*8	No function	.
+CYP2C19	rs4244285	chr10	94781859	G	A	*2	No function	.
+CYP2C19	rs4244285	chr10	94781859	G	A	*38	Normal function	.
+CYP2C19	rs4986893	chr10	94780653	G	A	*3	No function	.
+CYP2C19	rs4986893	chr10	94780653	G	A	*38	Normal function	.
+CYP2C19	rs55640102	chr10	94852914	A	C	*12	Uncertain function	.
+CYP2C19	rs55640102	chr10	94852914	A	C	*38	Normal function	.
+CYP2C19	rs55752064	chr10	94762755	T	C	*14	Uncertain function	.
+CYP2C19	rs55752064	chr10	94762755	T	C	*38	Normal function	.
+CYP2C19	rs56337013	chr10	94852738	C	T	*38	Normal function	.
+CYP2C19	rs56337013	chr10	94852738	C	T	*5	No function	.
+CYP2C19	rs57700608	chr10	94780544	A	G	*38	Normal function	.
+CYP2C19	rs57700608	chr10	94780544	A	G	*41	.	.
+CYP2C19	rs58973490	chr10	94775507	G	A	*11	Normal function	.
+CYP2C19	rs58973490	chr10	94775507	G	A	*2	No function	.
+CYP2C19	rs58973490	chr10	94775507	G	A	*38	Normal function	.
+CYP2C19	rs6413438	chr10	94781858	C	T	*10	Decreased function	.
+CYP2C19	rs6413438	chr10	94781858	C	T	*38	Normal function	.
+CYP2C19	rs72552267	chr10	94775453	G	A	*38	Normal function	.
+CYP2C19	rs72552267	chr10	94775453	G	A	*6	No function	.
+CYP2C19	rs72558186	chr10	94781999	T	A	*38	Normal function	.
+CYP2C19	rs72558186	chr10	94781999	T	A	*7	No function	.
+CYP2C9	rs1057910	chr10	94981296	A	C	*1	Normal function	.
+CYP2C9	rs1057910	chr10	94981296	A	C	*18	Uncertain function	.
+CYP2C9	rs1057910	chr10	94981296	A	C	*3	No function	.
+CYP2C9	rs1057910	chr10	94981296	A	C	*68	Uncertain function	.
+CYP2C9	rs114071557	chr10	94938683	A	G	*1	Normal function	.
+CYP2C9	rs114071557	chr10	94938683	A	G	*36	Uncertain function	.
+CYP2C9	rs1216169538	chr10	94941915	G	A	*1	Normal function	.
+CYP2C9	rs1216169538	chr10	94941915	G	A	*23	Decreased function	.
+CYP2C9	rs1237225311	chr10	94972233	C	T	*1	Normal function	.
+CYP2C9	rs1237225311	chr10	94972233	C	T	*53	Uncertain function	.
+CYP2C9	rs12414460	chr10	94942231	G	A	*1	Normal function	.
+CYP2C9	rs12414460	chr10	94942231	G	A	*42	No function	.
+CYP2C9	rs1250577724	chr10	94981302	C	A	*1	Normal function	.
+CYP2C9	rs1250577724	chr10	94981302	C	A	*55	Decreased function	.
+CYP2C9	rs1254213342	chr10	94986136	A	C	*1	Normal function	.
+CYP2C9	rs1254213342	chr10	94986136	A	C	*75	Unknown function	.
+CYP2C9	rs1274535931	chr10	94981230	C	A	*1	Normal function	.
+CYP2C9	rs1274535931	chr10	94981230	C	A	*58	Uncertain function	.
+CYP2C9	rs1289704600	chr10	94942306	C	T	*1	Normal function	.
+CYP2C9	rs1289704600	chr10	94942306	C	T	*72	Unknown function	.
+CYP2C9	rs1297714792	chr10	94981258	C	T	*1	Normal function	.
+CYP2C9	rs1297714792	chr10	94981258	C	T	*79	.	.
+CYP2C9	rs1326630788	chr10	94947917	T	C	*1	Normal function	.
+CYP2C9	rs1326630788	chr10	94947917	T	C	*48	Uncertain function	.
+CYP2C9	rs1364419386	chr10	94938800	G	A	*1	Normal function	.
+CYP2C9	rs1364419386	chr10	94938800	G	A	*76	.	.
+CYP2C9	rs1375956433	chr10	94942243	T	G	*1	Normal function	.
+CYP2C9	rs1375956433	chr10	94942243	T	G	*78	.	.
+CYP2C9	rs141489852	chr10	94942291	G	A	*1	Normal function	.
+CYP2C9	rs141489852	chr10	94942291	G	A	*63	Uncertain function	.
+CYP2C9	rs142240658	chr10	94938771	C	T	*1	Normal function	.
+CYP2C9	rs142240658	chr10	94938771	C	T	*21	Uncertain function	.
+CYP2C9	rs1441296358	chr10	94986174	G	C	*1	Normal function	.
+CYP2C9	rs1441296358	chr10	94986174	G	C	*84	.	.
+CYP2C9	rs17847037	chr10	94942308	C	T	*1	Normal function	.
+CYP2C9	rs17847037	chr10	94942308	C	T	*73	Unknown function	.
+CYP2C9	rs1799853	chr10	94942290	C	T	*1	Normal function	.
+CYP2C9	rs1799853	chr10	94942290	C	T	*2	Decreased function	.
+CYP2C9	rs1799853	chr10	94942290	C	T	*35	No function	.
+CYP2C9	rs1799853	chr10	94942290	C	T	*61	Decreased function	.
+CYP2C9	rs182132442	chr10	94972119	C	A	*1	Normal function	.
+CYP2C9	rs182132442	chr10	94972119	C	A	*29	Decreased function	.
+CYP2C9	rs199523631	chr10	94942254	C	T	*1	Normal function	.
+CYP2C9	rs199523631	chr10	94942254	C	T	*45	No function	.
+CYP2C9	rs200183364	chr10	94942255	G	A	*1	Normal function	.
+CYP2C9	rs200183364	chr10	94942255	G	A	*33	No function	.
+CYP2C9	rs200965026	chr10	94942249	C	G	*1	Normal function	.
+CYP2C9	rs200965026	chr10	94942249	C	G	*26	Decreased function	.
+CYP2C9	rs200965026	chr10	94942249	C	G	*44	Decreased function	.
+CYP2C9	rs202201137	chr10	94988925	A	G	*1	Normal function	.
+CYP2C9	rs202201137	chr10	94988925	A	G	*61	Decreased function	.
+CYP2C9	rs2031308986	chr10	94938803	A	G	*1	Normal function	.
+CYP2C9	rs2031308986	chr10	94938803	A	G	*22	Uncertain function	.
+CYP2C9	rs2031531005	chr10	94947938	A	T	*1	Normal function	.
+CYP2C9	rs2031531005	chr10	94947938	A	T	*28	Decreased function	.
+CYP2C9	rs2256871	chr10	94949217	A	G	*1	Normal function	.
+CYP2C9	rs2256871	chr10	94949217	A	G	*9	Normal function	.
+CYP2C9	rs2492587526	chr10	94947869	A	G	*1	Normal function	.
+CYP2C9	rs2492587526	chr10	94947869	A	G	*69	Uncertain function	.
+CYP2C9	rs2492591692	chr10	94949144	C	T	*1	Normal function	.
+CYP2C9	rs2492591692	chr10	94949144	C	T	*50	Decreased function	.
+CYP2C9	rs2492634549	chr10	94972134	A	G	*1	Normal function	.
+CYP2C9	rs2492634549	chr10	94972134	A	G	*51	Uncertain function	.
+CYP2C9	rs2492650213	chr10	94981365	C	T	*1	Normal function	.
+CYP2C9	rs2492650213	chr10	94981365	C	T	*17	Uncertain function	.
+CYP2C9	rs2492662738	chr10	94988855	A	T	*1	Normal function	.
+CYP2C9	rs2492662738	chr10	94988855	A	T	*59	Uncertain function	.
+CYP2C9	rs2492662839	chr10	94988880	G	T	*1	Normal function	.
+CYP2C9	rs2492662839	chr10	94988880	G	T	*70	Uncertain function	.
+CYP2C9	rs2493006942	chr10	94941975	G	A	*1	Normal function	.
+CYP2C9	rs2493006942	chr10	94941975	G	A	*77	.	.
+CYP2C9	rs28371685	chr10	94981224	C	T	*1	Normal function	.
+CYP2C9	rs28371685	chr10	94981224	C	T	*11	Decreased function	.
+CYP2C9	rs28371686	chr10	94981301	C	G	*1	Normal function	.
+CYP2C9	rs28371686	chr10	94981301	C	G	*36	Uncertain function	.
+CYP2C9	rs28371686	chr10	94981301	C	G	*5	Decreased function	.
+CYP2C9	rs367826293	chr10	94981225	G	A	*1	Normal function	.
+CYP2C9	rs367826293	chr10	94981225	G	A	*34	Uncertain function	.
+CYP2C9	rs369745682	chr10	94949184	T	C	*1	Normal function	.
+CYP2C9	rs369745682	chr10	94949184	T	C	*86	.	.
+CYP2C9	rs370100007	chr10	94947939	G	T	*1	Normal function	.
+CYP2C9	rs370100007	chr10	94947939	G	T	*74	Unknown function	.
+CYP2C9	rs371055887	chr10	94941897	G	C	*1	Normal function	.
+CYP2C9	rs371055887	chr10	94941897	G	C	*20	Uncertain function	.
+CYP2C9	rs375805362	chr10	94942233	C	T	*1	Normal function	.
+CYP2C9	rs375805362	chr10	94942233	C	T	*62	Uncertain function	.
+CYP2C9	rs530507053	chr10	94942240	C	T	*1	Normal function	.
+CYP2C9	rs530507053	chr10	94942240	C	T	*88	.	.
+CYP2C9	rs542577750	chr10	94981371	G	A	*1	Normal function	.
+CYP2C9	rs542577750	chr10	94981371	G	A	*68	Uncertain function	.
+CYP2C9	rs546318684	chr10	94972194	A	C	*1	Normal function	.
+CYP2C9	rs546318684	chr10	94972194	A	C	*87	.	.
+CYP2C9	rs56165452	chr10	94981297	T	C	*1	Normal function	.
+CYP2C9	rs56165452	chr10	94981297	T	C	*4	Decreased function	.
+CYP2C9	rs564813580	chr10	94938828	A	G	*1	Normal function	.
+CYP2C9	rs564813580	chr10	94938828	A	G	*37	Decreased function	.
+CYP2C9	rs57505750	chr10	94981201	T	C	*1	Normal function	.
+CYP2C9	rs57505750	chr10	94981201	T	C	*31	Decreased function	.
+CYP2C9	rs578144976	chr10	94981305	C	G	*1	Normal function	.
+CYP2C9	rs578144976	chr10	94981305	C	G	*66	Uncertain function	.
+CYP2C9	rs67807361	chr10	94938737	C	A	*1	Normal function	.
+CYP2C9	rs67807361	chr10	94938737	C	A	*7	Uncertain function	.
+CYP2C9	rs72558187	chr10	94941958	T	C	*1	Normal function	.
+CYP2C9	rs72558187	chr10	94941958	T	C	*13	No function	.
+CYP2C9	rs72558189	chr10	94942234	G	A	*1	Normal function	.
+CYP2C9	rs72558189	chr10	94942234	G	A	*14	Decreased function	.
+CYP2C9	rs72558189	chr10	94942234	G	A	*35	No function	.
+CYP2C9	rs72558190	chr10	94947782	C	A	*1	Normal function	.
+CYP2C9	rs72558190	chr10	94947782	C	A	*15	No function	.
+CYP2C9	rs72558192	chr10	94972179	A	G	*1	Normal function	.
+CYP2C9	rs72558192	chr10	94972179	A	G	*16	Decreased function	.
+CYP2C9	rs72558193	chr10	94986073	A	C	*1	Normal function	.
+CYP2C9	rs72558193	chr10	94986073	A	C	*18	Uncertain function	.
+CYP2C9	rs749060448	chr10	94981281	G	A	*1	Normal function	.
+CYP2C9	rs749060448	chr10	94981281	G	A	*24	No function	.
+CYP2C9	rs750820937	chr10	94981250	C	A	*1	Normal function	.
+CYP2C9	rs750820937	chr10	94981250	C	A	*54	Uncertain function	.
+CYP2C9	rs754487195	chr10	94942305	G	A	*1	Normal function	.
+CYP2C9	rs754487195	chr10	94942305	G	A	*46	Decreased function	.
+CYP2C9	rs761033063	chr10	94941976	G	C	*1	Normal function	.
+CYP2C9	rs761033063	chr10	94941976	G	C	*38	Decreased function	.
+CYP2C9	rs762239445	chr10	94941982	G	T	*1	Normal function	.
+CYP2C9	rs762239445	chr10	94941982	G	T	*39	No function	.
+CYP2C9	rs764211126	chr10	94986042	A	G	*1	Normal function	.
+CYP2C9	rs764211126	chr10	94986042	A	G	*56	Uncertain function	.
+CYP2C9	rs767284820	chr10	94988955	T	C	*1	Normal function	.
+CYP2C9	rs767284820	chr10	94988955	T	C	*60	Uncertain function	.
+CYP2C9	rs767576260	chr10	94942230	C	T	*1	Normal function	.
+CYP2C9	rs767576260	chr10	94942230	C	T	*43	No function	.
+CYP2C9	rs769942899	chr10	94988917	G	C	*1	Normal function	.
+CYP2C9	rs769942899	chr10	94988917	G	C	*19	Uncertain function	.
+CYP2C9	rs772782449	chr10	94949145	C	T	*1	Normal function	.
+CYP2C9	rs772782449	chr10	94949145	C	T	*82	.	.
+CYP2C9	rs774550549	chr10	94947785	C	T	*1	Normal function	.
+CYP2C9	rs774550549	chr10	94947785	C	T	*47	Uncertain function	.
+CYP2C9	rs774607211	chr10	94942216	A	G	*1	Normal function	.
+CYP2C9	rs774607211	chr10	94942216	A	G	*41	Uncertain function	.
+CYP2C9	rs776908257	chr10	94988852	C	T	*1	Normal function	.
+CYP2C9	rs776908257	chr10	94988852	C	T	*67	Uncertain function	.
+CYP2C9	rs781583846	chr10	94988984	G	A	*1	Normal function	.
+CYP2C9	rs781583846	chr10	94988984	G	A	*30	Decreased function	.
+CYP2C9	rs7900194	chr10	94942309	G	A	*1	Normal function	.
+CYP2C9	rs7900194	chr10	94942309	G	A	*27	Uncertain function	.
+CYP2C9	rs7900194	chr10	94942309	G	A	*8	Decreased function	.
+CYP2C9	rs868182778	chr10	94989023	G	T	*1	Normal function	.
+CYP2C9	rs868182778	chr10	94989023	G	T	*32	Uncertain function	.
+CYP2C9	rs9332130	chr10	94949280	A	G	*1	Normal function	.
+CYP2C9	rs9332130	chr10	94949280	A	G	*10	Uncertain function	.
+CYP2C9	rs9332130	chr10	94949280	A	G	*71	Uncertain function	.
+CYP2C9	rs9332131	chr10	94949283	N	del	*1	Normal function	.
+CYP2C9	rs9332131	chr10	94949283	N	del	*6	No function	.
+CYP2C9	rs9332239	chr10	94989020	C	T	*1	Normal function	.
+CYP2C9	rs9332239	chr10	94989020	C	T	*12	Decreased function	.
+CYP2C9	rs9332239	chr10	94989020	C	T	*71	Uncertain function	.
+CYP2C9	rs988617574	chr10	94972180	C	G	*1	Normal function	.
+CYP2C9	rs988617574	chr10	94972180	C	G	*52	No function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*1	Normal function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*10	Decreased function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*100	No function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*101	No function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*102	Unknown function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*103	Unknown function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*104	Unknown function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*105	Unknown function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*11	No function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*111	Uncertain function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*117	Unknown function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*12	No function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*121	Unknown function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*123	Uncertain function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*125	Unknown function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*126	Unknown function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*128	Uncertain function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*129	No function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*132	Decreased function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*133	Uncertain function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*135	Uncertain function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*136	Uncertain function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*138	Uncertain function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*14	Decreased function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*141	Uncertain function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*142	Uncertain function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*146	Uncertain function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*147	Uncertain function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*148	Unknown function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*149	Unknown function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*150	.	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*154	Uncertain function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*155	Unknown function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*156	No function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*157	Unknown function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*158	Unknown function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*159	Unknown function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*160	Unknown function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*161	No function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*162	Uncertain function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*163	Unknown function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*164	.	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*165	.	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*166	.	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*17	Decreased function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*171	.	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*172	.	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*175	.	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*177	.	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*179	.	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*182	.	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*183	.	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*184	.	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*19	No function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*2	Normal function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*20	No function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*21	No function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*28	Uncertain function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*29	Decreased function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*30	Uncertain function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*31	No function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*32	Decreased function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*35	Normal function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*36	No function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*37	Uncertain function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*39	Normal function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*4	No function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*40	No function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*41	Decreased function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*42	No function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*45	Normal function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*46	Normal function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*47	No function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*49	Decreased function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*51	No function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*52	Decreased function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*54	Decreased function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*55	Decreased function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*56	No function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*58	Unknown function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*59	Decreased function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*64	Uncertain function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*65	Uncertain function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*69	No function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*70	Uncertain function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*72	Uncertain function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*73	Unknown function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*8	No function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*84	Uncertain function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*85	Unknown function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*87	Uncertain function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*88	Uncertain function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*94	Uncertain function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*95	Uncertain function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*98	Uncertain function	.
+CYP2D6	rs1058164	chr22	42129130	C	G	*99	No function	.
+CYP2D6	rs1058172	chr22	42127526	C	T	*1	Normal function	.
+CYP2D6	rs1058172	chr22	42127526	C	T	*127	Unknown function	.
+CYP2D6	rs1058172	chr22	42127526	C	T	*139	Unknown function	.
+CYP2D6	rs1058172	chr22	42127526	C	T	*4	No function	.
+CYP2D6	rs1065852	chr22	42130692	G	A	*1	Normal function	.
+CYP2D6	rs1065852	chr22	42130692	G	A	*10	Decreased function	.
+CYP2D6	rs1065852	chr22	42130692	G	A	*100	No function	.
+CYP2D6	rs1065852	chr22	42130692	G	A	*101	No function	.
+CYP2D6	rs1065852	chr22	42130692	G	A	*114	No function	.
+CYP2D6	rs1065852	chr22	42130692	G	A	*132	Decreased function	.
+CYP2D6	rs1065852	chr22	42130692	G	A	*142	Uncertain function	.
+CYP2D6	rs1065852	chr22	42130692	G	A	*147	Uncertain function	.
+CYP2D6	rs1065852	chr22	42130692	G	A	*150	.	.
+CYP2D6	rs1065852	chr22	42130692	G	A	*177	.	.
+CYP2D6	rs1065852	chr22	42130692	G	A	*36	No function	.
+CYP2D6	rs1065852	chr22	42130692	G	A	*37	Uncertain function	.
+CYP2D6	rs1065852	chr22	42130692	G	A	*4	No function	.
+CYP2D6	rs1065852	chr22	42130692	G	A	*47	No function	.
+CYP2D6	rs1065852	chr22	42130692	G	A	*49	Decreased function	.
+CYP2D6	rs1065852	chr22	42130692	G	A	*52	Decreased function	.
+CYP2D6	rs1065852	chr22	42130692	G	A	*54	Decreased function	.
+CYP2D6	rs1065852	chr22	42130692	G	A	*56	No function	.
+CYP2D6	rs1065852	chr22	42130692	G	A	*64	Uncertain function	.
+CYP2D6	rs1065852	chr22	42130692	G	A	*65	Uncertain function	.
+CYP2D6	rs1065852	chr22	42130692	G	A	*69	No function	.
+CYP2D6	rs1065852	chr22	42130692	G	A	*72	Uncertain function	.
+CYP2D6	rs1065852	chr22	42130692	G	A	*87	Uncertain function	.
+CYP2D6	rs1065852	chr22	42130692	G	A	*94	Uncertain function	.
+CYP2D6	rs1065852	chr22	42130692	G	A	*95	Uncertain function	.
+CYP2D6	rs1065852	chr22	42130692	G	A	*99	No function	.
+CYP2D6	rs1135822	chr22	42129180	A	T	*1	Normal function	.
+CYP2D6	rs1135822	chr22	42129180	A	T	*36	No function	.
+CYP2D6	rs1135822	chr22	42129180	A	T	*49	Decreased function	.
+CYP2D6	rs1135822	chr22	42129180	A	T	*53	Normal function	.
+CYP2D6	rs1135823	chr22	42129174	C	A	*1	Normal function	.
+CYP2D6	rs1135823	chr22	42129174	C	A	*179	.	.
+CYP2D6	rs1135823	chr22	42129174	C	A	*36	No function	.
+CYP2D6	rs1135823	chr22	42129174	C	A	*53	Normal function	.
+CYP2D6	rs1135824	chr22	42129042	T	C	*1	Normal function	.
+CYP2D6	rs1135824	chr22	42129042	T	C	*103	Unknown function	.
+CYP2D6	rs1135824	chr22	42129042	T	C	*121	Unknown function	.
+CYP2D6	rs1135824	chr22	42129042	T	C	*3	No function	.
+CYP2D6	rs1135825	chr22	42129037	G	T	*1	Normal function	.
+CYP2D6	rs1135825	chr22	42129037	G	T	*121	Unknown function	.
+CYP2D6	rs1135826	chr22	42129036	A	C	*1	Normal function	.
+CYP2D6	rs1135826	chr22	42129036	A	C	*121	Unknown function	.
+CYP2D6	rs1135828	chr22	42128181	A	T	*1	Normal function	.
+CYP2D6	rs1135828	chr22	42128181	A	T	*176	.	.
+CYP2D6	rs1135828	chr22	42128181	A	T	*81	No function	.
+CYP2D6	rs1135828	chr22	42128181	A	T	*86	Unknown function	.
+CYP2D6	rs1135829	chr22	42127973	T	C	*1	Normal function	.
+CYP2D6	rs1135829	chr22	42127973	T	C	*115	Unknown function	.
+CYP2D6	rs1135829	chr22	42127973	T	C	*132	Decreased function	.
+CYP2D6	rs1135832	chr22	42126667	C	G	*1	Normal function	.
+CYP2D6	rs1135832	chr22	42126667	C	G	*141	Uncertain function	.
+CYP2D6	rs1135832	chr22	42126667	C	G	*36	No function	.
+CYP2D6	rs1135832	chr22	42126667	C	G	*4	No function	.
+CYP2D6	rs1135832	chr22	42126667	C	G	*83	Uncertain function	.
+CYP2D6	rs1135833	chr22	42126663	G	C	*1	Normal function	.
+CYP2D6	rs1135833	chr22	42126663	G	C	*141	Uncertain function	.
+CYP2D6	rs1135833	chr22	42126663	G	C	*36	No function	.
+CYP2D6	rs1135833	chr22	42126663	G	C	*4	No function	.
+CYP2D6	rs1135833	chr22	42126663	G	C	*83	Uncertain function	.
+CYP2D6	rs1135835	chr22	42126660	T	C	*1	Normal function	.
+CYP2D6	rs1135835	chr22	42126660	T	C	*141	Uncertain function	.
+CYP2D6	rs1135835	chr22	42126660	T	C	*36	No function	.
+CYP2D6	rs1135835	chr22	42126660	T	C	*4	No function	.
+CYP2D6	rs1135835	chr22	42126660	T	C	*83	Uncertain function	.
+CYP2D6	rs1135836	chr22	42126658	A	G	*1	Normal function	.
+CYP2D6	rs1135836	chr22	42126658	A	G	*141	Uncertain function	.
+CYP2D6	rs1135836	chr22	42126658	A	G	*36	No function	.
+CYP2D6	rs1135836	chr22	42126658	A	G	*4	No function	.
+CYP2D6	rs1135836	chr22	42126658	A	G	*83	Uncertain function	.
+CYP2D6	rs1135837	chr22	42126633	C	G	*1	Normal function	.
+CYP2D6	rs1135837	chr22	42126633	C	G	*141	Uncertain function	.
+CYP2D6	rs1135837	chr22	42126633	C	G	*36	No function	.
+CYP2D6	rs1135837	chr22	42126633	C	G	*4	No function	.
+CYP2D6	rs1135837	chr22	42126633	C	G	*83	Uncertain function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*1	Normal function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*10	Decreased function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*100	No function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*101	No function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*102	Unknown function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*103	Unknown function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*104	Unknown function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*105	Unknown function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*11	No function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*111	Uncertain function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*114	No function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*117	Unknown function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*12	No function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*121	Unknown function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*123	Uncertain function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*125	Unknown function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*126	Unknown function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*128	Uncertain function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*129	No function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*132	Decreased function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*133	Uncertain function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*135	Uncertain function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*136	Uncertain function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*138	Uncertain function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*14	Decreased function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*141	Uncertain function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*142	Uncertain function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*146	Uncertain function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*147	Uncertain function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*148	Unknown function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*149	Unknown function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*150	.	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*154	Uncertain function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*155	Unknown function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*156	No function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*157	Unknown function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*158	Unknown function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*159	Unknown function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*160	Unknown function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*161	No function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*162	Uncertain function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*163	Unknown function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*164	.	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*165	.	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*166	.	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*17	Decreased function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*171	.	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*172	.	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*175	.	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*177	.	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*179	.	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*182	.	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*183	.	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*19	No function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*2	Normal function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*20	No function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*21	No function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*28	Uncertain function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*29	Decreased function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*30	Uncertain function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*31	No function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*32	Decreased function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*35	Normal function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*36	No function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*37	Uncertain function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*39	Normal function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*4	No function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*40	No function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*41	Decreased function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*42	No function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*45	Normal function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*46	Normal function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*47	No function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*49	Decreased function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*51	No function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*52	Decreased function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*54	Decreased function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*55	Decreased function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*56	No function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*58	Unknown function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*59	Decreased function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*6	No function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*64	Uncertain function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*65	Uncertain function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*69	No function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*70	Uncertain function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*72	Uncertain function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*73	Unknown function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*8	No function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*83	Uncertain function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*84	Uncertain function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*85	Unknown function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*87	Uncertain function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*88	Uncertain function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*94	Uncertain function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*95	Uncertain function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*98	Uncertain function	.
+CYP2D6	rs1135840	chr22	42126611	C	G	*99	No function	.
+CYP2D6	rs1180015037	chr22	42129155	C	T	*1	Normal function	.
+CYP2D6	rs1180015037	chr22	42129155	C	T	*129	No function	.
+CYP2D6	rs118203758	chr22	42130667	C	T	*1	Normal function	.
+CYP2D6	rs118203758	chr22	42130667	C	T	*168	.	.
+CYP2D6	rs118203758	chr22	42130667	C	T	*71	Uncertain function	.
+CYP2D6	rs138100349	chr22	42130710	G	A	*1	Normal function	.
+CYP2D6	rs138100349	chr22	42130710	G	A	*142	Uncertain function	.
+CYP2D6	rs138100349	chr22	42130710	G	A	*22	Uncertain function	.
+CYP2D6	rs138100349	chr22	42130710	G	A	*44	No function	.
+CYP2D6	rs1406719554	chr22	42127922	A	G	*1	Normal function	.
+CYP2D6	rs1406719554	chr22	42127922	A	G	*123	Uncertain function	.
+CYP2D6	rs140900383	chr22	42128340	G	A	*1	Normal function	.
+CYP2D6	rs140900383	chr22	42128340	G	A	*152	Unknown function	.
+CYP2D6	rs141009491	chr22	42127631	C	G	*1	Normal function	.
+CYP2D6	rs141009491	chr22	42127631	C	G	*116	Unknown function	.
+CYP2D6	rs141009491	chr22	42127631	C	G	*174	.	.
+CYP2D6	rs1415188318	chr22	42129899	C	T	*1	Normal function	.
+CYP2D6	rs1415188318	chr22	42129899	C	T	*173	.	.
+CYP2D6	rs141756339	chr22	42126647	C	T	*1	Normal function	.
+CYP2D6	rs141756339	chr22	42126647	C	T	*138	Uncertain function	.
+CYP2D6	rs141824015	chr22	42127605	T	G	*1	Normal function	.
+CYP2D6	rs141824015	chr22	42127605	T	G	*158	Unknown function	.
+CYP2D6	rs1440526469	chr22	42126578	C	T	*1	Normal function	.
+CYP2D6	rs1440526469	chr22	42126578	C	T	*137	Uncertain function	.
+CYP2D6	rs1456026511	chr22	42129887	A	C	*1	Normal function	.
+CYP2D6	rs1456026511	chr22	42129887	A	C	*128	Uncertain function	.
+CYP2D6	rs1459127426	chr22	42128926	T	C	*1	Normal function	.
+CYP2D6	rs1459127426	chr22	42128926	T	C	*151	.	.
+CYP2D6	rs1477736084	chr22	42129880	G	T	*1	Normal function	.
+CYP2D6	rs1477736084	chr22	42129880	G	T	*180	.	.
+CYP2D6	rs148769737	chr22	42128217	G	T	*1	Normal function	.
+CYP2D6	rs148769737	chr22	42128217	G	T	*84	Uncertain function	.
+CYP2D6	rs150163869	chr22	42128813	G	A	*1	Normal function	.
+CYP2D6	rs150163869	chr22	42128813	G	A	*124	No function	.
+CYP2D6	rs150163869	chr22	42128813	G	A	*150	.	.
+CYP2D6	rs150163869	chr22	42128813	G	A	*20	No function	.
+CYP2D6	rs150216909	chr22	42127842	G	A	*1	Normal function	.
+CYP2D6	rs150216909	chr22	42127842	G	A	*183	.	.
+CYP2D6	rs1555888899	chr22	42127514	A	G	*1	Normal function	.
+CYP2D6	rs1555888899	chr22	42127514	A	G	*26	Uncertain function	.
+CYP2D6	rs1555888910	chr22	42127523	A	G	*1	Normal function	.
+CYP2D6	rs1555888910	chr22	42127523	A	G	*105	Unknown function	.
+CYP2D6	rs1602566413	chr22	42126962	C	G	*1	Normal function	.
+CYP2D6	rs1602566413	chr22	42126962	C	G	*169	.	.
+CYP2D6	rs16947	chr22	42127941	G	A	*1	Normal function	.
+CYP2D6	rs16947	chr22	42127941	G	A	*102	Unknown function	.
+CYP2D6	rs16947	chr22	42127941	G	A	*103	Unknown function	.
+CYP2D6	rs16947	chr22	42127941	G	A	*104	Unknown function	.
+CYP2D6	rs16947	chr22	42127941	G	A	*105	Unknown function	.
+CYP2D6	rs16947	chr22	42127941	G	A	*11	No function	.
+CYP2D6	rs16947	chr22	42127941	G	A	*111	Uncertain function	.
+CYP2D6	rs16947	chr22	42127941	G	A	*114	No function	.
+CYP2D6	rs16947	chr22	42127941	G	A	*117	Unknown function	.
+CYP2D6	rs16947	chr22	42127941	G	A	*12	No function	.
+CYP2D6	rs16947	chr22	42127941	G	A	*121	Unknown function	.
+CYP2D6	rs16947	chr22	42127941	G	A	*123	Uncertain function	.
+CYP2D6	rs16947	chr22	42127941	G	A	*125	Unknown function	.
+CYP2D6	rs16947	chr22	42127941	G	A	*126	Unknown function	.
+CYP2D6	rs16947	chr22	42127941	G	A	*128	Uncertain function	.
+CYP2D6	rs16947	chr22	42127941	G	A	*129	No function	.
+CYP2D6	rs16947	chr22	42127941	G	A	*133	Uncertain function	.
+CYP2D6	rs16947	chr22	42127941	G	A	*135	Uncertain function	.
+CYP2D6	rs16947	chr22	42127941	G	A	*136	Uncertain function	.
+CYP2D6	rs16947	chr22	42127941	G	A	*138	Uncertain function	.
+CYP2D6	rs16947	chr22	42127941	G	A	*14	Decreased function	.
+CYP2D6	rs16947	chr22	42127941	G	A	*141	Uncertain function	.
+CYP2D6	rs16947	chr22	42127941	G	A	*146	Uncertain function	.
+CYP2D6	rs16947	chr22	42127941	G	A	*148	Unknown function	.
+CYP2D6	rs16947	chr22	42127941	G	A	*149	Unknown function	.
+CYP2D6	rs16947	chr22	42127941	G	A	*150	.	.
+CYP2D6	rs16947	chr22	42127941	G	A	*154	Uncertain function	.
+CYP2D6	rs16947	chr22	42127941	G	A	*155	Unknown function	.
+CYP2D6	rs16947	chr22	42127941	G	A	*156	No function	.
+CYP2D6	rs16947	chr22	42127941	G	A	*157	Unknown function	.
+CYP2D6	rs16947	chr22	42127941	G	A	*158	Unknown function	.
+CYP2D6	rs16947	chr22	42127941	G	A	*159	Unknown function	.
+CYP2D6	rs16947	chr22	42127941	G	A	*160	Unknown function	.
+CYP2D6	rs16947	chr22	42127941	G	A	*161	No function	.
+CYP2D6	rs16947	chr22	42127941	G	A	*162	Uncertain function	.
+CYP2D6	rs16947	chr22	42127941	G	A	*163	Unknown function	.
+CYP2D6	rs16947	chr22	42127941	G	A	*165	.	.
+CYP2D6	rs16947	chr22	42127941	G	A	*166	.	.
+CYP2D6	rs16947	chr22	42127941	G	A	*17	Decreased function	.
+CYP2D6	rs16947	chr22	42127941	G	A	*171	.	.
+CYP2D6	rs16947	chr22	42127941	G	A	*172	.	.
+CYP2D6	rs16947	chr22	42127941	G	A	*175	.	.
+CYP2D6	rs16947	chr22	42127941	G	A	*179	.	.
+CYP2D6	rs16947	chr22	42127941	G	A	*182	.	.
+CYP2D6	rs16947	chr22	42127941	G	A	*183	.	.
+CYP2D6	rs16947	chr22	42127941	G	A	*184	.	.
+CYP2D6	rs16947	chr22	42127941	G	A	*19	No function	.
+CYP2D6	rs16947	chr22	42127941	G	A	*2	Normal function	.
+CYP2D6	rs16947	chr22	42127941	G	A	*20	No function	.
+CYP2D6	rs16947	chr22	42127941	G	A	*21	No function	.
+CYP2D6	rs16947	chr22	42127941	G	A	*28	Uncertain function	.
+CYP2D6	rs16947	chr22	42127941	G	A	*29	Decreased function	.
+CYP2D6	rs16947	chr22	42127941	G	A	*30	Uncertain function	.
+CYP2D6	rs16947	chr22	42127941	G	A	*31	No function	.
+CYP2D6	rs16947	chr22	42127941	G	A	*32	Decreased function	.
+CYP2D6	rs16947	chr22	42127941	G	A	*34	Normal function	.
+CYP2D6	rs16947	chr22	42127941	G	A	*35	Normal function	.
+CYP2D6	rs16947	chr22	42127941	G	A	*4	No function	.
+CYP2D6	rs16947	chr22	42127941	G	A	*40	No function	.
+CYP2D6	rs16947	chr22	42127941	G	A	*41	Decreased function	.
+CYP2D6	rs16947	chr22	42127941	G	A	*42	No function	.
+CYP2D6	rs16947	chr22	42127941	G	A	*45	Normal function	.
+CYP2D6	rs16947	chr22	42127941	G	A	*46	Normal function	.
+CYP2D6	rs16947	chr22	42127941	G	A	*51	No function	.
+CYP2D6	rs16947	chr22	42127941	G	A	*55	Decreased function	.
+CYP2D6	rs16947	chr22	42127941	G	A	*56	No function	.
+CYP2D6	rs16947	chr22	42127941	G	A	*58	Unknown function	.
+CYP2D6	rs16947	chr22	42127941	G	A	*59	Decreased function	.
+CYP2D6	rs16947	chr22	42127941	G	A	*65	Uncertain function	.
+CYP2D6	rs16947	chr22	42127941	G	A	*69	No function	.
+CYP2D6	rs16947	chr22	42127941	G	A	*73	Unknown function	.
+CYP2D6	rs16947	chr22	42127941	G	A	*8	No function	.
+CYP2D6	rs16947	chr22	42127941	G	A	*84	Uncertain function	.
+CYP2D6	rs16947	chr22	42127941	G	A	*85	Unknown function	.
+CYP2D6	rs16947	chr22	42127941	G	A	*91	Decreased function	.
+CYP2D6	rs16947	chr22	42127941	G	A	*98	Uncertain function	.
+CYP2D6	rs17002853	chr22	42128325	A	G	*1	Normal function	.
+CYP2D6	rs17002853	chr22	42128325	A	G	*131	Uncertain function	.
+CYP2D6	rs1931013246	chr22	42126956	T	G	*1	Normal function	.
+CYP2D6	rs1931013246	chr22	42126956	T	G	*55	Decreased function	.
+CYP2D6	rs199535154	chr22	42128812	A	G	*1	Normal function	.
+CYP2D6	rs199535154	chr22	42128812	A	G	*150	.	.
+CYP2D6	rs199535154	chr22	42128812	A	G	*20	No function	.
+CYP2D6	rs201006451	chr22	42129044	G	A	*1	Normal function	.
+CYP2D6	rs201006451	chr22	42129044	G	A	*157	Unknown function	.
+CYP2D6	rs201377835	chr22	42129910	C	G	*1	Normal function	.
+CYP2D6	rs201377835	chr22	42129910	C	G	*11	No function	.
+CYP2D6	rs202102799	chr22	42127556	T	C	*1	Normal function	.
+CYP2D6	rs202102799	chr22	42127556	T	C	*108	Unknown function	.
+CYP2D6	rs202102799	chr22	42127556	T	C	*127	Unknown function	.
+CYP2D6	rs2146937045	chr22	42128879	A	G	*1	Normal function	.
+CYP2D6	rs2146937045	chr22	42128879	A	G	*130	Uncertain function	.
+CYP2D6	rs267608276	chr22	42129827	C	G	*1	Normal function	.
+CYP2D6	rs267608276	chr22	42129827	C	G	*99	No function	.
+CYP2D6	rs267608279	chr22	42127963	N	del	*1	Normal function	.
+CYP2D6	rs267608279	chr22	42127963	N	del	*100	No function	.
+CYP2D6	rs267608295	chr22	42127593	G	C	*1	Normal function	.
+CYP2D6	rs267608295	chr22	42127593	G	C	*182	.	.
+CYP2D6	rs267608295	chr22	42127593	G	C	*25	Uncertain function	.
+CYP2D6	rs267608297	chr22	42128235	G	A	*1	Normal function	.
+CYP2D6	rs267608297	chr22	42128235	G	A	*54	Decreased function	.
+CYP2D6	rs267608302	chr22	42129071	T	G	*1	Normal function	.
+CYP2D6	rs267608302	chr22	42129071	T	G	*104	Unknown function	.
+CYP2D6	rs267608302	chr22	42129071	T	G	*50	Decreased function	.
+CYP2D6	rs267608308	chr22	42129780	C	T	*1	Normal function	.
+CYP2D6	rs267608308	chr22	42129780	C	T	*73	Unknown function	.
+CYP2D6	rs267608309	chr22	42129821	G	A	*1	Normal function	.
+CYP2D6	rs267608309	chr22	42129821	G	A	*102	Unknown function	.
+CYP2D6	rs267608309	chr22	42129821	G	A	*103	Unknown function	.
+CYP2D6	rs267608309	chr22	42129821	G	A	*48	Normal function	.
+CYP2D6	rs267608310	chr22	42129836	G	A	*1	Normal function	.
+CYP2D6	rs267608310	chr22	42129836	G	A	*23	Uncertain function	.
+CYP2D6	rs267608313	chr22	42130719	G	A	*1	Normal function	.
+CYP2D6	rs267608313	chr22	42130719	G	A	*47	No function	.
+CYP2D6	rs267608319	chr22	42126749	C	T	*1	Normal function	.
+CYP2D6	rs267608319	chr22	42126749	C	T	*31	No function	.
+CYP2D6	rs28371696	chr22	42130715	C	T	*1	Normal function	.
+CYP2D6	rs28371696	chr22	42130715	C	T	*146	Uncertain function	.
+CYP2D6	rs28371696	chr22	42130715	C	T	*148	Unknown function	.
+CYP2D6	rs28371696	chr22	42130715	C	T	*15	No function	.
+CYP2D6	rs28371696	chr22	42130715	C	T	*43	Uncertain function	.
+CYP2D6	rs28371696	chr22	42130715	C	T	*46	Normal function	.
+CYP2D6	rs28371703	chr22	42129819	G	T	*1	Normal function	.
+CYP2D6	rs28371703	chr22	42129819	G	T	*160	Unknown function	.
+CYP2D6	rs28371703	chr22	42129819	G	T	*185	.	.
+CYP2D6	rs28371703	chr22	42129819	G	T	*4	No function	.
+CYP2D6	rs28371703	chr22	42129819	G	T	*74	Unknown function	.
+CYP2D6	rs28371703	chr22	42129819	G	T	*82	Unknown function	.
+CYP2D6	rs28371704	chr22	42129809	T	C	*1	Normal function	.
+CYP2D6	rs28371704	chr22	42129809	T	C	*160	Unknown function	.
+CYP2D6	rs28371704	chr22	42129809	T	C	*185	.	.
+CYP2D6	rs28371704	chr22	42129809	T	C	*4	No function	.
+CYP2D6	rs28371704	chr22	42129809	T	C	*82	Unknown function	.
+CYP2D6	rs28371706	chr22	42129770	G	T	*1	Normal function	.
+CYP2D6	rs28371706	chr22	42129770	G	T	*141	Uncertain function	.
+CYP2D6	rs28371706	chr22	42129770	G	T	*154	Uncertain function	.
+CYP2D6	rs28371706	chr22	42129770	G	T	*17	Decreased function	.
+CYP2D6	rs28371706	chr22	42129770	G	T	*40	No function	.
+CYP2D6	rs28371706	chr22	42129770	G	T	*58	Unknown function	.
+CYP2D6	rs28371706	chr22	42129770	G	T	*64	Uncertain function	.
+CYP2D6	rs28371706	chr22	42129770	G	T	*82	Unknown function	.
+CYP2D6	rs28371710	chr22	42129075	C	T	*1	Normal function	.
+CYP2D6	rs28371710	chr22	42129075	C	T	*12	No function	.
+CYP2D6	rs28371710	chr22	42129075	C	T	*45	Normal function	.
+CYP2D6	rs28371710	chr22	42129075	C	T	*46	Normal function	.
+CYP2D6	rs28371717	chr22	42128308	C	A	*1	Normal function	.
+CYP2D6	rs28371717	chr22	42128308	C	A	*33	Normal function	.
+CYP2D6	rs28371725	chr22	42127803	C	T	*1	Normal function	.
+CYP2D6	rs28371725	chr22	42127803	C	T	*119	Decreased function	.
+CYP2D6	rs28371725	chr22	42127803	C	T	*123	Uncertain function	.
+CYP2D6	rs28371725	chr22	42127803	C	T	*138	Uncertain function	.
+CYP2D6	rs28371725	chr22	42127803	C	T	*158	Unknown function	.
+CYP2D6	rs28371725	chr22	42127803	C	T	*32	Decreased function	.
+CYP2D6	rs28371725	chr22	42127803	C	T	*41	Decreased function	.
+CYP2D6	rs28371725	chr22	42127803	C	T	*69	No function	.
+CYP2D6	rs28371725	chr22	42127803	C	T	*91	Decreased function	.
+CYP2D6	rs28371733	chr22	42126914	C	T	*1	Normal function	.
+CYP2D6	rs28371733	chr22	42126914	C	T	*106	Uncertain function	.
+CYP2D6	rs28371733	chr22	42126914	C	T	*52	Decreased function	.
+CYP2D6	rs28371735	chr22	42126636	G	A	*1	Normal function	.
+CYP2D6	rs28371735	chr22	42126636	G	A	*141	Uncertain function	.
+CYP2D6	rs28371735	chr22	42126636	G	A	*36	No function	.
+CYP2D6	rs28371735	chr22	42126636	G	A	*4	No function	.
+CYP2D6	rs28371735	chr22	42126636	G	A	*83	Uncertain function	.
+CYP2D6	rs28371736	chr22	42126619	G	A	*1	Normal function	.
+CYP2D6	rs28371736	chr22	42126619	G	A	*141	Uncertain function	.
+CYP2D6	rs28371736	chr22	42126619	G	A	*36	No function	.
+CYP2D6	rs28371736	chr22	42126619	G	A	*4	No function	.
+CYP2D6	rs28371736	chr22	42126619	G	A	*83	Uncertain function	.
+CYP2D6	rs3021084	chr22	42126877	G	A	*1	Normal function	.
+CYP2D6	rs3021084	chr22	42126877	G	A	*136	Uncertain function	.
+CYP2D6	rs3021084	chr22	42126877	G	A	*170	.	.
+CYP2D6	rs35742686	chr22	42128242	N	del	*1	Normal function	.
+CYP2D6	rs35742686	chr22	42128242	N	del	*3	No function	.
+CYP2D6	rs367543000	chr22	42128212	G	A	*1	Normal function	.
+CYP2D6	rs367543000	chr22	42128212	G	A	*81	No function	.
+CYP2D6	rs369177208	chr22	42126719	C	T	*1	Normal function	.
+CYP2D6	rs369177208	chr22	42126719	C	T	*125	Unknown function	.
+CYP2D6	rs373243894	chr22	42130670	G	A	*1	Normal function	.
+CYP2D6	rs373243894	chr22	42130670	G	A	*159	Unknown function	.
+CYP2D6	rs373813287	chr22	42128329	G	A	*1	Normal function	.
+CYP2D6	rs373813287	chr22	42128329	G	A	*140	Unknown function	.
+CYP2D6	rs374616348	chr22	42129183	C	T	*1	Normal function	.
+CYP2D6	rs374616348	chr22	42129183	C	T	*161	No function	.
+CYP2D6	rs374616348	chr22	42129183	C	T	*171	.	.
+CYP2D6	rs374616348	chr22	42129183	C	T	*70	Uncertain function	.
+CYP2D6	rs375135093	chr22	42129113	A	G	*1	Normal function	.
+CYP2D6	rs375135093	chr22	42129113	A	G	*89	Uncertain function	.
+CYP2D6	rs376636053	chr22	42129156	A	G	*1	Normal function	.
+CYP2D6	rs376636053	chr22	42129156	A	G	*163	Unknown function	.
+CYP2D6	rs377725912	chr22	42128351	C	T	*1	Normal function	.
+CYP2D6	rs377725912	chr22	42128351	C	T	*144	No function	.
+CYP2D6	rs3892097	chr22	42128945	C	T	*1	Normal function	.
+CYP2D6	rs3892097	chr22	42128945	C	T	*4	No function	.
+CYP2D6	rs3915951	chr22	42127634	C	A	*1	Normal function	.
+CYP2D6	rs3915951	chr22	42127634	C	A	*177	.	.
+CYP2D6	rs5030655	chr22	42129084	N	del	*1	Normal function	.
+CYP2D6	rs5030655	chr22	42129084	N	del	*6	No function	.
+CYP2D6	rs5030862	chr22	42130668	C	T	*1	Normal function	.
+CYP2D6	rs5030862	chr22	42130668	C	T	*12	No function	.
+CYP2D6	rs5030865	chr22	42129033	C	A	*1	Normal function	.
+CYP2D6	rs5030865	chr22	42129033	C	A	*114	No function	.
+CYP2D6	rs5030865	chr22	42129033	C	A	*14	Decreased function	.
+CYP2D6	rs5030865	chr22	42129033	C	A	*8	No function	.
+CYP2D6	rs5030867	chr22	42127856	T	G	*1	Normal function	.
+CYP2D6	rs5030867	chr22	42127856	T	G	*7	No function	.
+CYP2D6	rs532668079	chr22	42126746	C	T	*1	Normal function	.
+CYP2D6	rs532668079	chr22	42126746	C	T	*154	Uncertain function	.
+CYP2D6	rs532668079	chr22	42126746	C	T	*75	Uncertain function	.
+CYP2D6	rs535642512	chr22	42129759	C	T	*1	Normal function	.
+CYP2D6	rs535642512	chr22	42129759	C	T	*111	Uncertain function	.
+CYP2D6	rs536109057	chr22	42130638	G	A	*1	Normal function	.
+CYP2D6	rs536109057	chr22	42130638	G	A	*156	No function	.
+CYP2D6	rs538707090	chr22	42128876	C	T	*1	Normal function	.
+CYP2D6	rs538707090	chr22	42128876	C	T	*178	.	.
+CYP2D6	rs556882139	chr22	42128932	C	T	*1	Normal function	.
+CYP2D6	rs556882139	chr22	42128932	C	T	*165	.	.
+CYP2D6	rs563185985	chr22	42129753	C	G	*1	Normal function	.
+CYP2D6	rs563185985	chr22	42129753	C	G	*172	.	.
+CYP2D6	rs566108360	chr22	42127602	C	T	*1	Normal function	.
+CYP2D6	rs566108360	chr22	42127602	C	T	*133	Uncertain function	.
+CYP2D6	rs567606867	chr22	42128807	C	T	*1	Normal function	.
+CYP2D6	rs567606867	chr22	42128807	C	T	*153	Unknown function	.
+CYP2D6	rs568495591	chr22	42126605	G	A	*1	Normal function	.
+CYP2D6	rs568495591	chr22	42126605	G	A	*112	Uncertain function	.
+CYP2D6	rs569229126	chr22	42129098	T	C	*1	Normal function	.
+CYP2D6	rs569229126	chr22	42129098	T	C	*90	Uncertain function	.
+CYP2D6	rs569439709	chr22	42126752	C	T	*1	Normal function	.
+CYP2D6	rs569439709	chr22	42126752	C	T	*113	Uncertain function	.
+CYP2D6	rs59421388	chr22	42127608	C	T	*1	Normal function	.
+CYP2D6	rs59421388	chr22	42127608	C	T	*109	Decreased function	.
+CYP2D6	rs59421388	chr22	42127608	C	T	*149	Unknown function	.
+CYP2D6	rs59421388	chr22	42127608	C	T	*155	Unknown function	.
+CYP2D6	rs59421388	chr22	42127608	C	T	*156	No function	.
+CYP2D6	rs59421388	chr22	42127608	C	T	*157	Unknown function	.
+CYP2D6	rs59421388	chr22	42127608	C	T	*165	.	.
+CYP2D6	rs59421388	chr22	42127608	C	T	*171	.	.
+CYP2D6	rs59421388	chr22	42127608	C	T	*175	.	.
+CYP2D6	rs59421388	chr22	42127608	C	T	*29	Decreased function	.
+CYP2D6	rs59421388	chr22	42127608	C	T	*70	Uncertain function	.
+CYP2D6	rs61736512	chr22	42129132	C	T	*1	Normal function	.
+CYP2D6	rs61736512	chr22	42129132	C	T	*107	Unknown function	.
+CYP2D6	rs61736512	chr22	42129132	C	T	*149	Unknown function	.
+CYP2D6	rs61736512	chr22	42129132	C	T	*155	Unknown function	.
+CYP2D6	rs61736512	chr22	42129132	C	T	*156	No function	.
+CYP2D6	rs61736512	chr22	42129132	C	T	*157	Unknown function	.
+CYP2D6	rs61736512	chr22	42129132	C	T	*164	.	.
+CYP2D6	rs61736512	chr22	42129132	C	T	*165	.	.
+CYP2D6	rs61736512	chr22	42129132	C	T	*171	.	.
+CYP2D6	rs61736512	chr22	42129132	C	T	*29	Decreased function	.
+CYP2D6	rs61736512	chr22	42129132	C	T	*70	Uncertain function	.
+CYP2D6	rs61736517	chr22	42127565	T	C	*1	Normal function	.
+CYP2D6	rs61736517	chr22	42127565	T	C	*108	Unknown function	.
+CYP2D6	rs61745683	chr22	42127512	C	T	*1	Normal function	.
+CYP2D6	rs61745683	chr22	42127512	C	T	*122	Unknown function	.
+CYP2D6	rs72549347	chr22	42127590	G	A	*1	Normal function	.
+CYP2D6	rs72549347	chr22	42127590	G	A	*56	No function	.
+CYP2D6	rs72549348	chr22	42127619	T	G	*1	Normal function	.
+CYP2D6	rs72549348	chr22	42127619	T	G	*51	No function	.
+CYP2D6	rs72549349	chr22	42127841	C	G	*1	Normal function	.
+CYP2D6	rs72549349	chr22	42127841	C	G	*44	No function	.
+CYP2D6	rs72549358	chr22	42130773	C	T	*1	Normal function	.
+CYP2D6	rs72549358	chr22	42130773	C	T	*28	Uncertain function	.
+CYP2D6	rs730882251	chr22	42126747	G	A	*1	Normal function	.
+CYP2D6	rs730882251	chr22	42126747	G	A	*62	No function	.
+CYP2D6	rs74478221	chr22	42126624	C	T	*1	Normal function	.
+CYP2D6	rs74478221	chr22	42126624	C	T	*141	Uncertain function	.
+CYP2D6	rs74478221	chr22	42126624	C	T	*36	No function	.
+CYP2D6	rs74478221	chr22	42126624	C	T	*4	No function	.
+CYP2D6	rs74478221	chr22	42126624	C	T	*83	Uncertain function	.
+CYP2D6	rs745365204	chr22	42128848	C	T	*1	Normal function	.
+CYP2D6	rs745365204	chr22	42128848	C	T	*37	Uncertain function	.
+CYP2D6	rs747089665	chr22	42126926	G	A	*1	Normal function	.
+CYP2D6	rs747089665	chr22	42126926	G	A	*135	Uncertain function	.
+CYP2D6	rs747884067	chr22	42128878	C	A	*1	Normal function	.
+CYP2D6	rs747884067	chr22	42128878	C	A	*130	Uncertain function	.
+CYP2D6	rs747998333	chr22	42126622	A	G	*1	Normal function	.
+CYP2D6	rs747998333	chr22	42126622	A	G	*141	Uncertain function	.
+CYP2D6	rs747998333	chr22	42126622	A	G	*36	No function	.
+CYP2D6	rs747998333	chr22	42126622	A	G	*4	No function	.
+CYP2D6	rs747998333	chr22	42126622	A	G	*83	Uncertain function	.
+CYP2D6	rs74802369	chr22	42129771	T	A	*1	Normal function	.
+CYP2D6	rs74802369	chr22	42129771	T	A	*82	Unknown function	.
+CYP2D6	rs748712690	chr22	42127610	T	C	*1	Normal function	.
+CYP2D6	rs748712690	chr22	42127610	T	C	*94	Uncertain function	.
+CYP2D6	rs751092905	chr22	42126735	C	T	*1	Normal function	.
+CYP2D6	rs751092905	chr22	42126735	C	T	*110	Uncertain function	.
+CYP2D6	rs75386357	chr22	42127473	C	T	*1	Normal function	.
+CYP2D6	rs75386357	chr22	42127473	C	T	*72	Uncertain function	.
+CYP2D6	rs75467367	chr22	42126623	G	C	*1	Normal function	.
+CYP2D6	rs75467367	chr22	42126623	G	C	*141	Uncertain function	.
+CYP2D6	rs75467367	chr22	42126623	G	C	*36	No function	.
+CYP2D6	rs75467367	chr22	42126623	G	C	*4	No function	.
+CYP2D6	rs75467367	chr22	42126623	G	C	*83	Uncertain function	.
+CYP2D6	rs755518310	chr22	42128864	C	T	*1	Normal function	.
+CYP2D6	rs755518310	chr22	42128864	C	T	*168	.	.
+CYP2D6	rs76088846	chr22	42127589	C	T	*1	Normal function	.
+CYP2D6	rs76088846	chr22	42127589	C	T	*134	Uncertain function	.
+CYP2D6	rs760940331	chr22	42126715	C	T	*1	Normal function	.
+CYP2D6	rs760940331	chr22	42126715	C	T	*155	Unknown function	.
+CYP2D6	rs76187628	chr22	42129779	A	G	*1	Normal function	.
+CYP2D6	rs76187628	chr22	42129779	A	G	*82	Unknown function	.
+CYP2D6	rs76187628	chr22	42129779	A	G	*88	Uncertain function	.
+CYP2D6	rs763964554	chr22	42126896	G	A	*1	Normal function	.
+CYP2D6	rs763964554	chr22	42126896	G	A	*96	No function	.
+CYP2D6	rs766391487	chr22	42129166	A	C	*1	Normal function	.
+CYP2D6	rs766391487	chr22	42129166	A	C	*143	No function	.
+CYP2D6	rs766507177	chr22	42126635	T	G	*1	Normal function	.
+CYP2D6	rs766507177	chr22	42126635	T	G	*141	Uncertain function	.
+CYP2D6	rs766507177	chr22	42126635	T	G	*36	No function	.
+CYP2D6	rs766507177	chr22	42126635	T	G	*4	No function	.
+CYP2D6	rs766507177	chr22	42126635	T	G	*83	Uncertain function	.
+CYP2D6	rs76802407	chr22	42129799	G	C	*1	Normal function	.
+CYP2D6	rs76802407	chr22	42129799	G	C	*149	Unknown function	.
+CYP2D6	rs769157652	chr22	42126938	C	T	*1	Normal function	.
+CYP2D6	rs769157652	chr22	42126938	C	T	*141	Uncertain function	.
+CYP2D6	rs769157652	chr22	42126938	C	T	*148	Unknown function	.
+CYP2D6	rs769157652	chr22	42126938	C	T	*162	Uncertain function	.
+CYP2D6	rs769157652	chr22	42126938	C	T	*27	Normal function	.
+CYP2D6	rs769157652	chr22	42126938	C	T	*32	Decreased function	.
+CYP2D6	rs769258	chr22	42130761	C	T	*1	Normal function	.
+CYP2D6	rs769258	chr22	42130761	C	T	*143	No function	.
+CYP2D6	rs769258	chr22	42130761	C	T	*172	.	.
+CYP2D6	rs769258	chr22	42130761	C	T	*175	.	.
+CYP2D6	rs769258	chr22	42130761	C	T	*184	.	.
+CYP2D6	rs769258	chr22	42130761	C	T	*35	Normal function	.
+CYP2D6	rs77312092	chr22	42127457	C	T	*1	Normal function	.
+CYP2D6	rs77312092	chr22	42127457	C	T	*95	Uncertain function	.
+CYP2D6	rs773790593	chr22	42130778	G	A	*1	Normal function	.
+CYP2D6	rs773790593	chr22	42130778	G	A	*87	Uncertain function	.
+CYP2D6	rs774943042	chr22	42129056	C	G	*1	Normal function	.
+CYP2D6	rs774943042	chr22	42129056	C	G	*91	Decreased function	.
+CYP2D6	rs77913725	chr22	42128185	C	T	*1	Normal function	.
+CYP2D6	rs77913725	chr22	42128185	C	T	*81	No function	.
+CYP2D6	rs77913725	chr22	42128185	C	T	*86	Unknown function	.
+CYP2D6	rs781457579	chr22	42129134	G	A	*1	Normal function	.
+CYP2D6	rs781457579	chr22	42129134	G	A	*126	Unknown function	.
+CYP2D6	rs78209835	chr22	42127611	C	T	*1	Normal function	.
+CYP2D6	rs78209835	chr22	42127611	C	T	*117	Unknown function	.
+CYP2D6	rs78459009	chr22	42129765	T	C	*1	Normal function	.
+CYP2D6	rs78459009	chr22	42129765	T	C	*82	Unknown function	.
+CYP2D6	rs78482768	chr22	42129087	G	C	*1	Normal function	.
+CYP2D6	rs78482768	chr22	42129087	G	C	*28	Uncertain function	.
+CYP2D6	rs79292917	chr22	42127852	C	T	*1	Normal function	.
+CYP2D6	rs79292917	chr22	42127852	C	T	*59	Decreased function	.
+CYP2D6	rs949717872	chr22	42127938	T	G	*1	Normal function	.
+CYP2D6	rs949717872	chr22	42127938	T	G	*24	Uncertain function	.
+CYP2D6	rs993385303	chr22	42128332	C	T	*1	Normal function	.
+CYP2D6	rs993385303	chr22	42128332	C	T	*181	.	.
+CYP3A5	rs10264272	chr7	99665212	C	T	*1	Normal function	.
+CYP3A5	rs10264272	chr7	99665212	C	T	*6	No function	.
+CYP3A5	rs28383479	chr7	99660516	C	T	*1	Normal function	.
+CYP3A5	rs28383479	chr7	99660516	C	T	*9	Unknown function	.
+CYP3A5	rs55817950	chr7	99676198	G	A	*1	Normal function	.
+CYP3A5	rs55817950	chr7	99676198	G	A	*8	Unknown function	.
+CYP3A5	rs776746	chr7	99672916	T	C	*1	Normal function	.
+CYP3A5	rs776746	chr7	99672916	T	C	*3	No function	.
+CYP4F2	rs114099324	chr19	15897566	C	G	*1	.	.
+CYP4F2	rs114099324	chr19	15897566	C	G	*7	.	.
+CYP4F2	rs114396708	chr19	15895527	G	A	*1	.	.
+CYP4F2	rs114396708	chr19	15895527	G	A	*11	.	.
+CYP4F2	rs115517770	chr19	15897473	G	A	*1	.	.
+CYP4F2	rs115517770	chr19	15897473	G	A	*8	.	.
+CYP4F2	rs138971789	chr19	15879412	C	T	*1	.	.
+CYP4F2	rs138971789	chr19	15879412	C	T	*15	.	.
+CYP4F2	rs142113670	chr19	15879413	G	A	*1	.	.
+CYP4F2	rs142113670	chr19	15879413	G	A	*21	.	.
+CYP4F2	rs144233412	chr19	15889671	C	A	*1	.	.
+CYP4F2	rs144233412	chr19	15889671	C	A	*13	.	.
+CYP4F2	rs144455532	chr19	15895560	G	T	*1	.	.
+CYP4F2	rs144455532	chr19	15895560	G	T	*10	.	.
+CYP4F2	rs145174239	chr19	15886018	G	C	*1	.	.
+CYP4F2	rs145174239	chr19	15886018	G	C	*14	.	.
+CYP4F2	rs145875499	chr19	15892541	C	T	*1	.	.
+CYP4F2	rs145875499	chr19	15892541	C	T	*12	.	.
+CYP4F2	rs148396222	chr19	15895526	C	T	*1	.	.
+CYP4F2	rs148396222	chr19	15895526	C	T	*18	.	.
+CYP4F2	rs150579280	chr19	15895551	T	C	*1	.	.
+CYP4F2	rs150579280	chr19	15895551	T	C	*22	.	.
+CYP4F2	rs200629062	chr19	15892379	G	A	*1	.	.
+CYP4F2	rs200629062	chr19	15892379	G	A	*20	.	.
+CYP4F2	rs201380574	chr19	15897466	C	T	*1	.	.
+CYP4F2	rs201380574	chr19	15897466	C	T	*9	.	.
+CYP4F2	rs2108622	chr19	15879621	C	T	*1	.	.
+CYP4F2	rs2108622	chr19	15879621	C	T	*22	.	.
+CYP4F2	rs2108622	chr19	15879621	C	T	*3	.	.
+CYP4F2	rs2108622	chr19	15879621	C	T	*4	.	.
+CYP4F2	rs3093105	chr19	15897578	A	C	*1	.	.
+CYP4F2	rs3093105	chr19	15897578	A	C	*2	.	.
+CYP4F2	rs3093105	chr19	15897578	A	C	*4	.	.
+CYP4F2	rs3093153	chr19	15890405	C	A	*1	.	.
+CYP4F2	rs3093153	chr19	15890405	C	A	*6	.	.
+CYP4F2	rs3093200	chr19	15878779	G	T	*1	.	.
+CYP4F2	rs3093200	chr19	15878779	G	T	*23	.	.
+CYP4F2	rs3093200	chr19	15878779	G	T	*5	.	.
+CYP4F2	rs3952537	chr19	15878886	G	C	*1	.	.
+CYP4F2	rs3952537	chr19	15878886	G	C	*19	.	.
+CYP4F2	rs4020346	chr19	15878920	T	C	*1	.	.
+CYP4F2	rs4020346	chr19	15878920	T	C	*17	.	.
+CYP4F2	rs556151888	chr19	15892398	G	A	*1	.	.
+CYP4F2	rs556151888	chr19	15892398	G	A	*23	.	.
+DPYD	rs111858276	chr1	97549600	T	C	Reference	Normal function	.
+DPYD	rs111858276	chr1	97549600	T	C	c.1484A>G	No function	.
+DPYD	rs112766203	chr1	97305279	G	A	Reference	Normal function	.
+DPYD	rs112766203	chr1	97305279	G	A	c.2279C>T	Decreased function	.
+DPYD	rs114096998	chr1	97078987	G	T	Reference	Normal function	.
+DPYD	rs114096998	chr1	97078987	G	T	c.3067C>A	Normal function	.
+DPYD	rs115232898	chr1	97699474	T	C	Reference	Normal function	.
+DPYD	rs115232898	chr1	97699474	T	C	c.557A>G	Decreased function	.
+DPYD	rs137999090	chr1	97373598	C	T	Reference	Normal function	.
+DPYD	rs137999090	chr1	97373598	C	T	c.2021G>A	No function	.
+DPYD	rs138391898	chr1	97549565	C	T	Reference	Normal function	.
+DPYD	rs138391898	chr1	97549565	C	T	c.1519G>A	Normal function	.
+DPYD	rs138545885	chr1	97373629	C	A	Reference	Normal function	.
+DPYD	rs138545885	chr1	97373629	C	A	c.1990G>T	Normal function	.
+DPYD	rs138616379	chr1	97450189	C	T	Reference	Normal function	.
+DPYD	rs138616379	chr1	97450189	C	T	c.1775G>A	No function	.
+DPYD	rs139459586	chr1	97079076	A	C	Reference	Normal function	.
+DPYD	rs139459586	chr1	97079076	A	C	c.2978T>G	Normal function	.
+DPYD	rs139834141	chr1	97699533	C	T	Reference	Normal function	.
+DPYD	rs139834141	chr1	97699533	C	T	c.498G>A	Normal function	.
+DPYD	rs140114515	chr1	97079005	C	T	Reference	Normal function	.
+DPYD	rs140114515	chr1	97079005	C	T	c.3049G>A	Normal function	.
+DPYD	rs140602333	chr1	97573919	G	A	Reference	Normal function	.
+DPYD	rs140602333	chr1	97573919	G	A	c.1180C>T	Normal function	.
+DPYD	rs141044036	chr1	97082365	T	C	Reference	Normal function	.
+DPYD	rs141044036	chr1	97082365	T	C	c.2872A>G	No function	.
+DPYD	rs141462178	chr1	97721650	T	C	Reference	Normal function	.
+DPYD	rs141462178	chr1	97721650	T	C	c.343A>G	Normal function	.
+DPYD	rs142512579	chr1	97573805	C	T	Reference	Normal function	.
+DPYD	rs142512579	chr1	97573805	C	T	c.1294G>A	Normal function	.
+DPYD	rs142619737	chr1	97515851	C	T	Reference	Normal function	.
+DPYD	rs142619737	chr1	97515851	C	T	c.1615G>A	Normal function	.
+DPYD	rs143154602	chr1	97593289	G	A	Reference	Normal function	.
+DPYD	rs143154602	chr1	97593289	G	A	c.1057C>T	No function	.
+DPYD	rs143815742	chr1	97573918	C	A	Reference	Normal function	.
+DPYD	rs143815742	chr1	97573918	C	A	c.1181G>T	Normal function	.
+DPYD	rs144395748	chr1	97549726	G	C	Reference	Normal function	.
+DPYD	rs144395748	chr1	97549726	G	C	c.1358C>G	Normal function	.
+DPYD	rs145112791	chr1	97595083	G	A	Reference	Normal function	.
+DPYD	rs145112791	chr1	97595083	G	A	c.934C>T	Normal function	.
+DPYD	rs145529148	chr1	97079139	T	C	Reference	Normal function	.
+DPYD	rs145529148	chr1	97079139	T	C	c.2915A>G	Normal function	.
+DPYD	rs145548112	chr1	97306195	C	T	Reference	Normal function	.
+DPYD	rs145548112	chr1	97306195	C	T	c.2161G>A	Normal function	.
+DPYD	rs145773863	chr1	97450187	C	T	Reference	Normal function	.
+DPYD	rs145773863	chr1	97450187	C	T	c.1777G>A	No function	.
+DPYD	rs146356975	chr1	97595149	T	C	Reference	Normal function	.
+DPYD	rs146356975	chr1	97595149	T	C	c.868A>G	Decreased function	.
+DPYD	rs146529561	chr1	97305372	G	A	Reference	Normal function	.
+DPYD	rs146529561	chr1	97305372	G	A	c.2186C>T	Normal function	.
+DPYD	rs147545709	chr1	97098599	G	A	Reference	Normal function	.
+DPYD	rs147545709	chr1	97098599	G	A	c.2656C>T	Normal function	.
+DPYD	rs147601618	chr1	97450168	A	G	Reference	Normal function	.
+DPYD	rs147601618	chr1	97450168	A	G	c.1796T>C	Normal function	.
+DPYD	rs148799944	chr1	97078993	C	G	Reference	Normal function	.
+DPYD	rs148799944	chr1	97078993	C	G	c.3061G>C	Normal function	.
+DPYD	rs148994843	chr1	97515923	C	T	Reference	Normal function	.
+DPYD	rs148994843	chr1	97515923	C	T	c.1543G>A	Normal function	.
+DPYD	rs150036960	chr1	97883368	G	C	Reference	Normal function	.
+DPYD	rs150036960	chr1	97883368	G	C	c.46C>G	Normal function	.
+DPYD	rs150385342	chr1	97740400	C	T	Reference	Normal function	.
+DPYD	rs150385342	chr1	97740400	C	T	c.313G>A	Normal function	.
+DPYD	rs150437414	chr1	97595088	A	G	Reference	Normal function	.
+DPYD	rs150437414	chr1	97595088	A	G	c.929T>C	Normal function	.
+DPYD	rs17376848	chr1	97450068	A	G	Reference	Normal function	.
+DPYD	rs17376848	chr1	97450068	A	G	c.1896T>C	Normal function	.
+DPYD	rs1801158	chr1	97515865	C	T	Reference	Normal function	.
+DPYD	rs1801158	chr1	97515865	C	T	c.1601G>A (*4)	Normal function	.
+DPYD	rs1801159	chr1	97515839	T	C	Reference	Normal function	.
+DPYD	rs1801159	chr1	97515839	T	C	c.1627A>G (*5)	Normal function	.
+DPYD	rs1801160	chr1	97305364	C	T	Reference	Normal function	.
+DPYD	rs1801160	chr1	97305364	C	T	c.2194G>A (*6)	Normal function	.
+DPYD	rs1801265	chr1	97883329	A	G	Reference	Normal function	.
+DPYD	rs1801265	chr1	97883329	A	G	c.85T>C (*9A)	Normal function	.
+DPYD	rs1801266	chr1	97691776	G	A	Reference	Normal function	.
+DPYD	rs1801266	chr1	97691776	G	A	c.703C>T (*8)	No function	.
+DPYD	rs1801267	chr1	97098598	C	T	Reference	Normal function	.
+DPYD	rs1801267	chr1	97098598	C	T	c.2657G>A (*9B)	Normal function	.
+DPYD	rs1801268	chr1	97079071	C	A	Reference	Normal function	.
+DPYD	rs1801268	chr1	97079071	C	A	c.2983G>T (*10)	No function	.
+DPYD	rs183385770	chr1	97593322	C	T	Reference	Normal function	.
+DPYD	rs183385770	chr1	97593322	C	T	c.1024G>A	No function	.
+DPYD	rs186169810	chr1	97573785	A	C	Reference	Normal function	.
+DPYD	rs186169810	chr1	97573785	A	C	c.1314T>G	Decreased function	.
+DPYD	rs190951787	chr1	97515889	G	C	Reference	Normal function	.
+DPYD	rs190951787	chr1	97515889	G	C	c.1577C>G	Normal function	.
+DPYD	rs199549923	chr1	97549681	G	T	Reference	Normal function	.
+DPYD	rs199549923	chr1	97549681	G	T	c.1403C>A	Normal function	.
+DPYD	rs199634007	chr1	97234958	G	T	Reference	Normal function	.
+DPYD	rs199634007	chr1	97234958	G	T	c.2336C>A	Normal function	.
+DPYD	rs200064537	chr1	97573839	A	T	Reference	Normal function	.
+DPYD	rs200064537	chr1	97573839	A	T	c.1260T>A	Normal function	.
+DPYD	rs200562975	chr1	97721542	T	C	Reference	Normal function	.
+DPYD	rs200562975	chr1	97721542	T	C	c.451A>G	Normal function	.
+DPYD	rs200687447	chr1	97193209	C	T	Reference	Normal function	.
+DPYD	rs200687447	chr1	97193209	C	T	c.2482G>A	Normal function	.
+DPYD	rs201018345	chr1	97593379	C	T	Reference	Normal function	.
+DPYD	rs201018345	chr1	97593379	C	T	c.967G>A	Normal function	.
+DPYD	rs201035051	chr1	97098632	T	G	Reference	Normal function	.
+DPYD	rs201035051	chr1	97098632	T	G	c.2623A>C	Normal function	.
+DPYD	rs201615754	chr1	97515784	C	A	Reference	Normal function	.
+DPYD	rs201615754	chr1	97515784	C	A	c.1682G>T	Normal function	.
+DPYD	rs202144771	chr1	97079077	G	A	Reference	Normal function	.
+DPYD	rs202144771	chr1	97079077	G	A	c.2977C>T	Normal function	.
+DPYD	rs2297595	chr1	97699535	T	C	Reference	Normal function	.
+DPYD	rs2297595	chr1	97699535	T	C	c.496A>G	Normal function	.
+DPYD	rs3918289	chr1	97450059	G	C	Reference	Normal function	.
+DPYD	rs3918289	chr1	97450059	G	C	c.1905C>G	Normal function	.
+DPYD	rs3918290	chr1	97450058	C	T	Reference	Normal function	.
+DPYD	rs3918290	chr1	97450058	C	T	c.1905+1G>A (*2A)	No function	.
+DPYD	rs45589337	chr1	97679170	T	C	Reference	Normal function	.
+DPYD	rs45589337	chr1	97679170	T	C	c.775A>G	Normal function	.
+DPYD	rs55674432	chr1	97098616	C	A	Reference	Normal function	.
+DPYD	rs55674432	chr1	97098616	C	A	c.2639G>T	No function	.
+DPYD	rs55886062	chr1	97515787	A	C	Reference	Normal function	.
+DPYD	rs55886062	chr1	97515787	A	C	c.1679T>G (*13)	No function	.
+DPYD	rs55971861	chr1	97382461	T	G	Reference	Normal function	.
+DPYD	rs55971861	chr1	97382461	T	G	c.1906A>C	Normal function	.
+DPYD	rs56005131	chr1	97234991	G	T	Reference	Normal function	.
+DPYD	rs56005131	chr1	97234991	G	T	c.2303C>A	Normal function	.
+DPYD	rs56038477	chr1	97573863	C	T	Reference	Normal function	.
+DPYD	rs56038477	chr1	97573863	C	T	c.1129-5923C>G, c.1236G>A (HapB3)	Decreased function	.
+DPYD	rs57918000	chr1	97549713	G	A	Reference	Normal function	.
+DPYD	rs57918000	chr1	97549713	G	A	c.1371C>T	Normal function	.
+DPYD	rs59086055	chr1	97450190	G	A	Reference	Normal function	.
+DPYD	rs59086055	chr1	97450190	G	A	c.1774C>T	No function	.
+DPYD	rs60139309	chr1	97193109	T	C	Reference	Normal function	.
+DPYD	rs60139309	chr1	97193109	T	C	c.2582A>G	Normal function	.
+DPYD	rs60511679	chr1	97305363	A	C	Reference	Normal function	.
+DPYD	rs60511679	chr1	97305363	A	C	c.2195T>G	Normal function	.
+DPYD	rs61622928	chr1	97573881	C	T	Reference	Normal function	.
+DPYD	rs61622928	chr1	97573881	C	T	c.1218G>A	Normal function	.
+DPYD	rs6670886	chr1	97699506	C	T	Reference	Normal function	.
+DPYD	rs6670886	chr1	97699506	C	T	c.525G>A	Normal function	.
+DPYD	rs67376798	chr1	97082391	T	A	Reference	Normal function	.
+DPYD	rs67376798	chr1	97082391	T	A	c.2846A>T	Decreased function	.
+DPYD	rs72547601	chr1	97079121	T	C	Reference	Normal function	.
+DPYD	rs72547601	chr1	97079121	T	C	c.2933A>G	No function	.
+DPYD	rs72547602	chr1	97079133	T	A	Reference	Normal function	.
+DPYD	rs72547602	chr1	97079133	T	A	c.2921A>T	Normal function	.
+DPYD	rs72549303	chr1	97450067	N	del	Reference	Normal function	.
+DPYD	rs72549303	chr1	97450067	N	del	c.1898delC (*3)	No function	.
+DPYD	rs72549304	chr1	97549609	G	A	Reference	Normal function	.
+DPYD	rs72549304	chr1	97549609	G	A	c.1475C>T	No function	.
+DPYD	rs72549305	chr1	97593238	T	C	Reference	Normal function	.
+DPYD	rs72549305	chr1	97593238	T	C	c.1108A>G	Normal function	.
+DPYD	rs72549306	chr1	97593343	C	A	Reference	Normal function	.
+DPYD	rs72549306	chr1	97593343	C	A	c.1003G>T (*11)	Normal function	.
+DPYD	rs72549307	chr1	97699399	T	C	Reference	Normal function	.
+DPYD	rs72549307	chr1	97699399	T	C	c.632A>G	No function	.
+DPYD	rs72549308	chr1	97699430	T	G	Reference	Normal function	.
+DPYD	rs72549308	chr1	97699430	T	G	c.601A>C	No function	.
+DPYD	rs72549310	chr1	97883353	G	A	Reference	Normal function	.
+DPYD	rs72549310	chr1	97883353	G	A	c.61C>T	No function	.
+DPYD	rs72975710	chr1	97549735	G	A	Reference	Normal function	.
+DPYD	rs72975710	chr1	97549735	G	A	c.1349C>T	Normal function	.
+DPYD	rs75017182	chr1	97579893	G	C	Reference	Normal function	.
+DPYD	rs75017182	chr1	97579893	G	C	c.1129-5923C>G	Decreased function	.
+DPYD	rs75017182	chr1	97579893	G	C	c.1129-5923C>G, c.1236G>A (HapB3)	Decreased function	.
+DPYD	rs764666241	chr1	97573821	C	A	Reference	Normal function	.
+DPYD	rs764666241	chr1	97573821	C	A	c.1278G>T	Normal function	.
+DPYD	rs78060119	chr1	97573943	C	A	Reference	Normal function	.
+DPYD	rs78060119	chr1	97573943	C	A	c.1156G>T (*12)	No function	.
+DPYD	rs80081766	chr1	97883352	C	T	Reference	Normal function	.
+DPYD	rs80081766	chr1	97883352	C	T	c.62G>A	Normal function	.
+G6PD	rs1050828	chrX	154536002	C	T	202G>A_376A>G_1264C>G	I/Deficient with CNSHA	.
+G6PD	rs1050828	chrX	154536002	C	T	A- 202A_376G	III/Deficient	.
+G6PD	rs1050828	chrX	154536002	C	T	Asahi	III/Deficient	.
+G6PD	rs1050828	chrX	154536002	C	T	B (reference)	IV/Normal	.
+G6PD	rs1050828	chrX	154536002	C	T	Hechi	II/Deficient	.
+G6PD	rs1050829	chrX	154535277	T	C	202G>A_376A>G_1264C>G	I/Deficient with CNSHA	.
+G6PD	rs1050829	chrX	154535277	T	C	A	IV/Normal	.
+G6PD	rs1050829	chrX	154535277	T	C	A- 202A_376G	III/Deficient	.
+G6PD	rs1050829	chrX	154535277	T	C	A- 680T_376G	III/Deficient	.
+G6PD	rs1050829	chrX	154535277	T	C	A- 968C_376G	III/Deficient	.
+G6PD	rs1050829	chrX	154535277	T	C	Acrokorinthos	II/Deficient	.
+G6PD	rs1050829	chrX	154535277	T	C	Ananindeua	II/Deficient	.
+G6PD	rs1050829	chrX	154535277	T	C	B (reference)	IV/Normal	.
+G6PD	rs1050829	chrX	154535277	T	C	Mt Sinai	I/Deficient with CNSHA	.
+G6PD	rs1050829	chrX	154535277	T	C	Santa Maria	II/Deficient	.
+G6PD	rs1050829	chrX	154535277	T	C	Sierra Leone	III/Deficient	.
+G6PD	rs137852313	chrX	154535187	C	T	B (reference)	IV/Normal	.
+G6PD	rs137852313	chrX	154535187	C	T	Ilesha	III/Deficient	.
+G6PD	rs137852314	chrX	154534495	C	T	B (reference)	IV/Normal	.
+G6PD	rs137852314	chrX	154534495	C	T	Mahidol	III/Deficient	.
+G6PD	rs137852315	chrX	154536032	C	T	B (reference)	IV/Normal	.
+G6PD	rs137852315	chrX	154536032	C	T	Metaponto	III/Deficient	.
+G6PD	rs137852316	chrX	154532676	C	T	B (reference)	IV/Normal	.
+G6PD	rs137852316	chrX	154532676	C	T	Nashville, Anaheim, Portici	I/Deficient with CNSHA	.
+G6PD	rs137852317	chrX	154532411	C	T	B (reference)	IV/Normal	.
+G6PD	rs137852317	chrX	154532411	C	T	Santiago de Cuba, Morioka	I/Deficient with CNSHA	.
+G6PD	rs137852318	chrX	154533596	C	A	B (reference)	IV/Normal	.
+G6PD	rs137852318	chrX	154533596	C	A	Bajo Maumere	III/Deficient	.
+G6PD	rs137852318	chrX	154533596	C	A	Seattle, Lodi, Modena, Ferrara II, Athens-like	III/Deficient	.
+G6PD	rs137852319	chrX	154534157	A	C	B (reference)	IV/Normal	.
+G6PD	rs137852319	chrX	154534157	A	C	Harilaou	I/Deficient with CNSHA	.
+G6PD	rs137852320	chrX	154532698	T	C	B (reference)	IV/Normal	.
+G6PD	rs137852320	chrX	154532698	T	C	Iowa, Walter Reed, Springfield	I/Deficient with CNSHA	.
+G6PD	rs137852321	chrX	154532694	C	T	B (reference)	IV/Normal	.
+G6PD	rs137852321	chrX	154532694	C	T	Beverly Hills, Genova, Iwate, Niigata, Yamaguchi	I/Deficient with CNSHA	.
+G6PD	rs137852322	chrX	154532701	A	G	B (reference)	IV/Normal	.
+G6PD	rs137852322	chrX	154532701	A	G	Tomah	I/Deficient with CNSHA	.
+G6PD	rs137852323	chrX	154532626	C	A	B (reference)	IV/Normal	.
+G6PD	rs137852323	chrX	154532626	C	A	Riverside	I/Deficient with CNSHA	.
+G6PD	rs137852324	chrX	154532389	C	T	Andalus	II/Deficient	.
+G6PD	rs137852324	chrX	154532389	C	T	B (reference)	IV/Normal	.
+G6PD	rs137852325	chrX	154532662	C	T	B (reference)	IV/Normal	.
+G6PD	rs137852325	chrX	154532662	C	T	Puerto Limon	I/Deficient with CNSHA	.
+G6PD	rs137852326	chrX	154534345	C	A	B (reference)	IV/Normal	.
+G6PD	rs137852326	chrX	154534345	C	A	Cincinnati	I/Deficient with CNSHA	.
+G6PD	rs137852326	chrX	154534345	C	A	Minnesota, Marion, Gastonia, LeJeune	I/Deficient with CNSHA	.
+G6PD	rs137852327	chrX	154533122	C	T	Ananindeua	II/Deficient	.
+G6PD	rs137852327	chrX	154533122	C	T	B (reference)	IV/Normal	.
+G6PD	rs137852327	chrX	154533122	C	T	Hechi	II/Deficient	.
+G6PD	rs137852327	chrX	154533122	C	T	Viangchan, Jammu	II/Deficient	.
+G6PD	rs137852328	chrX	154534125	C	T	A- 680T_376G	III/Deficient	.
+G6PD	rs137852328	chrX	154534125	C	T	B (reference)	IV/Normal	.
+G6PD	rs137852328	chrX	154534125	C	T	Mexico City	III/Deficient	.
+G6PD	rs137852329	chrX	154532765	G	C	Aachen	I/Deficient with CNSHA	.
+G6PD	rs137852329	chrX	154532765	G	C	B (reference)	IV/Normal	.
+G6PD	rs137852329	chrX	154532765	G	C	Loma Linda	I/Deficient with CNSHA	.
+G6PD	rs137852330	chrX	154534390	G	A	B (reference)	IV/Normal	.
+G6PD	rs137852330	chrX	154534390	G	A	Coimbra Shunde	II/Deficient	.
+G6PD	rs137852330	chrX	154534390	G	A	Vancouver	I/Deficient with CNSHA	.
+G6PD	rs137852331	chrX	154534489	T	C	B (reference)	IV/Normal	.
+G6PD	rs137852331	chrX	154534489	T	C	Taipei, Chinese-3	II/Deficient	.
+G6PD	rs137852332	chrX	154534389	C	T	B (reference)	IV/Normal	.
+G6PD	rs137852332	chrX	154534389	C	T	Nilgiri	II/Deficient	.
+G6PD	rs137852332	chrX	154534389	C	T	Santiago	I/Deficient with CNSHA	.
+G6PD	rs137852333	chrX	154532797	G	A	B (reference)	IV/Normal	.
+G6PD	rs137852333	chrX	154532797	G	A	Ierapetra	II/Deficient	.
+G6PD	rs137852334	chrX	154532695	G	A	B (reference)	IV/Normal	.
+G6PD	rs137852334	chrX	154532695	G	A	Guadalajara	I/Deficient with CNSHA	.
+G6PD	rs137852334	chrX	154532695	G	A	Mt Sinai	I/Deficient with CNSHA	.
+G6PD	rs137852335	chrX	154532674	C	G	Alhambra	I/Deficient with CNSHA	.
+G6PD	rs137852335	chrX	154532674	C	G	B (reference)	IV/Normal	.
+G6PD	rs137852336	chrX	154532625	C	T	B (reference)	IV/Normal	.
+G6PD	rs137852336	chrX	154532625	C	T	Japan, Shinagawa	I/Deficient with CNSHA	.
+G6PD	rs137852336	chrX	154532625	C	T	Kawasaki	I/Deficient with CNSHA	.
+G6PD	rs137852337	chrX	154532434	C	G	B (reference)	IV/Normal	.
+G6PD	rs137852337	chrX	154532434	C	G	Pawnee	II/Deficient	.
+G6PD	rs137852339	chrX	154533044	C	T	B (reference)	IV/Normal	.
+G6PD	rs137852339	chrX	154533044	C	T	Kalyan-Kerala, Jamnaga, Rohini	III/Deficient	.
+G6PD	rs137852340	chrX	154546061	T	C	B (reference)	IV/Normal	.
+G6PD	rs137852340	chrX	154546061	T	C	Gaohe	III/Deficient	.
+G6PD	rs137852342	chrX	154532969	G	A	B (reference)	IV/Normal	.
+G6PD	rs137852342	chrX	154532969	G	A	Chinese-5	III/Deficient	.
+G6PD	rs137852343	chrX	154534465	A	G	B (reference)	IV/Normal	.
+G6PD	rs137852343	chrX	154534465	A	G	Nankang	II/Deficient	.
+G6PD	rs137852344	chrX	154532245	G	C	B (reference)	IV/Normal	.
+G6PD	rs137852344	chrX	154532245	G	C	Neapolis	III/Deficient	.
+G6PD	rs137852345	chrX	154532772	G	A	B (reference)	IV/Normal	.
+G6PD	rs137852345	chrX	154532772	G	A	Serres	I/Deficient with CNSHA	.
+G6PD	rs137852346	chrX	154533634	C	T	Aveiro	I/Deficient with CNSHA	.
+G6PD	rs137852346	chrX	154533634	C	T	B (reference)	IV/Normal	.
+G6PD	rs137852347	chrX	154533029	A	G	B (reference)	IV/Normal	.
+G6PD	rs137852347	chrX	154533029	A	G	Rehevot	I/Deficient with CNSHA	.
+G6PD	rs137852348	chrX	154532203	G	C	B (reference)	IV/Normal	.
+G6PD	rs137852348	chrX	154532203	G	C	Split	III/Deficient	.
+G6PD	rs137852349	chrX	154535996	A	G	B (reference)	IV/Normal	.
+G6PD	rs137852349	chrX	154535996	A	G	Namouru	II/Deficient	.
+G6PD	rs138687036	chrX	154535963	G	A	B (reference)	IV/Normal	.
+G6PD	rs138687036	chrX	154535963	G	A	Ube Konan	III/Deficient	.
+G6PD	rs181277621	chrX	154535342	C	T	B (reference)	IV/Normal	.
+G6PD	rs181277621	chrX	154535342	C	T	Sierra Leone	III/Deficient	.
+G6PD	rs2230037	chrX	154532439	G	A	B (reference)	IV/Normal	.
+G6PD	rs2230037	chrX	154532439	G	A	Mediterranean Haplotype	II/Deficient	.
+G6PD	rs267606835	chrX	154535336	G	C	B (reference)	IV/Normal	.
+G6PD	rs267606835	chrX	154535336	G	C	Vancouver	I/Deficient with CNSHA	.
+G6PD	rs267606836	chrX	154534438	G	A	B (reference)	IV/Normal	.
+G6PD	rs267606836	chrX	154534438	G	A	Vancouver	I/Deficient with CNSHA	.
+G6PD	rs34193178	chrX	154532945	C	G	B (reference)	IV/Normal	.
+G6PD	rs34193178	chrX	154532945	C	G	Mira d'Aire	IV/Normal	.
+G6PD	rs370918918	chrX	154535176	C	G	B (reference)	IV/Normal	.
+G6PD	rs370918918	chrX	154535176	C	G	Gond	Uncertain function	.
+G6PD	rs371489738	chrX	154532722	C	T	B (reference)	IV/Normal	.
+G6PD	rs371489738	chrX	154532722	C	T	Montpellier	I/Deficient with CNSHA	.
+G6PD	rs398123544	chrX	154532956	T	A	B (reference)	IV/Normal	.
+G6PD	rs398123544	chrX	154532956	T	A	Cincinnati	I/Deficient with CNSHA	.
+G6PD	rs398123546	chrX	154532390	G	A	B (reference)	IV/Normal	.
+G6PD	rs398123546	chrX	154532390	G	A	Hermoupolis	II/Deficient	.
+G6PD	rs398123546	chrX	154532390	G	A	Honiara	I/Deficient with CNSHA	.
+G6PD	rs398123546	chrX	154532390	G	A	Union,Maewo, Chinese-2, Kalo	II/Deficient	.
+G6PD	rs5030868	chrX	154534419	G	A	B (reference)	IV/Normal	.
+G6PD	rs5030868	chrX	154534419	G	A	Mediterranean Haplotype	II/Deficient	.
+G6PD	rs5030868	chrX	154534419	G	A	Mediterranean, Dallas, Panama, Sassari, Cagliari, Birmingham	II/Deficient	.
+G6PD	rs5030869	chrX	154532990	C	T	B (reference)	IV/Normal	.
+G6PD	rs5030869	chrX	154532990	C	T	Chatham	II/Deficient	.
+G6PD	rs5030870	chrX	154535316	C	T	B (reference)	IV/Normal	.
+G6PD	rs5030870	chrX	154535316	C	T	Sao Borja	IV/Normal	.
+G6PD	rs5030872	chrX	154534440	T	A	B (reference)	IV/Normal	.
+G6PD	rs5030872	chrX	154534440	T	A	Malaga	III/Deficient	.
+G6PD	rs5030872	chrX	154534440	T	A	Santa Maria	II/Deficient	.
+G6PD	rs72554664	chrX	154532257	C	T	B (reference)	IV/Normal	.
+G6PD	rs72554664	chrX	154532257	C	T	Kaiping, Anant, Dhon, Sapporo-like, Wosera	II/Deficient	.
+G6PD	rs72554665	chrX	154532269	C	A	B (reference)	IV/Normal	.
+G6PD	rs72554665	chrX	154532269	C	A	Bangkok Noi	I/Deficient with CNSHA	.
+G6PD	rs72554665	chrX	154532269	C	A	Canton, Taiwan-Hakka, Gifu-like, Agrigento-like	II/Deficient	.
+G6PD	rs72554665	chrX	154532269	C	A	Cosenza	II/Deficient	.
+G6PD	rs74575103	chrX	154533586	C	T	B (reference)	IV/Normal	.
+G6PD	rs74575103	chrX	154533586	C	T	Montalbano	III/Deficient	.
+G6PD	rs76645461	chrX	154536156	A	G	Aures	III/Deficient	.
+G6PD	rs76645461	chrX	154536156	A	G	B (reference)	IV/Normal	.
+G6PD	rs76723693	chrX	154533025	A	G	A- 968C_376G	III/Deficient	.
+G6PD	rs76723693	chrX	154533025	A	G	B (reference)	IV/Normal	.
+G6PD	rs781865768	chrX	154534387	T	C	B (reference)	IV/Normal	.
+G6PD	rs781865768	chrX	154534387	T	C	Dagua	Uncertain function	.
+G6PD	rs782090947	chrX	154535995	T	C	B (reference)	IV/Normal	.
+G6PD	rs782090947	chrX	154535995	T	C	Murcia Oristano	III/Deficient	.
+G6PD	rs782098548	chrX	154532459	C	T	B (reference)	IV/Normal	.
+G6PD	rs782098548	chrX	154532459	C	T	Surabaya	II/Deficient	.
+G6PD	rs782308266	chrX	154535962	C	T	B (reference)	IV/Normal	.
+G6PD	rs782308266	chrX	154535962	C	T	Lagosanto	III/Deficient	.
+G6PD	rs782322505	chrX	154535249	T	G	B (reference)	IV/Normal	.
+G6PD	rs782322505	chrX	154535249	T	G	Cairo	II/Deficient	.
+G6PD	rs782487723	chrX	154535180	C	T	B (reference)	IV/Normal	.
+G6PD	rs782487723	chrX	154535180	C	T	Shenzen	II/Deficient	.
+G6PD	rs782608284	chrX	154532264	C	T	B (reference)	IV/Normal	.
+G6PD	rs782608284	chrX	154532264	C	T	Yunan	Uncertain function	.
+G6PD	rs782754619	chrX	154534348	T	C	B (reference)	IV/Normal	.
+G6PD	rs782754619	chrX	154534348	T	C	Sibari	III/Deficient	.
+G6PD	rs782757170	chrX	154534102	G	A	B (reference)	IV/Normal	.
+G6PD	rs782757170	chrX	154534102	G	A	Nanning	III/Deficient	.
+G6PD	rs78365220	chrX	154535270	A	C	B (reference)	IV/Normal	.
+G6PD	rs78365220	chrX	154535270	A	C	Crispim	II/Deficient	.
+G6PD	rs78365220	chrX	154535270	A	C	Salerno Pyrgos	III/Deficient	.
+G6PD	rs78365220	chrX	154535270	A	C	Vanua Lava	II/Deficient	.
+G6PD	rs78478128	chrX	154536168	G	C	B (reference)	IV/Normal	.
+G6PD	rs78478128	chrX	154536168	G	C	Orissa	III/Deficient	.
+IFNL3	rs12979860	chr19	39248147	C	T	rs12979860 reference (C)	.	.
+IFNL3	rs12979860	chr19	39248147	C	T	rs12979860 variant (T)	.	.
+NAT2	rs1208	chr8	18400806	G	A	*1	Increased function	.
+NAT2	rs1208	chr8	18400806	G	A	*10	Uncertain function	.
+NAT2	rs1208	chr8	18400806	G	A	*14	Decreased function	.
+NAT2	rs1208	chr8	18400806	G	A	*15	Decreased function	.
+NAT2	rs1208	chr8	18400806	G	A	*16	Decreased function	.
+NAT2	rs1208	chr8	18400806	G	A	*19	Decreased function	.
+NAT2	rs1208	chr8	18400806	G	A	*21	Uncertain function	.
+NAT2	rs1208	chr8	18400806	G	A	*27	Uncertain function	.
+NAT2	rs1208	chr8	18400806	G	A	*30	Decreased function	.
+NAT2	rs1208	chr8	18400806	G	A	*35	Decreased function	.
+NAT2	rs1208	chr8	18400806	G	A	*36	Decreased function	.
+NAT2	rs1208	chr8	18400806	G	A	*37	Decreased function	.
+NAT2	rs1208	chr8	18400806	G	A	*38	Decreased function	.
+NAT2	rs1208	chr8	18400806	G	A	*39	Decreased function	.
+NAT2	rs1208	chr8	18400806	G	A	*4	Increased function	.
+NAT2	rs1208	chr8	18400806	G	A	*47	Decreased function	.
+NAT2	rs1208	chr8	18400806	G	A	*50	Decreased function	.
+NAT2	rs1208	chr8	18400806	G	A	*52	Decreased function	.
+NAT2	rs1208	chr8	18400806	G	A	*53	Decreased function	.
+NAT2	rs1208	chr8	18400806	G	A	*54	Uncertain function	.
+NAT2	rs1208	chr8	18400806	G	A	*55	Unknown function	.
+NAT2	rs1208	chr8	18400806	G	A	*56	Decreased function	.
+NAT2	rs1208	chr8	18400806	G	A	*57	Unknown function	.
+NAT2	rs1208	chr8	18400806	G	A	*58	Decreased function	.
+NAT2	rs1208	chr8	18400806	G	A	*59	Decreased function	.
+NAT2	rs1208	chr8	18400806	G	A	*6	Decreased function	.
+NAT2	rs1208	chr8	18400806	G	A	*60	Unknown function	.
+NAT2	rs1208	chr8	18400806	G	A	*61	Unknown function	.
+NAT2	rs1208	chr8	18400806	G	A	*62	Decreased function	.
+NAT2	rs1208	chr8	18400806	G	A	*63	Decreased function	.
+NAT2	rs1208	chr8	18400806	G	A	*64	Decreased function	.
+NAT2	rs1208	chr8	18400806	G	A	*65	Unknown function	.
+NAT2	rs1208	chr8	18400806	G	A	*66	Decreased function	.
+NAT2	rs1208	chr8	18400806	G	A	*67	Decreased function	.
+NAT2	rs1208	chr8	18400806	G	A	*68	Decreased function	.
+NAT2	rs1208	chr8	18400806	G	A	*7	Decreased function	.
+NAT2	rs1208	chr8	18400806	G	A	*74	Unknown function	.
+NAT2	rs12720065	chr8	18400406	C	G	*1	Increased function	.
+NAT2	rs12720065	chr8	18400406	C	G	*36	Decreased function	.
+NAT2	rs12720065	chr8	18400406	C	G	*44	Uncertain function	.
+NAT2	rs138707146	chr8	18400641	C	T	*1	Increased function	.
+NAT2	rs138707146	chr8	18400641	C	T	*37	Decreased function	.
+NAT2	rs139351995	chr8	18400475	A	C	*1	Increased function	.
+NAT2	rs139351995	chr8	18400475	A	C	*33	Decreased function	.
+NAT2	rs139512288	chr8	18400494	T	C	*1	Increased function	.
+NAT2	rs139512288	chr8	18400494	T	C	*60	Unknown function	.
+NAT2	rs1464413878	chr8	18400070	A	C	*1	Increased function	.
+NAT2	rs1464413878	chr8	18400070	A	C	*72	Decreased function	.
+NAT2	rs148566670	chr8	18400826	T	A	*1	Increased function	.
+NAT2	rs148566670	chr8	18400826	T	A	*67	Decreased function	.
+NAT2	rs149283608	chr8	18400124	A	T	*1	Increased function	.
+NAT2	rs149283608	chr8	18400124	A	T	*51	Uncertain function	.
+NAT2	rs150329557	chr8	18400685	C	T	*1	Increased function	.
+NAT2	rs150329557	chr8	18400685	C	T	*66	Decreased function	.
+NAT2	rs1799930	chr8	18400593	G	A	*1	Increased function	.
+NAT2	rs1799930	chr8	18400593	G	A	*15	Decreased function	.
+NAT2	rs1799930	chr8	18400593	G	A	*30	Decreased function	.
+NAT2	rs1799930	chr8	18400593	G	A	*34	Decreased function	.
+NAT2	rs1799930	chr8	18400593	G	A	*35	Decreased function	.
+NAT2	rs1799930	chr8	18400593	G	A	*36	Decreased function	.
+NAT2	rs1799930	chr8	18400593	G	A	*37	Decreased function	.
+NAT2	rs1799930	chr8	18400593	G	A	*38	Decreased function	.
+NAT2	rs1799930	chr8	18400593	G	A	*39	Decreased function	.
+NAT2	rs1799930	chr8	18400593	G	A	*50	Decreased function	.
+NAT2	rs1799930	chr8	18400593	G	A	*52	Decreased function	.
+NAT2	rs1799930	chr8	18400593	G	A	*53	Decreased function	.
+NAT2	rs1799930	chr8	18400593	G	A	*56	Decreased function	.
+NAT2	rs1799930	chr8	18400593	G	A	*58	Decreased function	.
+NAT2	rs1799930	chr8	18400593	G	A	*6	Decreased function	.
+NAT2	rs1799930	chr8	18400593	G	A	*62	Decreased function	.
+NAT2	rs1799930	chr8	18400593	G	A	*63	Decreased function	.
+NAT2	rs1799930	chr8	18400593	G	A	*64	Decreased function	.
+NAT2	rs1799930	chr8	18400593	G	A	*66	Decreased function	.
+NAT2	rs1799930	chr8	18400593	G	A	*67	Decreased function	.
+NAT2	rs1799931	chr8	18400860	G	A	*1	Increased function	.
+NAT2	rs1799931	chr8	18400860	G	A	*40	Decreased function	.
+NAT2	rs1799931	chr8	18400860	G	A	*59	Decreased function	.
+NAT2	rs1799931	chr8	18400860	G	A	*68	Decreased function	.
+NAT2	rs1799931	chr8	18400860	G	A	*7	Decreased function	.
+NAT2	rs1801279	chr8	18400194	G	A	*1	Increased function	.
+NAT2	rs1801279	chr8	18400194	G	A	*14	Decreased function	.
+NAT2	rs1801279	chr8	18400194	G	A	*15	Decreased function	.
+NAT2	rs1801279	chr8	18400194	G	A	*29	Decreased function	.
+NAT2	rs1801279	chr8	18400194	G	A	*46	Decreased function	.
+NAT2	rs1801279	chr8	18400194	G	A	*47	Decreased function	.
+NAT2	rs1801280	chr8	18400344	T	C	*1	Increased function	.
+NAT2	rs1801280	chr8	18400344	T	C	*16	Decreased function	.
+NAT2	rs1801280	chr8	18400344	T	C	*29	Decreased function	.
+NAT2	rs1801280	chr8	18400344	T	C	*30	Decreased function	.
+NAT2	rs1801280	chr8	18400344	T	C	*31	Decreased function	.
+NAT2	rs1801280	chr8	18400344	T	C	*32	Decreased function	.
+NAT2	rs1801280	chr8	18400344	T	C	*33	Decreased function	.
+NAT2	rs1801280	chr8	18400344	T	C	*49	Decreased function	.
+NAT2	rs1801280	chr8	18400344	T	C	*5	Decreased function	.
+NAT2	rs1801280	chr8	18400344	T	C	*69	Decreased function	.
+NAT2	rs1801280	chr8	18400344	T	C	*70	Decreased function	.
+NAT2	rs1801280	chr8	18400344	T	C	*72	Decreased function	.
+NAT2	rs1801280	chr8	18400344	T	C	*73	Decreased function	.
+NAT2	rs1801280	chr8	18400344	T	C	*75	Decreased function	.
+NAT2	rs1805158	chr8	18400193	C	T	*1	Increased function	.
+NAT2	rs1805158	chr8	18400193	C	T	*19	Decreased function	.
+NAT2	rs183409091	chr8	18400349	G	A	*1	Increased function	.
+NAT2	rs183409091	chr8	18400349	G	A	*58	Decreased function	.
+NAT2	rs200585149	chr8	18400509	A	G	*1	Increased function	.
+NAT2	rs200585149	chr8	18400509	A	G	*61	Unknown function	.
+NAT2	rs200893121	chr8	18400010	A	G	*1	Increased function	.
+NAT2	rs200893121	chr8	18400010	A	G	*50	Decreased function	.
+NAT2	rs201339185	chr8	18400054	C	G	*1	Increased function	.
+NAT2	rs201339185	chr8	18400054	C	G	*55	Unknown function	.
+NAT2	rs2535896050	chr8	18400267	G	A	*1	Increased function	.
+NAT2	rs2535896050	chr8	18400267	G	A	*75	Decreased function	.
+NAT2	rs369500066	chr8	18400521	A	G	*1	Increased function	.
+NAT2	rs369500066	chr8	18400521	A	G	*52	Decreased function	.
+NAT2	rs375746304	chr8	18400592	C	T	*1	Increased function	.
+NAT2	rs375746304	chr8	18400592	C	T	*27	Uncertain function	.
+NAT2	rs375746304	chr8	18400592	C	T	*69	Decreased function	.
+NAT2	rs45477599	chr8	18400073	T	A	*1	Increased function	.
+NAT2	rs45477599	chr8	18400073	T	A	*31	Decreased function	.
+NAT2	rs45518335	chr8	18400686	C	T	*1	Increased function	.
+NAT2	rs45518335	chr8	18400686	C	T	*47	Decreased function	.
+NAT2	rs45607939	chr8	18400616	A	T	*1	Increased function	.
+NAT2	rs45607939	chr8	18400616	A	T	*65	Unknown function	.
+NAT2	rs45618543	chr8	18400612	G	T	*1	Increased function	.
+NAT2	rs45618543	chr8	18400612	G	T	*43	Uncertain function	.
+NAT2	rs4986996	chr8	18400367	G	A	*1	Increased function	.
+NAT2	rs4986996	chr8	18400367	G	A	*48	Decreased function	.
+NAT2	rs532310930	chr8	18400061	G	T	*1	Increased function	.
+NAT2	rs532310930	chr8	18400061	G	T	*56	Decreased function	.
+NAT2	rs537007806	chr8	18400478	T	A	*1	Increased function	.
+NAT2	rs537007806	chr8	18400478	T	A	*59	Decreased function	.
+NAT2	rs539346244	chr8	18400799	G	A	*1	Increased function	.
+NAT2	rs539346244	chr8	18400799	G	A	*64	Decreased function	.
+NAT2	rs549917500	chr8	18400324	C	A	*1	Increased function	.
+NAT2	rs549917500	chr8	18400324	C	A	*57	Unknown function	.
+NAT2	rs55700793	chr8	18400769	A	G	*1	Increased function	.
+NAT2	rs55700793	chr8	18400769	A	G	*38	Decreased function	.
+NAT2	rs56054745	chr8	18400848	A	G	*1	Increased function	.
+NAT2	rs56054745	chr8	18400848	A	G	*74	Unknown function	.
+NAT2	rs561124342	chr8	18400251	G	C	*1	Increased function	.
+NAT2	rs561124342	chr8	18400251	G	C	*53	Decreased function	.
+NAT2	rs56387565	chr8	18400625	T	C	*1	Increased function	.
+NAT2	rs56387565	chr8	18400625	T	C	*42	Uncertain function	.
+NAT2	rs56393504	chr8	18400841	G	A	*1	Increased function	.
+NAT2	rs56393504	chr8	18400841	G	A	*39	Decreased function	.
+NAT2	rs568110818	chr8	18400653	T	A	*1	Increased function	.
+NAT2	rs568110818	chr8	18400653	T	A	*63	Decreased function	.
+NAT2	rs572750517	chr8	18400539	A	G	*1	Increased function	.
+NAT2	rs572750517	chr8	18400539	A	G	*62	Decreased function	.
+NAT2	rs72466456	chr8	18400032	T	C	*1	Increased function	.
+NAT2	rs72466456	chr8	18400032	T	C	*45	Uncertain function	.
+NAT2	rs72466456	chr8	18400032	T	C	*54	Uncertain function	.
+NAT2	rs72466457	chr8	18400155	G	T	*1	Increased function	.
+NAT2	rs72466457	chr8	18400155	G	T	*35	Decreased function	.
+NAT2	rs72466458	chr8	18400206	G	A	*1	Increased function	.
+NAT2	rs72466458	chr8	18400206	G	A	*32	Decreased function	.
+NAT2	rs72466460	chr8	18400461	C	T	*1	Increased function	.
+NAT2	rs72466460	chr8	18400461	C	T	*21	Uncertain function	.
+NAT2	rs72554617	chr8	18400502	G	A	*1	Increased function	.
+NAT2	rs72554617	chr8	18400502	G	A	*10	Uncertain function	.
+NAT2	rs756616433	chr8	18400707	T	G	*1	Increased function	.
+NAT2	rs756616433	chr8	18400707	T	G	*71	Unknown function	.
+NAT2	rs761741098	chr8	18400599	T	C	*1	Increased function	.
+NAT2	rs761741098	chr8	18400599	T	C	*70	Decreased function	.
+NAT2	rs774002627	chr8	18400583	C	G	*1	Increased function	.
+NAT2	rs774002627	chr8	18400583	C	G	*68	Decreased function	.
+NAT2	rs79050330	chr8	18400581	C	T	*1	Increased function	.
+NAT2	rs79050330	chr8	18400581	C	T	*41	Uncertain function	.
+NAT2	rs79050330	chr8	18400581	C	T	*49	Decreased function	.
+NAT2	rs910738034	chr8	18400805	A	G	*1	Increased function	.
+NAT2	rs910738034	chr8	18400805	A	G	*73	Decreased function	.
+NUDT15	rs116855232	chr13	48045719	C	T	*1	Normal function	.
+NUDT15	rs116855232	chr13	48045719	C	T	*3	No function	.
+NUDT15	rs1185228044	chr13	48045714	G	C	*1	Normal function	.
+NUDT15	rs1185228044	chr13	48045714	G	C	*21	Uncertain function	.
+NUDT15	rs1202487323	chr13	48037834	C	T	*1	Normal function	.
+NUDT15	rs1202487323	chr13	48037834	C	T	*16	Uncertain function	.
+NUDT15	rs1368252918	chr13	48041113	G	T	*1	Normal function	.
+NUDT15	rs1368252918	chr13	48041113	G	T	*17	No function	.
+NUDT15	rs139551410	chr13	48045771	T	A	*1	Normal function	.
+NUDT15	rs139551410	chr13	48045771	T	A	*15	Uncertain function	.
+NUDT15	rs1457579126	chr13	48040982	N	del	*1	Normal function	.
+NUDT15	rs1457579126	chr13	48040982	N	del	*18	No function	.
+NUDT15	rs147390019	chr13	48045720	G	A	*1	Normal function	.
+NUDT15	rs147390019	chr13	48045720	G	A	*4	No function	.
+NUDT15	rs149436418	chr13	48037902	C	G	*1	Normal function	.
+NUDT15	rs149436418	chr13	48037902	C	G	*12	Uncertain function	.
+NUDT15	rs186364861	chr13	48037798	G	A	*1	Normal function	.
+NUDT15	rs186364861	chr13	48037798	G	A	*5	Decreased function	.
+NUDT15	rs1950545307	chr13	48037885	G	A	*1	Normal function	.
+NUDT15	rs1950545307	chr13	48037885	G	A	*11	Uncertain function	.
+NUDT15	rs766023281	chr13	48037847	G	C	*1	Normal function	.
+NUDT15	rs766023281	chr13	48037847	G	C	*7	No function	.
+NUDT15	rs768324690	chr13	48045690	C	G	*1	Normal function	.
+NUDT15	rs768324690	chr13	48045690	C	G	*20	Uncertain function	.
+NUDT15	rs769369441	chr13	48037748	T	C	*1	Normal function	.
+NUDT15	rs769369441	chr13	48037748	T	C	*10	No function	.
+RYR1	rs111272095	chr19	38466347	C	T	Reference	Normal function	.
+RYR1	rs111272095	chr19	38466347	C	T	c.3127C>T	Uncertain function	.
+RYR1	rs111364296	chr19	38499817	G	A	Reference	Normal function	.
+RYR1	rs111364296	chr19	38499817	G	A	c.7210G>A	Uncertain function	.
+RYR1	rs111565359	chr19	38535197	G	A	Reference	Normal function	.
+RYR1	rs111565359	chr19	38535197	G	A	c.11416G>A	Uncertain function	.
+RYR1	rs111657878	chr19	38585947	T	C	Reference	Normal function	.
+RYR1	rs111657878	chr19	38585947	T	C	c.14813T>C	Uncertain function	.
+RYR1	rs111888148	chr19	38455463	G	A	Reference	Normal function	.
+RYR1	rs111888148	chr19	38455463	G	A	c.1589G>A	Malignant Hyperthermia associated	.
+RYR1	rs112151058	chr19	38517541	G	A	Reference	Normal function	.
+RYR1	rs112151058	chr19	38517541	G	A	c.9868G>A	Uncertain function	.
+RYR1	rs112196644	chr19	38504869	A	G	Reference	Normal function	.
+RYR1	rs112196644	chr19	38504869	A	G	c.8189A>G	Uncertain function	.
+RYR1	rs112563513	chr19	38499223	G	A	Reference	Normal function	.
+RYR1	rs112563513	chr19	38499223	G	A	c.7007G>A	Malignant Hyperthermia associated	.
+RYR1	rs112596687	chr19	38446517	T	A	Reference	Normal function	.
+RYR1	rs112596687	chr19	38446517	T	A	c.677T>A	Uncertain function	.
+RYR1	rs112772310	chr19	38506492	G	A	Reference	Normal function	.
+RYR1	rs112772310	chr19	38506492	G	A	c.8638G>A	Uncertain function	.
+RYR1	rs113210953	chr19	38580485	A	G	Reference	Normal function	.
+RYR1	rs113210953	chr19	38580485	A	G	c.14627A>G	Malignant Hyperthermia associated	.
+RYR1	rs113332073	chr19	38448791	G	A	Reference	Normal function	.
+RYR1	rs113332073	chr19	38448791	G	A	c.1100G>A	Uncertain function	.
+RYR1	rs113332073	chr19	38448791	G	A	c.1100G>T	Uncertain function	.
+RYR1	rs117886618	chr19	38494464	C	G	Reference	Normal function	.
+RYR1	rs117886618	chr19	38494464	C	G	c.6387C>G	Malignant Hyperthermia associated	.
+RYR1	rs118192113	chr19	38442395	C	A	Reference	Normal function	.
+RYR1	rs118192113	chr19	38442395	C	A	c.212C>A	Uncertain function	.
+RYR1	rs118192116	chr19	38451850	C	G	Reference	Normal function	.
+RYR1	rs118192116	chr19	38451850	C	G	c.1209C>G	Uncertain function	.
+RYR1	rs118192121	chr19	38496910	A	C	Reference	Normal function	.
+RYR1	rs118192121	chr19	38496910	A	C	c.6847A>C	Uncertain function	.
+RYR1	rs118192122	chr19	38500643	G	A	Reference	Normal function	.
+RYR1	rs118192122	chr19	38500643	G	A	c.7361G>A	Malignant Hyperthermia associated	.
+RYR1	rs118192123	chr19	38500640	T	C	Reference	Normal function	.
+RYR1	rs118192123	chr19	38500640	T	C	c.7358T>C	Malignant Hyperthermia associated	.
+RYR1	rs118192124	chr19	38500636	C	T	Reference	Normal function	.
+RYR1	rs118192124	chr19	38500636	C	T	c.7354C>T	Malignant Hyperthermia associated	.
+RYR1	rs118192126	chr19	38519295	A	G	Reference	Normal function	.
+RYR1	rs118192126	chr19	38519295	A	G	c.10100A>G	Normal function	.
+RYR1	rs118192130	chr19	38570620	G	A	Reference	Normal function	.
+RYR1	rs118192130	chr19	38570620	G	A	c.13673G>A	Uncertain function	.
+RYR1	rs118192135	chr19	38572185	G	A	Reference	Normal function	.
+RYR1	rs118192135	chr19	38572185	G	A	c.13913G>A	Uncertain function	.
+RYR1	rs118192140	chr19	38573304	C	T	Reference	Normal function	.
+RYR1	rs118192140	chr19	38573304	C	T	c.14126C>T	Uncertain function	.
+RYR1	rs118192151	chr19	38584974	G	A	Reference	Normal function	.
+RYR1	rs118192151	chr19	38584974	G	A	c.14678G>A	Uncertain function	.
+RYR1	rs118192158	chr19	38585952	G	A	Reference	Normal function	.
+RYR1	rs118192158	chr19	38585952	G	A	c.14818G>A	Uncertain function	.
+RYR1	rs118192159	chr19	38585948	C	G	Reference	Normal function	.
+RYR1	rs118192159	chr19	38585948	C	G	c.14814C>G	Uncertain function	.
+RYR1	rs118192160	chr19	38442361	G	A	Reference	Normal function	.
+RYR1	rs118192160	chr19	38442361	G	A	c.178G>A	Uncertain function	.
+RYR1	rs118192160	chr19	38442361	G	A	c.178G>T	Uncertain function	.
+RYR1	rs118192161	chr19	38444211	C	T	Reference	Normal function	.
+RYR1	rs118192161	chr19	38444211	C	T	c.487C>T	Malignant Hyperthermia associated	.
+RYR1	rs118192162	chr19	38455359	A	C	Reference	Normal function	.
+RYR1	rs118192162	chr19	38455359	A	C	c.1565A>C	Malignant Hyperthermia associated	.
+RYR1	rs118192162	chr19	38455359	A	C	c.1565A>G	Malignant Hyperthermia associated	.
+RYR1	rs118192163	chr19	38494565	G	A	Reference	Normal function	.
+RYR1	rs118192163	chr19	38494565	G	A	c.6488G>A	Malignant Hyperthermia associated	.
+RYR1	rs118192163	chr19	38494565	G	A	c.6488G>C	Malignant Hyperthermia associated	.
+RYR1	rs118192163	chr19	38494565	G	A	c.6488G>T	Malignant Hyperthermia associated	.
+RYR1	rs118192167	chr19	38580004	A	G	Reference	Normal function	.
+RYR1	rs118192167	chr19	38580004	A	G	c.14387A>G	Uncertain function	.
+RYR1	rs118192168	chr19	38580403	G	A	Reference	Normal function	.
+RYR1	rs118192168	chr19	38580403	G	A	c.14545G>A	Malignant Hyperthermia associated	.
+RYR1	rs118192170	chr19	38584989	T	C	Reference	Normal function	.
+RYR1	rs118192170	chr19	38584989	T	C	c.14693T>C	Uncertain function	.
+RYR1	rs118192172	chr19	38457545	C	T	Reference	Normal function	.
+RYR1	rs118192172	chr19	38457545	C	T	c.1840C>T	Malignant Hyperthermia associated	.
+RYR1	rs118192175	chr19	38494564	C	T	Reference	Normal function	.
+RYR1	rs118192175	chr19	38494564	C	T	c.6487C>T	Malignant Hyperthermia associated	.
+RYR1	rs118192176	chr19	38494579	G	A	Reference	Normal function	.
+RYR1	rs118192176	chr19	38494579	G	A	c.6502G>A	Malignant Hyperthermia associated	.
+RYR1	rs118192177	chr19	38496283	C	G	Reference	Normal function	.
+RYR1	rs118192177	chr19	38496283	C	G	c.6617C>G	Malignant Hyperthermia associated	.
+RYR1	rs118192177	chr19	38496283	C	G	c.6617C>T	Malignant Hyperthermia associated	.
+RYR1	rs118192178	chr19	38500898	C	T	Reference	Normal function	.
+RYR1	rs118192178	chr19	38500898	C	T	c.7522C>G	Uncertain function	.
+RYR1	rs118192178	chr19	38500898	C	T	c.7522C>T	Malignant Hyperthermia associated	.
+RYR1	rs118192181	chr19	38580439	C	T	Reference	Normal function	.
+RYR1	rs118192181	chr19	38580439	C	T	c.14581C>T	Uncertain function	.
+RYR1	rs118204421	chr19	38519237	C	T	Reference	Normal function	.
+RYR1	rs118204421	chr19	38519237	C	T	c.10042C>T	Uncertain function	.
+RYR1	rs118204422	chr19	38543816	T	C	Reference	Normal function	.
+RYR1	rs118204422	chr19	38543816	T	C	c.11953T>C	Uncertain function	.
+RYR1	rs118204423	chr19	38457539	G	C	Reference	Normal function	.
+RYR1	rs118204423	chr19	38457539	G	C	c.1834G>C	Uncertain function	.
+RYR1	rs121918592	chr19	38448712	G	A	Reference	Normal function	.
+RYR1	rs121918592	chr19	38448712	G	A	c.1021G>A	Malignant Hyperthermia associated	.
+RYR1	rs121918592	chr19	38448712	G	A	c.1021G>C	Malignant Hyperthermia associated	.
+RYR1	rs121918593	chr19	38499993	G	A	Reference	Normal function	.
+RYR1	rs121918593	chr19	38499993	G	A	c.7300G>A	Malignant Hyperthermia associated	.
+RYR1	rs121918594	chr19	38500655	G	A	Reference	Normal function	.
+RYR1	rs121918594	chr19	38500655	G	A	c.7373G>A	Malignant Hyperthermia associated	.
+RYR1	rs121918594	chr19	38500655	G	A	c.7373G>T	Malignant Hyperthermia associated	.
+RYR1	rs121918595	chr19	38580094	C	T	Reference	Normal function	.
+RYR1	rs121918595	chr19	38580094	C	T	c.14477C>T	Malignant Hyperthermia associated	.
+RYR1	rs137932199	chr19	38519292	G	A	Reference	Normal function	.
+RYR1	rs137932199	chr19	38519292	G	A	c.10097G>A	Normal function	.
+RYR1	rs137933390	chr19	38475335	A	G	Reference	Normal function	.
+RYR1	rs137933390	chr19	38475335	A	G	c.4178A>G	Normal function	.
+RYR1	rs138874610	chr19	38458247	G	A	Reference	Normal function	.
+RYR1	rs138874610	chr19	38458247	G	A	c.2122G>A	Uncertain function	.
+RYR1	rs139161723	chr19	38440830	G	A	Reference	Normal function	.
+RYR1	rs139161723	chr19	38440830	G	A	c.131G>A	Uncertain function	.
+RYR1	rs139647387	chr19	38566978	A	G	Reference	Normal function	.
+RYR1	rs139647387	chr19	38566978	A	G	c.13505A>G	Uncertain function	.
+RYR1	rs140152019	chr19	38496488	G	A	Reference	Normal function	.
+RYR1	rs140152019	chr19	38496488	G	A	c.6743G>A	Uncertain function	.
+RYR1	rs140616359	chr19	38535998	G	A	Reference	Normal function	.
+RYR1	rs140616359	chr19	38535998	G	A	c.11518G>A	Uncertain function	.
+RYR1	rs141646642	chr19	38496278	C	G	Reference	Normal function	.
+RYR1	rs141646642	chr19	38496278	C	G	c.6612C>G	Malignant Hyperthermia associated	.
+RYR1	rs141942845	chr19	38466315	G	A	Reference	Normal function	.
+RYR1	rs141942845	chr19	38466315	G	A	c.3095G>A	Uncertain function	.
+RYR1	rs142474192	chr19	38443790	G	A	Reference	Normal function	.
+RYR1	rs142474192	chr19	38443790	G	A	c.418G>A	Normal function	.
+RYR1	rs143398211	chr19	38494555	G	A	Reference	Normal function	.
+RYR1	rs143398211	chr19	38494555	G	A	c.6478G>A	Uncertain function	.
+RYR1	rs143520367	chr19	38572032	C	T	Reference	Normal function	.
+RYR1	rs143520367	chr19	38572032	C	T	c.13760C>T	Uncertain function	.
+RYR1	rs143987857	chr19	38525492	G	A	Reference	Normal function	.
+RYR1	rs143987857	chr19	38525492	G	A	c.10616G>A	Normal function	.
+RYR1	rs143988412	chr19	38580066	A	T	Reference	Normal function	.
+RYR1	rs143988412	chr19	38580066	A	T	c.14449A>T	Uncertain function	.
+RYR1	rs144336148	chr19	38455472	G	A	Reference	Normal function	.
+RYR1	rs144336148	chr19	38455472	G	A	c.1598G>A	Uncertain function	.
+RYR1	rs144685735	chr19	38548259	C	T	Reference	Normal function	.
+RYR1	rs144685735	chr19	38548259	C	T	c.12121C>T	Uncertain function	.
+RYR1	rs145573319	chr19	38477816	A	G	Reference	Normal function	.
+RYR1	rs145573319	chr19	38477816	A	G	c.4400A>G	Uncertain function	.
+RYR1	rs145801146	chr19	38490151	C	T	Reference	Normal function	.
+RYR1	rs145801146	chr19	38490151	C	T	c.5890C>T	Uncertain function	.
+RYR1	rs146306934	chr19	38499706	G	A	Reference	Normal function	.
+RYR1	rs146306934	chr19	38499706	G	A	c.7099G>A	Uncertain function	.
+RYR1	rs146429605	chr19	38483293	A	G	Reference	Normal function	.
+RYR1	rs146429605	chr19	38483293	A	G	c.4711A>G	Normal function	.
+RYR1	rs146504767	chr19	38485691	G	A	Reference	Normal function	.
+RYR1	rs146504767	chr19	38485691	G	A	c.5036G>A	Normal function	.
+RYR1	rs146876145	chr19	38586140	C	T	Reference	Normal function	.
+RYR1	rs146876145	chr19	38586140	C	T	c.14918C>T	Malignant Hyperthermia associated	.
+RYR1	rs147136339	chr19	38543551	A	G	Reference	Normal function	.
+RYR1	rs147136339	chr19	38543551	A	G	c.11798A>G	Normal function	.
+RYR1	rs147213895	chr19	38499241	A	G	Reference	Normal function	.
+RYR1	rs147213895	chr19	38499241	A	G	c.7025A>G	Normal function	.
+RYR1	rs147303895	chr19	38511590	G	A	Reference	Normal function	.
+RYR1	rs147303895	chr19	38511590	G	A	c.9152G>A	Uncertain function	.
+RYR1	rs147707463	chr19	38505325	C	T	Reference	Normal function	.
+RYR1	rs147707463	chr19	38505325	C	T	c.8327C>T	Normal function	.
+RYR1	rs147723844	chr19	38455247	A	G	Reference	Normal function	.
+RYR1	rs147723844	chr19	38455247	A	G	c.1453A>G	Uncertain function	.
+RYR1	rs148399313	chr19	38543365	G	A	Reference	Normal function	.
+RYR1	rs148399313	chr19	38543365	G	A	c.11708G>A	Malignant Hyperthermia associated	.
+RYR1	rs148623597	chr19	38464649	G	A	Reference	Normal function	.
+RYR1	rs148623597	chr19	38464649	G	A	c.2797G>A	Normal function	.
+RYR1	rs150396398	chr19	38566986	G	C	Reference	Normal function	.
+RYR1	rs150396398	chr19	38566986	G	C	c.13513G>C	Normal function	.
+RYR1	rs151029675	chr19	38483345	C	T	Reference	Normal function	.
+RYR1	rs151029675	chr19	38483345	C	T	c.4763C>T	Uncertain function	.
+RYR1	rs151119428	chr19	38561383	G	A	Reference	Normal function	.
+RYR1	rs151119428	chr19	38561383	G	A	c.12553G>A	Uncertain function	.
+RYR1	rs1801086	chr19	38446710	G	A	Reference	Normal function	.
+RYR1	rs1801086	chr19	38446710	G	A	c.742G>A	Malignant Hyperthermia associated	.
+RYR1	rs1801086	chr19	38446710	G	A	c.742G>C	Malignant Hyperthermia associated	.
+RYR1	rs180714609	chr19	38466216	G	A	Reference	Normal function	.
+RYR1	rs180714609	chr19	38466216	G	A	c.2996G>A	Uncertain function	.
+RYR1	rs186983396	chr19	38442434	C	T	Reference	Normal function	.
+RYR1	rs186983396	chr19	38442434	C	T	c.251C>T	Uncertain function	.
+RYR1	rs192863857	chr19	38485972	C	T	Reference	Normal function	.
+RYR1	rs192863857	chr19	38485972	C	T	c.5317C>T	Normal function	.
+RYR1	rs193922744	chr19	38433867	T	G	Reference	Normal function	.
+RYR1	rs193922744	chr19	38433867	T	G	c.38T>G	Malignant Hyperthermia associated	.
+RYR1	rs193922746	chr19	38440796	A	G	Reference	Normal function	.
+RYR1	rs193922746	chr19	38440796	A	G	c.97A>G	Malignant Hyperthermia associated	.
+RYR1	rs193922747	chr19	38440802	T	C	Reference	Normal function	.
+RYR1	rs193922747	chr19	38440802	T	C	c.103T>C	Malignant Hyperthermia associated	.
+RYR1	rs193922748	chr19	38440829	C	T	Reference	Normal function	.
+RYR1	rs193922748	chr19	38440829	C	T	c.130C>T	Malignant Hyperthermia associated	.
+RYR1	rs193922749	chr19	38440851	C	A	Reference	Normal function	.
+RYR1	rs193922749	chr19	38440851	C	A	c.152C>A	Uncertain function	.
+RYR1	rs193922750	chr19	38444187	C	A	Reference	Normal function	.
+RYR1	rs193922750	chr19	38444187	C	A	c.463C>A	Malignant Hyperthermia associated	.
+RYR1	rs193922751	chr19	38444191	G	A	Reference	Normal function	.
+RYR1	rs193922751	chr19	38444191	G	A	c.467G>A	Uncertain function	.
+RYR1	rs193922752	chr19	38444203	A	G	Reference	Normal function	.
+RYR1	rs193922752	chr19	38444203	A	G	c.479A>G	Uncertain function	.
+RYR1	rs193922753	chr19	38444212	G	T	Reference	Normal function	.
+RYR1	rs193922753	chr19	38444212	G	T	c.488G>A	Uncertain function	.
+RYR1	rs193922753	chr19	38444212	G	T	c.488G>T	Malignant Hyperthermia associated	.
+RYR1	rs193922754	chr19	38444217	G	A	Reference	Normal function	.
+RYR1	rs193922754	chr19	38444217	G	A	c.493G>A	Uncertain function	.
+RYR1	rs193922755	chr19	38444220	G	A	Reference	Normal function	.
+RYR1	rs193922755	chr19	38444220	G	A	c.496G>A	Uncertain function	.
+RYR1	rs193922756	chr19	38444221	A	G	Reference	Normal function	.
+RYR1	rs193922756	chr19	38444221	A	G	c.497A>G	Uncertain function	.
+RYR1	rs193922757	chr19	38444253	C	T	Reference	Normal function	.
+RYR1	rs193922757	chr19	38444253	C	T	c.529C>T	Malignant Hyperthermia associated	.
+RYR1	rs193922759	chr19	38446492	G	A	Reference	Normal function	.
+RYR1	rs193922759	chr19	38446492	G	A	c.652G>A	Uncertain function	.
+RYR1	rs193922760	chr19	38446520	A	T	Reference	Normal function	.
+RYR1	rs193922760	chr19	38446520	A	T	c.680A>T	Uncertain function	.
+RYR1	rs193922761	chr19	38448501	G	T	Reference	Normal function	.
+RYR1	rs193922761	chr19	38448501	G	T	c.947G>T	Uncertain function	.
+RYR1	rs193922762	chr19	38448673	C	T	Reference	Normal function	.
+RYR1	rs193922762	chr19	38448673	C	T	c.982C>T	Malignant Hyperthermia associated	.
+RYR1	rs193922764	chr19	38451842	C	T	Reference	Normal function	.
+RYR1	rs193922764	chr19	38451842	C	T	c.1201C>A	Uncertain function	.
+RYR1	rs193922764	chr19	38451842	C	T	c.1201C>G	Uncertain function	.
+RYR1	rs193922764	chr19	38451842	C	T	c.1201C>T	Malignant Hyperthermia associated	.
+RYR1	rs193922766	chr19	38451843	G	T	Reference	Normal function	.
+RYR1	rs193922766	chr19	38451843	G	T	c.1202G>A	Malignant Hyperthermia associated	.
+RYR1	rs193922766	chr19	38451843	G	T	c.1202G>T	Malignant Hyperthermia associated	.
+RYR1	rs193922767	chr19	38452996	G	T	Reference	Normal function	.
+RYR1	rs193922767	chr19	38452996	G	T	c.1422G>T	Uncertain function	.
+RYR1	rs193922768	chr19	38455471	C	T	Reference	Normal function	.
+RYR1	rs193922768	chr19	38455471	C	T	c.1597C>A	Uncertain function	.
+RYR1	rs193922768	chr19	38455471	C	T	c.1597C>T	Malignant Hyperthermia associated	.
+RYR1	rs193922769	chr19	38455489	T	C	Reference	Normal function	.
+RYR1	rs193922769	chr19	38455489	T	C	c.1615T>C	Malignant Hyperthermia associated	.
+RYR1	rs193922769	chr19	38455489	T	C	c.1615T>G	Malignant Hyperthermia associated	.
+RYR1	rs193922770	chr19	38455528	C	T	Reference	Normal function	.
+RYR1	rs193922770	chr19	38455528	C	T	c.1654C>T	Malignant Hyperthermia associated	.
+RYR1	rs193922772	chr19	38457546	G	T	Reference	Normal function	.
+RYR1	rs193922772	chr19	38457546	G	T	c.1841G>T	Malignant Hyperthermia associated	.
+RYR1	rs193922775	chr19	38460551	C	T	Reference	Normal function	.
+RYR1	rs193922775	chr19	38460551	C	T	c.2537C>T	Uncertain function	.
+RYR1	rs193922776	chr19	38469002	C	T	Reference	Normal function	.
+RYR1	rs193922776	chr19	38469002	C	T	c.3418C>T	Uncertain function	.
+RYR1	rs193922777	chr19	38483357	C	T	Reference	Normal function	.
+RYR1	rs193922777	chr19	38483357	C	T	c.4775C>T	Uncertain function	.
+RYR1	rs193922781	chr19	38485838	C	T	Reference	Normal function	.
+RYR1	rs193922781	chr19	38485838	C	T	c.5183C>T	Malignant Hyperthermia associated	.
+RYR1	rs193922782	chr19	38485841	T	G	Reference	Normal function	.
+RYR1	rs193922782	chr19	38485841	T	G	c.5186T>G	Uncertain function	.
+RYR1	rs193922783	chr19	38486096	T	A	Reference	Normal function	.
+RYR1	rs193922783	chr19	38486096	T	A	c.5441T>A	Uncertain function	.
+RYR1	rs193922788	chr19	38494426	G	C	Reference	Normal function	.
+RYR1	rs193922788	chr19	38494426	G	C	c.6349G>C	Malignant Hyperthermia associated	.
+RYR1	rs193922789	chr19	38494465	G	A	Reference	Normal function	.
+RYR1	rs193922789	chr19	38494465	G	A	c.6388G>A	Uncertain function	.
+RYR1	rs193922790	chr19	38494621	A	T	Reference	Normal function	.
+RYR1	rs193922790	chr19	38494621	A	T	c.6544A>T	Uncertain function	.
+RYR1	rs193922791	chr19	38496265	C	T	Reference	Normal function	.
+RYR1	rs193922791	chr19	38496265	C	T	c.6599C>T	Uncertain function	.
+RYR1	rs193922792	chr19	38496294	G	T	Reference	Normal function	.
+RYR1	rs193922792	chr19	38496294	G	T	c.6628G>T	Malignant Hyperthermia associated	.
+RYR1	rs193922793	chr19	38496301	T	A	Reference	Normal function	.
+RYR1	rs193922793	chr19	38496301	T	A	c.6635T>A	Uncertain function	.
+RYR1	rs193922795	chr19	38496306	G	A	Reference	Normal function	.
+RYR1	rs193922795	chr19	38496306	G	A	c.6640G>A	Uncertain function	.
+RYR1	rs193922797	chr19	38496901	G	A	Reference	Normal function	.
+RYR1	rs193922797	chr19	38496901	G	A	c.6838G>A	Malignant Hyperthermia associated	.
+RYR1	rs193922798	chr19	38499639	G	C	Reference	Normal function	.
+RYR1	rs193922798	chr19	38499639	G	C	c.7032G>C	Uncertain function	.
+RYR1	rs193922799	chr19	38499643	G	A	Reference	Normal function	.
+RYR1	rs193922799	chr19	38499643	G	A	c.7036G>A	Malignant Hyperthermia associated	.
+RYR1	rs193922801	chr19	38499650	A	G	Reference	Normal function	.
+RYR1	rs193922801	chr19	38499650	A	G	c.7043A>G	Malignant Hyperthermia associated	.
+RYR1	rs193922802	chr19	38499655	G	A	Reference	Normal function	.
+RYR1	rs193922802	chr19	38499655	G	A	c.7048G>A	Malignant Hyperthermia associated	.
+RYR1	rs193922803	chr19	38499670	C	T	Reference	Normal function	.
+RYR1	rs193922803	chr19	38499670	C	T	c.7063C>T	Malignant Hyperthermia associated	.
+RYR1	rs193922804	chr19	38499692	A	G	Reference	Normal function	.
+RYR1	rs193922804	chr19	38499692	A	G	c.7085A>G	Uncertain function	.
+RYR1	rs193922805	chr19	38499697	T	G	Reference	Normal function	.
+RYR1	rs193922805	chr19	38499697	T	G	c.7090T>G	Malignant Hyperthermia associated	.
+RYR1	rs193922806	chr19	38499704	C	G	Reference	Normal function	.
+RYR1	rs193922806	chr19	38499704	C	G	c.7097C>G	Uncertain function	.
+RYR1	rs193922807	chr19	38499731	G	C	Reference	Normal function	.
+RYR1	rs193922807	chr19	38499731	G	C	c.7124G>C	Malignant Hyperthermia associated	.
+RYR1	rs193922809	chr19	38499975	G	A	Reference	Normal function	.
+RYR1	rs193922809	chr19	38499975	G	A	c.7282G>A	Malignant Hyperthermia associated	.
+RYR1	rs193922810	chr19	38499984	G	A	Reference	Normal function	.
+RYR1	rs193922810	chr19	38499984	G	A	c.7291G>A	Malignant Hyperthermia associated	.
+RYR1	rs193922810	chr19	38499984	G	A	c.7291G>T	Malignant Hyperthermia associated	.
+RYR1	rs193922812	chr19	38500003	C	T	Reference	Normal function	.
+RYR1	rs193922812	chr19	38500003	C	T	c.7310C>T	Malignant Hyperthermia associated	.
+RYR1	rs193922813	chr19	38500010	G	C	Reference	Normal function	.
+RYR1	rs193922813	chr19	38500010	G	C	c.7317G>C	Uncertain function	.
+RYR1	rs193922815	chr19	38500637	G	A	Reference	Normal function	.
+RYR1	rs193922815	chr19	38500637	G	A	c.7355G>A	Uncertain function	.
+RYR1	rs193922815	chr19	38500637	G	A	c.7355G>C	Uncertain function	.
+RYR1	rs193922816	chr19	38500642	C	T	Reference	Normal function	.
+RYR1	rs193922816	chr19	38500642	C	T	c.7360C>T	Malignant Hyperthermia associated	.
+RYR1	rs193922817	chr19	38500863	C	T	Reference	Normal function	.
+RYR1	rs193922817	chr19	38500863	C	T	c.7487C>T	Uncertain function	.
+RYR1	rs193922818	chr19	38500899	G	A	Reference	Normal function	.
+RYR1	rs193922818	chr19	38500899	G	A	c.7523G>A	Malignant Hyperthermia associated	.
+RYR1	rs193922819	chr19	38500904	T	C	Reference	Normal function	.
+RYR1	rs193922819	chr19	38500904	T	C	c.7528T>C	Uncertain function	.
+RYR1	rs193922822	chr19	38502663	C	G	Reference	Normal function	.
+RYR1	rs193922822	chr19	38502663	C	G	c.7771C>G	Uncertain function	.
+RYR1	rs193922822	chr19	38502663	C	G	c.7771C>T	Uncertain function	.
+RYR1	rs193922824	chr19	38502679	C	T	Reference	Normal function	.
+RYR1	rs193922824	chr19	38502679	C	T	c.7787C>T	Uncertain function	.
+RYR1	rs193922826	chr19	38504319	C	T	Reference	Normal function	.
+RYR1	rs193922826	chr19	38504319	C	T	c.8026C>T	Malignant Hyperthermia associated	.
+RYR1	rs193922827	chr19	38504868	G	C	Reference	Normal function	.
+RYR1	rs193922827	chr19	38504868	G	C	c.8188G>C	Uncertain function	.
+RYR1	rs193922828	chr19	38504878	G	A	Reference	Normal function	.
+RYR1	rs193922828	chr19	38504878	G	A	c.8198G>A	Uncertain function	.
+RYR1	rs193922829	chr19	38505061	G	A	Reference	Normal function	.
+RYR1	rs193922829	chr19	38505061	G	A	c.8290G>A	Uncertain function	.
+RYR1	rs193922830	chr19	38505923	C	T	Reference	Normal function	.
+RYR1	rs193922830	chr19	38505923	C	T	c.8518C>T	Uncertain function	.
+RYR1	rs193922831	chr19	38506361	T	A	Reference	Normal function	.
+RYR1	rs193922831	chr19	38506361	T	A	c.8600T>A	Uncertain function	.
+RYR1	rs193922832	chr19	38512321	G	A	Reference	Normal function	.
+RYR1	rs193922832	chr19	38512321	G	A	c.9310G>A	Malignant Hyperthermia associated	.
+RYR1	rs193922833	chr19	38512367	G	A	Reference	Normal function	.
+RYR1	rs193922833	chr19	38512367	G	A	c.9356G>A	Uncertain function	.
+RYR1	rs193922834	chr19	38519238	G	A	Reference	Normal function	.
+RYR1	rs193922834	chr19	38519238	G	A	c.10043G>A	Uncertain function	.
+RYR1	rs193922838	chr19	38529036	G	T	Reference	Normal function	.
+RYR1	rs193922838	chr19	38529036	G	T	c.11120G>T	Uncertain function	.
+RYR1	rs193922839	chr19	38534775	G	A	Reference	Normal function	.
+RYR1	rs193922839	chr19	38534775	G	A	c.11315G>A	Malignant Hyperthermia associated	.
+RYR1	rs193922840	chr19	38543405	T	G	Reference	Normal function	.
+RYR1	rs193922840	chr19	38543405	T	G	c.11748T>G	Uncertain function	.
+RYR1	rs193922842	chr19	38543821	C	G	Reference	Normal function	.
+RYR1	rs193922842	chr19	38543821	C	G	c.11958C>G	Uncertain function	.
+RYR1	rs193922843	chr19	38543832	G	T	Reference	Normal function	.
+RYR1	rs193922843	chr19	38543832	G	T	c.11969G>T	Malignant Hyperthermia associated	.
+RYR1	rs193922844	chr19	38548287	C	A	Reference	Normal function	.
+RYR1	rs193922844	chr19	38548287	C	A	c.12149C>A	Malignant Hyperthermia associated	.
+RYR1	rs193922848	chr19	38561185	A	T	Reference	Normal function	.
+RYR1	rs193922848	chr19	38561185	A	T	c.12355A>T	Uncertain function	.
+RYR1	rs193922849	chr19	38561236	C	A	Reference	Normal function	.
+RYR1	rs193922849	chr19	38561236	C	A	c.12406C>A	Normal function	.
+RYR1	rs193922850	chr19	38561243	T	C	Reference	Normal function	.
+RYR1	rs193922850	chr19	38561243	T	C	c.12413T>C	Uncertain function	.
+RYR1	rs193922852	chr19	38565034	G	C	Reference	Normal function	.
+RYR1	rs193922852	chr19	38565034	G	C	c.12700G>C	Malignant Hyperthermia associated	.
+RYR1	rs193922852	chr19	38565034	G	C	c.12700G>T	Malignant Hyperthermia associated	.
+RYR1	rs193922853	chr19	38565182	A	T	Reference	Normal function	.
+RYR1	rs193922853	chr19	38565182	A	T	c.12848A>T	Uncertain function	.
+RYR1	rs193922855	chr19	38565218	C	T	Reference	Normal function	.
+RYR1	rs193922855	chr19	38565218	C	T	c.12884C>T	Normal function	.
+RYR1	rs193922860	chr19	38572206	G	A	Reference	Normal function	.
+RYR1	rs193922860	chr19	38572206	G	A	c.13934G>A	Uncertain function	.
+RYR1	rs193922863	chr19	38573180	C	T	Reference	Normal function	.
+RYR1	rs193922863	chr19	38573180	C	T	c.14002C>T	Uncertain function	.
+RYR1	rs193922864	chr19	38573229	T	C	Reference	Normal function	.
+RYR1	rs193922864	chr19	38573229	T	C	c.14051T>C	Uncertain function	.
+RYR1	rs193922865	chr19	38577942	T	G	Reference	Normal function	.
+RYR1	rs193922865	chr19	38577942	T	G	c.14197T>G	Uncertain function	.
+RYR1	rs193922866	chr19	38577946	G	A	Reference	Normal function	.
+RYR1	rs193922866	chr19	38577946	G	A	c.14201G>A	Uncertain function	.
+RYR1	rs193922867	chr19	38577954	C	T	Reference	Normal function	.
+RYR1	rs193922867	chr19	38577954	C	T	c.14209C>T	Malignant Hyperthermia associated	.
+RYR1	rs193922868	chr19	38577955	G	A	Reference	Normal function	.
+RYR1	rs193922868	chr19	38577955	G	A	c.14210G>A	Malignant Hyperthermia associated	.
+RYR1	rs193922873	chr19	38580075	G	A	Reference	Normal function	.
+RYR1	rs193922873	chr19	38580075	G	A	c.14458G>A	Uncertain function	.
+RYR1	rs193922873	chr19	38580075	G	A	c.14458G>T	Uncertain function	.
+RYR1	rs193922874	chr19	38580088	T	C	Reference	Normal function	.
+RYR1	rs193922874	chr19	38580088	T	C	c.14471T>C	Uncertain function	.
+RYR1	rs193922876	chr19	38580114	C	T	Reference	Normal function	.
+RYR1	rs193922876	chr19	38580114	C	T	c.14497C>T	Malignant Hyperthermia associated	.
+RYR1	rs193922877	chr19	38580127	A	del	Reference	Normal function	.
+RYR1	rs193922877	chr19	38580127	A	del	c.14510delA	Normal function	.
+RYR1	rs193922878	chr19	38580370	C	G	Reference	Normal function	.
+RYR1	rs193922878	chr19	38580370	C	G	c.14512C>G	Malignant Hyperthermia associated	.
+RYR1	rs193922879	chr19	38580382	G	A	Reference	Normal function	.
+RYR1	rs193922879	chr19	38580382	G	A	c.14524G>A	Uncertain function	.
+RYR1	rs193922880	chr19	38580425	C	G	Reference	Normal function	.
+RYR1	rs193922880	chr19	38580425	C	G	c.14567C>G	Uncertain function	.
+RYR1	rs193922883	chr19	38580497	T	C	Reference	Normal function	.
+RYR1	rs193922883	chr19	38580497	T	C	c.14639T>C	Uncertain function	.
+RYR1	rs193922888	chr19	38584976	G	A	Reference	Normal function	.
+RYR1	rs193922888	chr19	38584976	G	A	c.14680G>A	Uncertain function	.
+RYR1	rs193922895	chr19	38585951	C	A	Reference	Normal function	.
+RYR1	rs193922895	chr19	38585951	C	A	c.14817C>A	Uncertain function	.
+RYR1	rs193922896	chr19	38585959	G	T	Reference	Normal function	.
+RYR1	rs193922896	chr19	38585959	G	T	c.14825G>T	Uncertain function	.
+RYR1	rs193922898	chr19	38586101	T	A	Reference	Normal function	.
+RYR1	rs193922898	chr19	38586101	T	A	c.14879T>A	Uncertain function	.
+RYR1	rs199738299	chr19	38516167	A	G	Reference	Normal function	.
+RYR1	rs199738299	chr19	38516167	A	G	c.9635A>G	Uncertain function	.
+RYR1	rs199870223	chr19	38496415	C	T	Reference	Normal function	.
+RYR1	rs199870223	chr19	38496415	C	T	c.6670C>T	Normal function	.
+RYR1	rs200766617	chr19	38575957	G	A	Reference	Normal function	.
+RYR1	rs200766617	chr19	38575957	G	A	c.14168G>A	Normal function	.
+RYR1	rs201321695	chr19	38561228	A	G	Reference	Normal function	.
+RYR1	rs201321695	chr19	38561228	A	G	c.12398A>G	Uncertain function	.
+RYR1	rs2145447772	chr19	38466386	G	C	Reference	Normal function	.
+RYR1	rs2145447772	chr19	38466386	G	C	c.3166G>A	Uncertain function	.
+RYR1	rs2145447772	chr19	38466386	G	C	c.3166G>C	Malignant Hyperthermia associated	.
+RYR1	rs28933396	chr19	38499997	G	A	Reference	Normal function	.
+RYR1	rs28933396	chr19	38499997	G	A	c.7304G>A	Malignant Hyperthermia associated	.
+RYR1	rs28933396	chr19	38499997	G	A	c.7304G>T	Malignant Hyperthermia associated	.
+RYR1	rs28933397	chr19	38500654	C	T	Reference	Normal function	.
+RYR1	rs28933397	chr19	38500654	C	T	c.7372C>T	Malignant Hyperthermia associated	.
+RYR1	rs34390345	chr19	38499177	A	G	Reference	Normal function	.
+RYR1	rs34390345	chr19	38499177	A	G	c.6961A>G	Normal function	.
+RYR1	rs34694816	chr19	38473635	A	G	Reference	Normal function	.
+RYR1	rs34694816	chr19	38473635	A	G	c.4024A>G	Normal function	.
+RYR1	rs34934920	chr19	38486015	C	T	Reference	Normal function	.
+RYR1	rs34934920	chr19	38486015	C	T	c.5360C>T	Normal function	.
+RYR1	rs35180584	chr19	38505358	C	G	Reference	Normal function	.
+RYR1	rs35180584	chr19	38505358	C	G	c.8360C>G	Normal function	.
+RYR1	rs35364374	chr19	38492540	G	T	Reference	Normal function	.
+RYR1	rs35364374	chr19	38492540	G	T	c.6178G>T	Normal function	.
+RYR1	rs370634440	chr19	38463499	G	A	Reference	Normal function	.
+RYR1	rs370634440	chr19	38463499	G	A	c.2654G>A	Uncertain function	.
+RYR1	rs372958050	chr19	38485996	T	C	Reference	Normal function	.
+RYR1	rs372958050	chr19	38485996	T	C	c.5341T>C	Uncertain function	.
+RYR1	rs373406011	chr19	38548380	C	T	Reference	Normal function	.
+RYR1	rs373406011	chr19	38548380	C	T	c.12242C>T	Uncertain function	.
+RYR1	rs375626634	chr19	38517431	T	C	Reference	Normal function	.
+RYR1	rs375626634	chr19	38517431	T	C	c.9758T>C	Uncertain function	.
+RYR1	rs375915752	chr19	38529048	C	T	Reference	Normal function	.
+RYR1	rs375915752	chr19	38529048	C	T	c.11132C>T	Uncertain function	.
+RYR1	rs376149732	chr19	38460461	C	T	Reference	Normal function	.
+RYR1	rs376149732	chr19	38460461	C	T	c.2447C>T	Normal function	.
+RYR1	rs4802584	chr19	38534726	C	G	Reference	Normal function	.
+RYR1	rs4802584	chr19	38534726	C	G	c.11266C>G	Normal function	.
+RYR1	rs537994744	chr19	38496416	G	A	Reference	Normal function	.
+RYR1	rs537994744	chr19	38496416	G	A	c.6671G>A	Uncertain function	.
+RYR1	rs549201486	chr19	38469111	C	T	Reference	Normal function	.
+RYR1	rs549201486	chr19	38469111	C	T	c.3527C>T	Uncertain function	.
+RYR1	rs551223467	chr19	38500667	C	T	Reference	Normal function	.
+RYR1	rs551223467	chr19	38500667	C	T	c.7385C>T	Uncertain function	.
+RYR1	rs553055844	chr19	38516184	G	A	Reference	Normal function	.
+RYR1	rs553055844	chr19	38516184	G	A	c.9652G>A	Uncertain function	.
+RYR1	rs55876273	chr19	38527707	G	C	Reference	Normal function	.
+RYR1	rs55876273	chr19	38527707	G	C	c.10747G>C	Normal function	.
+RYR1	rs587784372	chr19	38565215	C	T	Reference	Normal function	.
+RYR1	rs587784372	chr19	38565215	C	T	c.12881C>T	Normal function	.
+RYR1	rs63749869	chr19	38580440	G	A	Reference	Normal function	.
+RYR1	rs63749869	chr19	38580440	G	A	c.14582G>A	Uncertain function	.
+RYR1	rs727504129	chr19	38446481	C	T	Reference	Normal function	.
+RYR1	rs727504129	chr19	38446481	C	T	c.641C>T	Uncertain function	.
+RYR1	rs746818096	chr19	38494379	T	A	Reference	Normal function	.
+RYR1	rs746818096	chr19	38494379	T	A	c.6302T>A	Uncertain function	.
+RYR1	rs747177274	chr19	38458175	G	C	Reference	Normal function	.
+RYR1	rs747177274	chr19	38458175	G	C	c.2050G>C	Uncertain function	.
+RYR1	rs748575133	chr19	38502708	T	A	Reference	Normal function	.
+RYR1	rs748575133	chr19	38502708	T	A	c.7816T>A	Normal function	.
+RYR1	rs749040743	chr19	38467655	G	A	Reference	Normal function	.
+RYR1	rs749040743	chr19	38467655	G	A	c.3224G>A	Normal function	.
+RYR1	rs751180702	chr19	38502670	G	A	Reference	Normal function	.
+RYR1	rs751180702	chr19	38502670	G	A	c.7778G>A	Uncertain function	.
+RYR1	rs752652072	chr19	38448500	C	T	Reference	Normal function	.
+RYR1	rs752652072	chr19	38448500	C	T	c.946C>T	Uncertain function	.
+RYR1	rs754476250	chr19	38483329	C	T	Reference	Normal function	.
+RYR1	rs754476250	chr19	38483329	C	T	c.4747C>T	Uncertain function	.
+RYR1	rs754785770	chr19	38485787	A	G	Reference	Normal function	.
+RYR1	rs754785770	chr19	38485787	A	G	c.5132A>G	Uncertain function	.
+RYR1	rs755088027	chr19	38546460	G	A	Reference	Normal function	.
+RYR1	rs755088027	chr19	38546460	G	A	c.12028G>A	Uncertain function	.
+RYR1	rs756850145	chr19	38572190	A	G	Reference	Normal function	.
+RYR1	rs756850145	chr19	38572190	A	G	c.13918A>G	Uncertain function	.
+RYR1	rs757753317	chr19	38517521	G	A	Reference	Normal function	.
+RYR1	rs757753317	chr19	38517521	G	A	c.9848G>A	Uncertain function	.
+RYR1	rs759500310	chr19	38572262	T	C	Reference	Normal function	.
+RYR1	rs759500310	chr19	38572262	T	C	c.13990T>C	Uncertain function	.
+RYR1	rs761616815	chr19	38444250	G	A	Reference	Normal function	.
+RYR1	rs761616815	chr19	38444250	G	A	c.526G>A	Uncertain function	.
+RYR1	rs762401851	chr19	38499691	G	A	Reference	Normal function	.
+RYR1	rs762401851	chr19	38499691	G	A	c.7084G>A	Malignant Hyperthermia associated	.
+RYR1	rs763112609	chr19	38534774	C	T	Reference	Normal function	.
+RYR1	rs763112609	chr19	38534774	C	T	c.11314C>T	Uncertain function	.
+RYR1	rs763352221	chr19	38496487	C	T	Reference	Normal function	.
+RYR1	rs763352221	chr19	38496487	C	T	c.6742C>T	Uncertain function	.
+RYR1	rs767553612	chr19	38502652	A	G	Reference	Normal function	.
+RYR1	rs767553612	chr19	38502652	A	G	c.7760A>G	Uncertain function	.
+RYR1	rs768360593	chr19	38578015	G	A	Reference	Normal function	.
+RYR1	rs768360593	chr19	38578015	G	A	c.14270G>A	Uncertain function	.
+RYR1	rs768535909	chr19	38505932	T	C	Reference	Normal function	.
+RYR1	rs768535909	chr19	38505932	T	C	c.8527T>C	Uncertain function	.
+RYR1	rs769482889	chr19	38499682	C	T	Reference	Normal function	.
+RYR1	rs769482889	chr19	38499682	C	T	c.7075C>T	Uncertain function	.
+RYR1	rs770593660	chr19	38494381	G	C	Reference	Normal function	.
+RYR1	rs770593660	chr19	38494381	G	C	c.6304G>C	Uncertain function	.
+RYR1	rs771058055	chr19	38444671	G	A	Reference	Normal function	.
+RYR1	rs771058055	chr19	38444671	G	A	c.625G>A	Uncertain function	.
+RYR1	rs771741606	chr19	38570619	C	T	Reference	Normal function	.
+RYR1	rs771741606	chr19	38570619	C	T	c.13672C>T	Uncertain function	.
+RYR1	rs773040531	chr19	38546496	A	G	Reference	Normal function	.
+RYR1	rs773040531	chr19	38546496	A	G	c.12064A>G	Uncertain function	.
+RYR1	rs778241277	chr19	38466144	G	A	Reference	Normal function	.
+RYR1	rs778241277	chr19	38466144	G	A	c.2924G>A	Uncertain function	.
+RYR1	rs781104539	chr19	38485688	A	G	Reference	Normal function	.
+RYR1	rs781104539	chr19	38485688	A	G	c.5033A>G	Uncertain function	.
+RYR1	rs781126470	chr19	38504347	C	T	Reference	Normal function	.
+RYR1	rs781126470	chr19	38504347	C	T	c.8054C>T	Uncertain function	.
+RYR1	rs901087791	chr19	38455269	G	A	Reference	Normal function	.
+RYR1	rs901087791	chr19	38455269	G	A	c.1475G>A	Uncertain function	.
+RYR1	rs914804033	chr19	38502923	G	C	Reference	Normal function	.
+RYR1	rs914804033	chr19	38502923	G	C	c.7879G>A	Uncertain function	.
+RYR1	rs914804033	chr19	38502923	G	C	c.7879G>C	Malignant Hyperthermia associated	.
+RYR1	rs917523269	chr19	38496502	C	T	Reference	Normal function	.
+RYR1	rs917523269	chr19	38496502	C	T	c.6757C>T	Uncertain function	.
+RYR1	rs936513262	chr19	38469415	G	A	Reference	Normal function	.
+RYR1	rs936513262	chr19	38469415	G	A	c.3667G>A	Uncertain function	.
+RYR1	rs959170123	chr19	38494625	G	A	Reference	Normal function	.
+RYR1	rs959170123	chr19	38494625	G	A	c.6548G>A	Uncertain function	.
+RYR1	rs976108591	chr19	38499806	A	G	Reference	Normal function	.
+RYR1	rs976108591	chr19	38499806	A	G	c.7199A>G	Uncertain function	.
+RYR1	rs995399438	chr19	38442373	T	C	Reference	Normal function	.
+RYR1	rs995399438	chr19	38442373	T	C	c.190T>C	Uncertain function	.
+SLCO1B1	rs11045819	chr12	21176879	C	A	*1	Normal function	.
+SLCO1B1	rs11045819	chr12	21176879	C	A	*14	Increased function	.
+SLCO1B1	rs11045819	chr12	21176879	C	A	*25	Uncertain function	.
+SLCO1B1	rs11045819	chr12	21176879	C	A	*32	Uncertain function	.
+SLCO1B1	rs11045819	chr12	21176879	C	A	*4	Uncertain function	.
+SLCO1B1	rs11045819	chr12	21176879	C	A	*43	Unknown function	.
+SLCO1B1	rs11045819	chr12	21176879	C	A	*53	.	.
+SLCO1B1	rs11045819	chr12	21176879	C	A	*55	.	.
+SLCO1B1	rs11045852	chr12	21196951	A	G	*1	Normal function	.
+SLCO1B1	rs11045852	chr12	21196951	A	G	*24	Uncertain function	.
+SLCO1B1	rs11045852	chr12	21196951	A	G	*25	Uncertain function	.
+SLCO1B1	rs11045852	chr12	21196951	A	G	*28	Uncertain function	.
+SLCO1B1	rs11045852	chr12	21196951	A	G	*32	Uncertain function	.
+SLCO1B1	rs11045852	chr12	21196951	A	G	*33	Uncertain function	.
+SLCO1B1	rs11045852	chr12	21196951	A	G	*43	Unknown function	.
+SLCO1B1	rs11045852	chr12	21196951	A	G	*44	Unknown function	.
+SLCO1B1	rs11045852	chr12	21196951	A	G	*54	.	.
+SLCO1B1	rs11045853	chr12	21196976	G	A	*1	Normal function	.
+SLCO1B1	rs11045853	chr12	21196976	G	A	*25	Uncertain function	.
+SLCO1B1	rs11045853	chr12	21196976	G	A	*28	Uncertain function	.
+SLCO1B1	rs11045853	chr12	21196976	G	A	*33	Uncertain function	.
+SLCO1B1	rs1228465562	chr12	21202553	T	G	*1	Normal function	.
+SLCO1B1	rs1228465562	chr12	21202553	T	G	*36	Uncertain function	.
+SLCO1B1	rs139257324	chr12	21172734	C	T	*1	Normal function	.
+SLCO1B1	rs139257324	chr12	21172734	C	T	*33	Uncertain function	.
+SLCO1B1	rs140790673	chr12	21239158	C	T	*1	Normal function	.
+SLCO1B1	rs140790673	chr12	21239158	C	T	*29	Uncertain function	.
+SLCO1B1	rs141467543	chr12	21178612	A	G	*1	Normal function	.
+SLCO1B1	rs141467543	chr12	21178612	A	G	*42	Uncertain function	.
+SLCO1B1	rs142965323	chr12	21202664	G	A	*1	Normal function	.
+SLCO1B1	rs142965323	chr12	21202664	G	A	*26	Uncertain function	.
+SLCO1B1	rs145144129	chr12	21176871	G	C	*1	Normal function	.
+SLCO1B1	rs145144129	chr12	21176871	G	C	*55	.	.
+SLCO1B1	rs183501729	chr12	21196975	C	T	*1	Normal function	.
+SLCO1B1	rs183501729	chr12	21196975	C	T	*39	No function	.
+SLCO1B1	rs185905373	chr12	21141575	A	T	*1	Normal function	.
+SLCO1B1	rs185905373	chr12	21141575	A	T	*56	.	.
+SLCO1B1	rs200331427	chr12	21178653	C	G	*1	Normal function	.
+SLCO1B1	rs200331427	chr12	21178653	C	G	*50	.	.
+SLCO1B1	rs200994482	chr12	21224840	G	A	*1	Normal function	.
+SLCO1B1	rs200994482	chr12	21224840	G	A	*51	.	.
+SLCO1B1	rs200995543	chr12	21239145	C	T	*1	Normal function	.
+SLCO1B1	rs200995543	chr12	21239145	C	T	*34	Uncertain function	.
+SLCO1B1	rs201722521	chr12	21178926	A	G	*1	Normal function	.
+SLCO1B1	rs201722521	chr12	21178926	A	G	*54	.	.
+SLCO1B1	rs2306282	chr12	21176868	A	G	*1	Normal function	.
+SLCO1B1	rs2306282	chr12	21176868	A	G	*16	Uncertain function	.
+SLCO1B1	rs2306283	chr12	21176804	A	G	*1	Normal function	.
+SLCO1B1	rs2306283	chr12	21176804	A	G	*14	Increased function	.
+SLCO1B1	rs2306283	chr12	21176804	A	G	*15	No function	.
+SLCO1B1	rs2306283	chr12	21176804	A	G	*20	Increased function	.
+SLCO1B1	rs2306283	chr12	21176804	A	G	*24	Uncertain function	.
+SLCO1B1	rs2306283	chr12	21176804	A	G	*25	Uncertain function	.
+SLCO1B1	rs2306283	chr12	21176804	A	G	*27	Uncertain function	.
+SLCO1B1	rs2306283	chr12	21176804	A	G	*28	Uncertain function	.
+SLCO1B1	rs2306283	chr12	21176804	A	G	*29	Uncertain function	.
+SLCO1B1	rs2306283	chr12	21176804	A	G	*30	Uncertain function	.
+SLCO1B1	rs2306283	chr12	21176804	A	G	*31	No function	.
+SLCO1B1	rs2306283	chr12	21176804	A	G	*32	Uncertain function	.
+SLCO1B1	rs2306283	chr12	21176804	A	G	*33	Uncertain function	.
+SLCO1B1	rs2306283	chr12	21176804	A	G	*37	Normal function	.
+SLCO1B1	rs2306283	chr12	21176804	A	G	*39	No function	.
+SLCO1B1	rs2306283	chr12	21176804	A	G	*42	Uncertain function	.
+SLCO1B1	rs2306283	chr12	21176804	A	G	*43	Unknown function	.
+SLCO1B1	rs2306283	chr12	21176804	A	G	*44	Unknown function	.
+SLCO1B1	rs2306283	chr12	21176804	A	G	*45	No function	.
+SLCO1B1	rs2306283	chr12	21176804	A	G	*47	No function	.
+SLCO1B1	rs2306283	chr12	21176804	A	G	*52	.	.
+SLCO1B1	rs2306283	chr12	21176804	A	G	*53	.	.
+SLCO1B1	rs2306283	chr12	21176804	A	G	*54	.	.
+SLCO1B1	rs2306283	chr12	21176804	A	G	*55	.	.
+SLCO1B1	rs2306283	chr12	21176804	A	G	*56	.	.
+SLCO1B1	rs2306283	chr12	21176804	A	G	*57	.	.
+SLCO1B1	rs34671512	chr12	21239042	A	C	*1	Normal function	.
+SLCO1B1	rs34671512	chr12	21239042	A	C	*19	Uncertain function	.
+SLCO1B1	rs34671512	chr12	21239042	A	C	*20	Increased function	.
+SLCO1B1	rs34671512	chr12	21239042	A	C	*40	Uncertain function	.
+SLCO1B1	rs34671512	chr12	21239042	A	C	*54	.	.
+SLCO1B1	rs373327528	chr12	21172776	G	A	*1	Normal function	.
+SLCO1B1	rs373327528	chr12	21172776	G	A	*23	No function	.
+SLCO1B1	rs4149056	chr12	21178615	T	C	*1	Normal function	.
+SLCO1B1	rs4149056	chr12	21178615	T	C	*15	No function	.
+SLCO1B1	rs4149056	chr12	21178615	T	C	*40	Uncertain function	.
+SLCO1B1	rs4149056	chr12	21178615	T	C	*45	No function	.
+SLCO1B1	rs4149056	chr12	21178615	T	C	*47	No function	.
+SLCO1B1	rs4149056	chr12	21178615	T	C	*5	No function	.
+SLCO1B1	rs556524705	chr12	21172675	G	C	*1	Normal function	.
+SLCO1B1	rs556524705	chr12	21172675	G	C	*57	.	.
+SLCO1B1	rs55737008	chr12	21239113	A	G	*1	Normal function	.
+SLCO1B1	rs55737008	chr12	21239113	A	G	*11	Uncertain function	.
+SLCO1B1	rs55901008	chr12	21200595	T	C	*1	Normal function	.
+SLCO1B1	rs55901008	chr12	21200595	T	C	*6	Uncertain function	.
+SLCO1B1	rs56101265	chr12	21172782	T	C	*1	Normal function	.
+SLCO1B1	rs56101265	chr12	21172782	T	C	*2	Uncertain function	.
+SLCO1B1	rs56199088	chr12	21239077	A	G	*1	Normal function	.
+SLCO1B1	rs56199088	chr12	21239077	A	G	*10	Uncertain function	.
+SLCO1B1	rs59113707	chr12	21202555	C	G	*1	Normal function	.
+SLCO1B1	rs59113707	chr12	21202555	C	G	*27	Uncertain function	.
+SLCO1B1	rs59113707	chr12	21202555	C	G	*53	.	.
+SLCO1B1	rs59113707	chr12	21202555	C	G	*55	.	.
+SLCO1B1	rs59502379	chr12	21205999	G	C	*1	Normal function	.
+SLCO1B1	rs59502379	chr12	21205999	G	C	*31	No function	.
+SLCO1B1	rs59502379	chr12	21205999	G	C	*9	No function	.
+SLCO1B1	rs61760182	chr12	21172735	G	A	*1	Normal function	.
+SLCO1B1	rs61760182	chr12	21172735	G	A	*58	.	.
+SLCO1B1	rs71581941	chr12	21222355	C	T	*1	Normal function	.
+SLCO1B1	rs71581941	chr12	21222355	C	T	*45	No function	.
+SLCO1B1	rs72559747	chr12	21200544	C	G	*1	Normal function	.
+SLCO1B1	rs72559747	chr12	21200544	C	G	*47	No function	.
+SLCO1B1	rs72559748	chr12	21205921	A	G	*1	Normal function	.
+SLCO1B1	rs72559748	chr12	21205921	A	G	*8	Uncertain function	.
+SLCO1B1	rs74064213	chr12	21206031	A	G	*1	Normal function	.
+SLCO1B1	rs74064213	chr12	21206031	A	G	*43	Unknown function	.
+SLCO1B1	rs74064213	chr12	21206031	A	G	*44	Unknown function	.
+SLCO1B1	rs756393362	chr12	21200673	G	A	*1	Normal function	.
+SLCO1B1	rs756393362	chr12	21200673	G	A	*52	.	.
+SLCO1B1	rs77271279	chr12	21176898	G	T	*1	Normal function	.
+SLCO1B1	rs77271279	chr12	21176898	G	T	*41	No function	.
+SLCO1B1	rs79135870	chr12	21178957	A	G	*1	Normal function	.
+SLCO1B1	rs79135870	chr12	21178957	A	G	*30	Uncertain function	.
+TPMT	rs111901354	chr6	18143718	G	A	*1	Normal function	.
+TPMT	rs111901354	chr6	18143718	G	A	*34	No function	.
+TPMT	rs112339338	chr6	18138970	G	A	*1	Normal function	.
+TPMT	rs112339338	chr6	18138970	G	A	*33	No function	.
+TPMT	rs1142345	chr6	18130687	T	C	*1	Normal function	.
+TPMT	rs1142345	chr6	18130687	T	C	*3A	No function	.
+TPMT	rs1142345	chr6	18130687	T	C	*3C	No function	.
+TPMT	rs1142345	chr6	18130687	T	C	*41	No function	.
+TPMT	rs115106679	chr6	18143622	C	T	*1	Normal function	.
+TPMT	rs115106679	chr6	18143622	C	T	*32	Uncertain function	.
+TPMT	rs1256618794	chr6	18143728	C	A	*1	Normal function	.
+TPMT	rs1256618794	chr6	18143728	C	A	*43	No function	.
+TPMT	rs139392616	chr6	18130729	C	T	*1	Normal function	.
+TPMT	rs139392616	chr6	18130729	C	T	*40	Uncertain function	.
+TPMT	rs144041067	chr6	18138969	C	T	*1	Normal function	.
+TPMT	rs144041067	chr6	18138969	C	T	*16	No function	.
+TPMT	rs144041067	chr6	18138969	C	T	*22	No function	.
+TPMT	rs150900439	chr6	18130694	T	C	*1	Normal function	.
+TPMT	rs150900439	chr6	18130694	T	C	*20	No function	.
+TPMT	rs151149760	chr6	18143606	T	G	*1	Normal function	.
+TPMT	rs151149760	chr6	18143606	T	G	*9	Uncertain function	.
+TPMT	rs1800460	chr6	18138997	C	T	*1	Normal function	.
+TPMT	rs1800460	chr6	18138997	C	T	*3A	No function	.
+TPMT	rs1800460	chr6	18138997	C	T	*3B	No function	.
+TPMT	rs1800462	chr6	18143724	C	G	*1	Normal function	.
+TPMT	rs1800462	chr6	18143724	C	G	*2	No function	.
+TPMT	rs1800584	chr6	18130781	C	T	*1	Normal function	.
+TPMT	rs1800584	chr6	18130781	C	T	*4	No function	.
+TPMT	rs200220210	chr6	18139710	G	A	*1	Normal function	.
+TPMT	rs200220210	chr6	18139710	G	A	*12	Uncertain function	.
+TPMT	rs200591577	chr6	18147851	G	C	*1	Normal function	.
+TPMT	rs200591577	chr6	18147851	G	C	*21	No function	.
+TPMT	rs201695576	chr6	18133887	T	C	*1	Normal function	.
+TPMT	rs201695576	chr6	18133887	T	C	*44	No function	.
+TPMT	rs267607275	chr6	18149126	A	G	*1	Normal function	.
+TPMT	rs267607275	chr6	18149126	A	G	*29	No function	.
+TPMT	rs281874771	chr6	18147838	G	A	*1	Normal function	.
+TPMT	rs281874771	chr6	18147838	G	A	*39	No function	.
+TPMT	rs377085266	chr6	18130772	A	G	*1	Normal function	.
+TPMT	rs377085266	chr6	18130772	A	G	*25	No function	.
+TPMT	rs398122996	chr6	18130758	A	T	*1	Normal function	.
+TPMT	rs398122996	chr6	18130758	A	T	*37	No function	.
+TPMT	rs56161402	chr6	18130762	C	T	*1	Normal function	.
+TPMT	rs56161402	chr6	18130762	C	T	*8	Decreased function	.
+TPMT	rs6921269	chr6	18133847	C	A	*1	Normal function	.
+TPMT	rs6921269	chr6	18133847	C	A	*24	Uncertain function	.
+TPMT	rs72552736	chr6	18130725	A	C	*1	Normal function	.
+TPMT	rs72552736	chr6	18130725	A	C	*7	No function	.
+TPMT	rs72552737	chr6	18139027	C	G	*1	Normal function	.
+TPMT	rs72552737	chr6	18139027	C	G	*10	No function	.
+TPMT	rs72552738	chr6	18139689	C	T	*1	Normal function	.
+TPMT	rs72552738	chr6	18139689	C	T	*11	No function	.
+TPMT	rs72552740	chr6	18147910	A	G	*1	Normal function	.
+TPMT	rs72552740	chr6	18147910	A	G	*5	No function	.
+TPMT	rs72552742	chr6	18149045	T	A	*1	Normal function	.
+TPMT	rs72552742	chr6	18149045	T	A	*13	No function	.
+TPMT	rs72556347	chr6	18132136	A	G	*1	Normal function	.
+TPMT	rs72556347	chr6	18132136	A	G	*26	No function	.
+TPMT	rs74423290	chr6	18133884	G	C	*1	Normal function	.
+TPMT	rs74423290	chr6	18133884	G	C	*23	No function	.
+TPMT	rs750424422	chr6	18149022	C	T	*1	Normal function	.
+TPMT	rs750424422	chr6	18149022	C	T	*30	Uncertain function	.
+TPMT	rs753545734	chr6	18143700	C	T	*1	Normal function	.
+TPMT	rs753545734	chr6	18143700	C	T	*43	No function	.
+TPMT	rs75543815	chr6	18133845	T	A	*1	Normal function	.
+TPMT	rs75543815	chr6	18133845	T	A	*6	No function	.
+TPMT	rs772832951	chr6	18133870	A	G	*1	Normal function	.
+TPMT	rs772832951	chr6	18133870	A	G	*38	No function	.
+TPMT	rs777686348	chr6	18147845	C	T	*1	Normal function	.
+TPMT	rs777686348	chr6	18147845	C	T	*18	No function	.
+TPMT	rs79901429	chr6	18132147	A	G	*1	Normal function	.
+TPMT	rs79901429	chr6	18132147	A	G	*31	No function	.
+TPMT	rs9333569	chr6	18149127	T	C	*1	Normal function	.
+TPMT	rs9333569	chr6	18149127	T	C	*14	No function	.
+TPMT	rs9333570	chr6	18133890	C	T	*1	Normal function	.
+TPMT	rs9333570	chr6	18133890	C	T	*15	No function	.
+UGT1A1	rs35350960	chr2	233760973	C	A	*1	Normal function	.
+UGT1A1	rs35350960	chr2	233760973	C	A	*27	Decreased function	.
+UGT1A1	rs4148323	chr2	233760498	G	A	*1	Normal function	.
+UGT1A1	rs4148323	chr2	233760498	G	A	*6	Decreased function	.
+UGT1A1	rs887829	chr2	233759924	C	T	*1	Normal function	.
+UGT1A1	rs887829	chr2	233759924	C	T	*80	Unknown function	.
+UGT1A1	rs887829	chr2	233759924	C	T	*80+*28	Decreased function	.
+UGT1A1	rs887829	chr2	233759924	C	T	*80+*37	Decreased function	.
+VKORC1	rs9923231	chr16	31096368	C	T	rs9923231 reference (C)	.	.
+VKORC1	rs9923231	chr16	31096368	C	T	rs9923231 variant (T)	.	.

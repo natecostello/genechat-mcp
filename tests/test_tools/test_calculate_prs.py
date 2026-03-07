@@ -26,8 +26,7 @@ class TestCalculatePrs:
     def test_available_traits_listed(self, mock_engine, test_db, test_config):
         fn = _setup_tool(mock_engine, test_db, test_config)
         result = fn(trait="nonexistent disease")
-        assert "coronary artery disease" in result
-        assert "type 2 diabetes" in result
+        assert "Currently available" in result
 
     def test_cad_prs_by_trait(self, mock_engine, test_db, test_config):
         mock_engine.query_region.return_value = []
@@ -39,20 +38,20 @@ class TestCalculatePrs:
         assert "Raw score" in result
         assert "Variants scored" in result
 
-    def test_t2d_prs_by_trait(self, mock_engine, test_db, test_config):
+    def test_bmi_prs_by_trait(self, mock_engine, test_db, test_config):
         mock_engine.query_region.return_value = []
         fn = _setup_tool(mock_engine, test_db, test_config)
-        result = fn(trait="type 2 diabetes")
+        result = fn(trait="body mass index")
 
         assert "Polygenic Risk Score" in result
-        assert "diabetes" in result.lower()
+        assert "bmi" in result.lower() or "body mass" in result.lower()
 
     def test_prs_by_id(self, mock_engine, test_db, test_config):
         mock_engine.query_region.return_value = []
         fn = _setup_tool(mock_engine, test_db, test_config)
-        result = fn(prs_id="PGS000013")
+        result = fn(prs_id="PGS000010")
 
-        assert "PGS000013" in result
+        assert "PGS000010" in result
         assert "Polygenic Risk Score" in result
 
     def test_caveats_included(self, mock_engine, test_db, test_config):

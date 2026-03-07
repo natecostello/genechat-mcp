@@ -3131,7 +3131,6 @@ ATG16L1	autophagy related 16 like 1	chr2	233210051	233295674	+
 SAG	S-antigen visual arrestin	chr2	233307816	233347055	+
 DGKD	diacylglycerol kinase delta	chr2	233354484	233472104	+
 USP40	ubiquitin specific peptidase 40	chr2	233475526	233566782	-
-UGT1A1	UDP glucuronosyltransferase family 1 member A1	chr2	233760270	233773300	+
 MROH2A	maestro heat like repeat family member 2A	chr2	233775679	233833423	+
 HJURP	Holliday junction recognition protein	chr2	233833416	233854566	-
 MSL3B	MSL complex subunit 3B	chr2	233864663	233868386	-
@@ -8420,7 +8419,6 @@ IFNA1	interferon alpha 1	chr9	21440439	21441316	+
 IFNE	interferon epsilon	chr9	21480839	21482313	-
 MTAP	methylthioadenosine phosphorylase	chr9	21802636	21937651	+
 CDKN2A	cyclin dependent kinase inhibitor 2A	chr9	21967752	21995301	-
-CDKN2B-AS1	CDKN2B and CDKN2A antisense cis and trans regulatory RNA 1	chr9	21994139	22212895	+
 CDKN2B	cyclin dependent kinase inhibitor 2B	chr9	22002903	22009305	-
 DMRTA1	DMRT like family A1	chr9	22446824	22455740	+
 ELAVL2	ELAV like RNA binding protein 2	chr9	23690099	23826352	-

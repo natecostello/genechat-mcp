@@ -14,17 +14,17 @@ def _setup_tool(mock_engine, test_db, test_config):
 
 class TestQueryVariants:
     def test_batch_found(self, mock_engine, test_db, test_config):
-        from tests.conftest import SAMPLE_VARIANT_MTHFR, SAMPLE_VARIANT_SLCO1B1
+        from tests.conftest import SAMPLE_VARIANT_CFTR, SAMPLE_VARIANT_SLCO1B1
 
         mock_engine.query_rsids.return_value = {
             "rs4149056": [SAMPLE_VARIANT_SLCO1B1],
-            "rs1801133": [SAMPLE_VARIANT_MTHFR],
+            "rs113993960": [SAMPLE_VARIANT_CFTR],
         }
         fn = _setup_tool(mock_engine, test_db, test_config)
-        result = fn(rsids="rs4149056,rs1801133")
+        result = fn(rsids="rs4149056,rs113993960")
 
         assert "rs4149056" in result
-        assert "rs1801133" in result
+        assert "rs113993960" in result
         assert "2/2 found" in result
         assert "NOTE:" in result
 

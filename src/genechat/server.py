@@ -20,7 +20,7 @@ def main():
         instructions=(
             "GeneChat provides tools to query your whole-genome sequencing data. "
             "Ask about specific variants (rsIDs), genes, drug interactions (pharmacogenomics), "
-            "trait associations, carrier status, or get a genome overview. "
+            "GWAS associations, or get a genome overview. "
             "Always start with genome_summary for a high-level view."
         ),
     )

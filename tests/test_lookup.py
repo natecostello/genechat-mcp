@@ -34,8 +34,8 @@ class TestSearchPgx:
         assert len(results) >= 1
         assert any(r["gene"] == "SLCO1B1" for r in results)
 
-    def test_by_drug_alias(self, test_db):
-        results = test_db.search_pgx_by_drug("zocor")
+    def test_by_drug_case_insensitive(self, test_db):
+        results = test_db.search_pgx_by_drug("Simvastatin")
         assert len(results) >= 1
 
     def test_by_gene(self, test_db):
@@ -58,49 +58,13 @@ class TestPgxVariants:
         assert any(v.get("star_allele") for v in variants)
 
 
-class TestTraitVariants:
-    def test_by_category(self, test_db):
-        results = test_db.get_trait_variants(category="nutrigenomics")
-        assert len(results) >= 1
-        assert all(r["trait_category"] == "nutrigenomics" for r in results)
-
-    def test_by_gene(self, test_db):
-        results = test_db.get_trait_variants(gene="MTHFR")
-        assert len(results) >= 1
-
-    def test_by_trait(self, test_db):
-        results = test_db.get_trait_variants(trait="caffeine")
-        assert len(results) >= 1
-
-    def test_no_filter(self, test_db):
-        results = test_db.get_trait_variants()
-        assert len(results) >= 20  # We seeded ~23
-
-
-class TestCarrierGenes:
-    def test_acmg_only(self, test_db):
-        results = test_db.get_carrier_genes(acmg_only=True)
-        assert len(results) >= 1
-        assert all(r["acmg_recommended"] for r in results)
-
-    def test_all_genes(self, test_db):
-        all_genes = test_db.get_carrier_genes(acmg_only=False)
-        acmg_genes = test_db.get_carrier_genes(acmg_only=True)
-        assert len(all_genes) > len(acmg_genes)
-
-    def test_by_condition(self, test_db):
-        results = test_db.get_carrier_genes(condition="cystic")
-        assert len(results) >= 1
-        assert any("Cystic" in r["condition_name"] for r in results)
-
-
 class TestPrsWeights:
     def test_by_trait(self, test_db):
         results = test_db.get_prs_weights(trait="coronary")
         assert len(results) >= 1
 
     def test_by_prs_id(self, test_db):
-        results = test_db.get_prs_weights(prs_id="PGS000013")
+        results = test_db.get_prs_weights(prs_id="PGS000010")
         assert len(results) >= 1
 
     def test_unknown_trait(self, test_db):

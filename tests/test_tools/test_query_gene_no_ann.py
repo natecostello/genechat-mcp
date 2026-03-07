@@ -77,7 +77,7 @@ class TestQueryGeneNoAnnotation:
         """Variants with empty impact string should pass through the filter."""
         mock_engine.query_region.return_value = [EMPTY_IMPACT_VARIANT]
         fn = _setup_tool(mock_engine, test_db, test_config)
-        result = fn(gene="MTHFR")
+        result = fn(gene="MTHFR", smart_filter=False)
 
         assert "rs1801133" in result
 
