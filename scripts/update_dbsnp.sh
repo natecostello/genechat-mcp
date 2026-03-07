@@ -35,14 +35,15 @@ echo "=== dbSNP Update ==="
 echo "  Annotated VCF: $ANNOTATED_VCF"
 echo "  dbSNP source: $DBSNP_VCF"
 
-# 1. Backup (VCF + index)
+# 1. Backup (VCF + index) with timestamp to preserve history
+BACKUP_SUFFIX="bak.$(date +%Y%m%d_%H%M%S)"
 echo "Step 1: Backing up current VCF..."
-cp "$ANNOTATED_VCF" "${ANNOTATED_VCF}.bak"
+cp "$ANNOTATED_VCF" "${ANNOTATED_VCF}.${BACKUP_SUFFIX}"
 if [ -f "${ANNOTATED_VCF}.tbi" ]; then
-    cp "${ANNOTATED_VCF}.tbi" "${ANNOTATED_VCF}.bak.tbi"
+    cp "${ANNOTATED_VCF}.tbi" "${ANNOTATED_VCF}.${BACKUP_SUFFIX}.tbi"
 fi
 if [ -f "${ANNOTATED_VCF}.csi" ]; then
-    cp "${ANNOTATED_VCF}.csi" "${ANNOTATED_VCF}.bak.csi"
+    cp "${ANNOTATED_VCF}.csi" "${ANNOTATED_VCF}.${BACKUP_SUFFIX}.csi"
 fi
 
 # 2. dbSNP contig rename if needed
@@ -122,4 +123,4 @@ rm -f "$WORK_DIR/tmp_annotated.vcf.gz"
 rm -f "$WORK_DIR/dbsnp_chrfixed.vcf.gz" "$WORK_DIR/dbsnp_chrfixed.vcf.gz.tbi"
 
 echo "Done. dbSNP rsIDs updated ($DATE)."
-echo "Backup at: ${ANNOTATED_VCF}.bak"
+echo "Backup at: ${ANNOTATED_VCF}.${BACKUP_SUFFIX}"
