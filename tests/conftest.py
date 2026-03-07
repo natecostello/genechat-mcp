@@ -52,6 +52,7 @@ def mock_engine():
     """Mock VCFEngine for tool tests (no VCF required)."""
     engine = MagicMock()
     engine.max_variants = 100
+    engine.annotation_versions.return_value = {}
     return engine
 
 

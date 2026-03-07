@@ -85,6 +85,9 @@ bcftools annotate -a "$CLINVAR_USE" \
     -c INFO/CLNSIG,INFO/CLNDN,INFO/CLNREVSTAT,INFO/CLNVC \
     "$OUTPUT_DIR/step1_snpeff.vcf" -Oz -o "$OUTPUT_DIR/step2_clinvar.vcf.gz"
 
+# Free disk: step1 no longer needed after ClinVar annotation
+rm -f "$OUTPUT_DIR/step1_snpeff.vcf"
+
 echo "Step 3: gnomAD frequency annotation..."
 if [ -n "${GNOMAD_DIR:-}" ] && [ -d "${GNOMAD_DIR}" ]; then
     # Per-chromosome gnomAD v4 exome annotation
@@ -144,6 +147,6 @@ fi
 echo "Step 4: Indexing..."
 tabix -p vcf "$OUTPUT_DIR/annotated.vcf.gz"
 
-rm -f "$OUTPUT_DIR/step1_snpeff.vcf" "$OUTPUT_DIR/step2_clinvar.vcf.gz"
+rm -f "$OUTPUT_DIR/step2_clinvar.vcf.gz"
 rm -f "$OUTPUT_DIR/clinvar_chrfixed.vcf.gz" "$OUTPUT_DIR/clinvar_chrfixed.vcf.gz.tbi"
 echo "Done: $OUTPUT_DIR/annotated.vcf.gz"

@@ -4,8 +4,6 @@ from genechat.vcf_engine import VCFEngineError
 
 
 def register(mcp, engine, db, config):
-    _cache: dict[str, str] = {}
-
     @mcp.tool()
     def genome_summary() -> str:
         """Get a high-level summary of your genome data.
@@ -13,12 +11,19 @@ def register(mcp, engine, db, config):
         Returns variant counts, ClinVar annotation summary, and pharmacogenomics overview.
         Use this as a starting point when a user wants a general overview of their genome.
         """
-        if "result" in _cache:
-            return _cache["result"]
-
         lines = ["## Genome Summary"]
         lines.append(f"**Build:** {config.genome.genome_build}")
         lines.append(f"**VCF:** {config.genome.vcf_path}")
+
+        # Annotation versions from VCF headers
+        try:
+            versions = engine.annotation_versions()
+            if versions:
+                lines.append("\n### Annotation Versions")
+                for label, value in sorted(versions.items()):
+                    lines.append(f"- **{label}:** {value}")
+        except VCFEngineError:
+            pass
 
         # Variant stats
         try:
@@ -95,6 +100,4 @@ def register(mcp, engine, db, config):
             "query_clinvar, query_gwas, calculate_prs) for detailed analysis.*"
         )
 
-        result = "\n".join(lines)
-        _cache["result"] = result
-        return result
+        return "\n".join(lines)
