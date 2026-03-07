@@ -75,6 +75,30 @@ def _find_config_file() -> Path | None:
     return None
 
 
+def write_config(vcf_path: Path, config_dir: Path) -> Path:
+    """Write a config.toml with the given VCF path. Returns the config file path."""
+    config_dir.mkdir(parents=True, exist_ok=True)
+    config_path = config_dir / "config.toml"
+
+    # Use TOML literal string (single quotes) so backslashes aren't treated as escapes
+    vcf_literal = str(vcf_path).replace("'", "''")
+    content = f"[genome]\nvcf_path = '{vcf_literal}'\n"
+
+    # Write via temp file with 0o600 permissions, then atomically replace.
+    # This ensures correct permissions even when overwriting an existing file.
+    tmp_path = config_path.with_suffix(".tmp")
+    fd = os.open(tmp_path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    try:
+        os.fchmod(fd, 0o600)
+        os.write(fd, content.encode("utf-8"))
+        os.fsync(fd)
+    finally:
+        os.close(fd)
+    os.replace(tmp_path, config_path)
+
+    return config_path
+
+
 def load_config(path: str | None = None) -> AppConfig:
     """Load config from a TOML file. Falls back to defaults if no file found.
 

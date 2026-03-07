@@ -10,6 +10,7 @@ Produces (or updates) the lookup database with a `gwas_associations` table.
 """
 
 import csv
+import os
 import sqlite3
 import sys
 import zipfile
@@ -121,14 +122,29 @@ def _normalize_chrom(chrom: str) -> str | None:
     return None
 
 
+GWAS_URL = "https://ftp.ebi.ac.uk/pub/databases/gwas/releases/latest/gwas-catalog-associations_ontology-annotated-full.zip"
+
+
+def _download_gwas(zip_path: Path) -> None:
+    """Download the GWAS Catalog associations zip (atomic with temp file)."""
+    import urllib.request
+
+    zip_path.parent.mkdir(parents=True, exist_ok=True)
+    tmp_path = zip_path.with_suffix(".tmp")
+    print("Downloading GWAS Catalog (~58 MB)...")
+    try:
+        urllib.request.urlretrieve(GWAS_URL, tmp_path)
+        os.replace(tmp_path, zip_path)
+    except Exception:
+        tmp_path.unlink(missing_ok=True)
+        raise
+    print(f"Downloaded: {zip_path}")
+
+
 def build_gwas_db(zip_path: Path, db_path: Path) -> int:
     """Process GWAS catalog zip into SQLite. Returns row count."""
     if not zip_path.exists():
-        print(f"Error: GWAS catalog zip not found: {zip_path}")
-        print(
-            "Download from: https://ftp.ebi.ac.uk/pub/databases/gwas/releases/latest/"
-        )
-        sys.exit(1)
+        _download_gwas(zip_path)
 
     db_path.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(str(db_path))
