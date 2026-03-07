@@ -154,16 +154,6 @@ def register(mcp, engine, db, config):
         truncated = len(variants) > max_results
         variants = variants[:max_results]
 
-        if not variants and suppressed_count == 0:
-            return (
-                f"No {'/'.join(impacts)} impact variants found in **{gene}** "
-                f"({gene_info['name']}).\n\n"
-                f"Region searched: {region}\n"
-                "This means your sequence matches the reference genome in this region "
-                "for the impact levels queried. Try broadening the impact filter "
-                "(e.g. impact_filter='HIGH,MODERATE,LOW,MODIFIER') to see all variants."
-            )
-
         lines = [
             f"## Variants in {gene} ({gene_info['name']})",
             f"Region: {region} | Filter: {impact_filter} | Found: {len(variants)}",
@@ -188,23 +178,29 @@ def register(mcp, engine, db, config):
                     "Use smart_filter=false to see all.*\n"
                 )
 
-        if not variants:
+        if variants:
+            lines.append("| rsID | Position | Genotype | Effect | Impact | ClinVar |")
+            lines.append("|------|----------|----------|--------|--------|---------|")
+
+            for v in variants:
+                rsid = v["rsid"] or "."
+                pos = f"{v['chrom']}:{v['pos']}"
+                gt = v["genotype"]["display"]
+                ann = v.get("annotation", {})
+                effect = ann.get("effect", ".") or "."
+                impact = ann.get("impact", ".") or "."
+                clin = v.get("clinvar", {})
+                sig = clin.get("significance", ".") if clin else "."
+                lines.append(f"| {rsid} | {pos} | {gt} | {effect} | {impact} | {sig} |")
+        elif suppressed_count == 0:
+            lines.append(
+                f"No {'/'.join(impacts)} impact variants found. "
+                "Your sequence matches the reference genome in this region "
+                "for the impact levels queried. Try broadening the impact filter "
+                "(e.g. impact_filter='HIGH,MODERATE,LOW,MODIFIER') to see all variants."
+            )
+        else:
             lines.append("No clinically notable variants remain after filtering.")
-            return "\n".join(lines) + DISCLAIMER
-
-        lines.append("| rsID | Position | Genotype | Effect | Impact | ClinVar |")
-        lines.append("|------|----------|----------|--------|--------|---------|")
-
-        for v in variants:
-            rsid = v["rsid"] or "."
-            pos = f"{v['chrom']}:{v['pos']}"
-            gt = v["genotype"]["display"]
-            ann = v.get("annotation", {})
-            effect = ann.get("effect", ".") or "."
-            impact = ann.get("impact", ".") or "."
-            clin = v.get("clinvar", {})
-            sig = clin.get("significance", ".") if clin else "."
-            lines.append(f"| {rsid} | {pos} | {gt} | {effect} | {impact} | {sig} |")
 
         # Trait overlay: show known trait associations for this gene with genotypes
         trait_variants = db.get_trait_variants(gene=gene.upper())
