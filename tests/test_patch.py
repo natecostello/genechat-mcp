@@ -338,3 +338,44 @@ class TestPatchDBClearLayer:
         ann = full_db.get_annotation("chr12", 21178615, "T", "C")
         assert ann["gene"] is None
         assert ann["clnsig"] == "drug_response"  # ClinVar untouched
+
+    def test_clear_unknown_layer_raises(self, full_db):
+        with pytest.raises(ValueError, match="Unsupported annotation layer"):
+            full_db.clear_layer("unknown")
+
+
+class TestPatchDBEdgeCases:
+    def test_lookup_rsids_empty_list(self, tmp_path):
+        db = PatchDB.create(tmp_path / "test.db")
+        result = db.lookup_rsids([])
+        assert result == {}
+        db.close()
+
+    def test_upsert_preserves_other_layers(self, tmp_path):
+        """INSERT...ON CONFLICT should not wipe ClinVar/gnomAD columns."""
+        db = PatchDB.create(tmp_path / "test.db")
+        # Populate with SnpEff
+        snpeff_lines = [
+            "chr12\t21178615\trs4149056\tT\tC\t.\tPASS\t"
+            "ANN=C|missense_variant|MODERATE|SLCO1B1|ENSG|transcript|ENST|protein_coding||c.521T>C|p.Val174Ala||||||\t"
+            "GT\t0/1\n"
+        ]
+        db.populate_from_snpeff_stream(iter(snpeff_lines))
+        # Add ClinVar
+        clinvar_lines = [
+            "chr12\t21178615\trs4149056\tT\tC\t.\tPASS\t"
+            "CLNSIG=drug_response;CLNDN=test;CLNREVSTAT=reviewed\tGT\t0/1\n"
+        ]
+        db.update_clinvar_from_stream(iter(clinvar_lines))
+        # Re-run SnpEff (simulating incremental update)
+        snpeff_lines_v2 = [
+            "chr12\t21178615\trs4149056\tT\tC\t.\tPASS\t"
+            "ANN=C|missense_variant|MODERATE|SLCO1B1|ENSG|transcript|ENST2|protein_coding||c.521T>C|p.Val174Ala||||||\t"
+            "GT\t0/1\n"
+        ]
+        db.populate_from_snpeff_stream(iter(snpeff_lines_v2))
+        # ClinVar should be preserved
+        ann = db.get_annotation("chr12", 21178615, "T", "C")
+        assert ann["clnsig"] == "drug_response"
+        assert ann["transcript"] == "ENST2"  # SnpEff field updated
+        db.close()

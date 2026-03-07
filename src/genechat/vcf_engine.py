@@ -64,6 +64,15 @@ class VCFEngine:
                     "Run `genechat annotate` to update.",
                     stacklevel=2,
                 )
+        elif patch_db_path and not patch_db_path.exists():
+            warnings.warn(
+                f"Configured patch_db not found: {patch_db_path}. "
+                "Falling back to annotated VCF mode. "
+                "Run `genechat annotate` to create the patch database.",
+                stacklevel=2,
+            )
+            self._patch = None
+            self._use_patch = False
         else:
             self._patch = None
             self._use_patch = False
@@ -203,6 +212,7 @@ class VCFEngine:
             return []
 
         variants = []
+        truncated = False
         try:
             with pysam.VariantFile(str(self.vcf_path)) as vcf:
                 sample_idx = self._get_sample_index()
@@ -224,13 +234,22 @@ class VCFEngine:
                     except ValueError:
                         continue
                     if len(variants) >= self.max_variants:
+                        truncated = True
                         break
         except Exception as e:
             raise VCFEngineError(f"Error querying rsID {rsid}: {e}") from e
+        if truncated and variants:
+            variants[-1]["_truncated"] = True
+            variants[-1]["_truncation_notice"] = (
+                f"Results capped at {self.max_variants} variants. "
+                "Narrow your query for complete results."
+            )
         return variants
 
     def query_rsids(self, rsids: list[str]) -> dict[str, list[dict]]:
         """Query multiple rsIDs in a single operation."""
+        if not rsids:
+            return {}
         for rsid in rsids:
             if not RSID_PATTERN.match(rsid):
                 raise ValueError(f"Invalid rsID format: {rsid}. Expected rs<digits>")
@@ -303,6 +322,16 @@ class VCFEngine:
                         break
         except Exception as e:
             raise VCFEngineError(f"Error querying rsIDs: {e}") from e
+        if found_count >= self.max_variants:
+            results["_truncated"] = [
+                {
+                    "_truncated": True,
+                    "_truncation_notice": (
+                        f"Results capped at {self.max_variants} variants. "
+                        "Some rsIDs may not have been reached."
+                    ),
+                }
+            ]
         return results
 
     def query_clinvar(self, significance: str, region: str | None = None) -> list[dict]:

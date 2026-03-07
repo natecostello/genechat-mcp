@@ -109,6 +109,8 @@ class PatchDB:
 
     def lookup_rsids(self, rsids: list[str]) -> dict[str, list[dict]]:
         """Look up multiple rsIDs in one query."""
+        if not rsids:
+            return {}
         placeholders = ",".join("?" for _ in rsids)
         rows = self._conn.execute(
             f"SELECT * FROM annotations WHERE rsid IN ({placeholders})", rsids
@@ -127,19 +129,21 @@ class PatchDB:
         start: int | None = None,
         end: int | None = None,
     ) -> list[dict]:
-        """Query variants by ClinVar significance substring."""
-        pattern = f"%{significance}%"
+        """Query variants by ClinVar significance substring (case-insensitive)."""
         if chrom and start is not None and end is not None:
             rows = self._conn.execute(
                 "SELECT * FROM annotations "
-                "WHERE clnsig IS NOT NULL AND clnsig LIKE ? "
+                "WHERE clnsig IS NOT NULL "
+                "AND instr(lower(clnsig), lower(?)) > 0 "
                 "AND chrom=? AND pos BETWEEN ? AND ?",
-                (pattern, chrom, start, end),
+                (significance, chrom, start, end),
             ).fetchall()
         else:
             rows = self._conn.execute(
-                "SELECT * FROM annotations WHERE clnsig IS NOT NULL AND clnsig LIKE ?",
-                (pattern,),
+                "SELECT * FROM annotations "
+                "WHERE clnsig IS NOT NULL "
+                "AND instr(lower(clnsig), lower(?)) > 0",
+                (significance,),
             ).fetchall()
         return [dict(r) for r in rows]
 
@@ -199,10 +203,19 @@ class PatchDB:
 
     def _insert_snpeff_batch(self, batch: list[tuple]):
         self._conn.executemany(
-            "INSERT OR REPLACE INTO annotations "
+            "INSERT INTO annotations "
             "(chrom, pos, ref, alt, rsid, rsid_source, "
             "gene, effect, impact, transcript, hgvs_c, hgvs_p) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
+            "ON CONFLICT(chrom, pos, ref, alt) DO UPDATE SET "
+            "rsid=excluded.rsid, "
+            "rsid_source=excluded.rsid_source, "
+            "gene=excluded.gene, "
+            "effect=excluded.effect, "
+            "impact=excluded.impact, "
+            "transcript=excluded.transcript, "
+            "hgvs_c=excluded.hgvs_c, "
+            "hgvs_p=excluded.hgvs_p",
             batch,
         )
 
@@ -243,7 +256,7 @@ class PatchDB:
             "WHERE chrom=? AND pos=? AND ref=? AND alt=?",
             batch,
         )
-        return len(batch)
+        return self._conn.execute("SELECT changes()").fetchone()[0]
 
     def update_gnomad_from_stream(self, stream: Iterator[str]) -> int:
         """Parse bcftools gnomAD-annotated VCF stream and UPDATE rows.
@@ -282,7 +295,7 @@ class PatchDB:
             "WHERE chrom=? AND pos=? AND ref=? AND alt=?",
             batch,
         )
-        return len(batch)
+        return self._conn.execute("SELECT changes()").fetchone()[0]
 
     def update_dbsnp_from_stream(self, stream: Iterator[str]) -> int:
         """Parse bcftools dbSNP-annotated VCF stream and UPDATE rsid where NULL.
@@ -319,7 +332,7 @@ class PatchDB:
             "WHERE chrom=? AND pos=? AND ref=? AND alt=? AND rsid IS NULL",
             batch,
         )
-        return len(batch)
+        return self._conn.execute("SELECT changes()").fetchone()[0]
 
     def clear_layer(self, layer: str):
         """Clear annotation columns for a specific layer (for incremental updates)."""
@@ -339,6 +352,8 @@ class PatchDB:
                 "UPDATE annotations SET rsid=NULL, rsid_source=NULL "
                 "WHERE rsid_source='dbsnp'"
             )
+        else:
+            raise ValueError(f"Unsupported annotation layer: {layer!r}")
         self._conn.commit()
 
     def set_metadata(self, source: str, version: str, status: str = "complete"):
