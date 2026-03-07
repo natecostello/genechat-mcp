@@ -365,10 +365,14 @@ else
     cp "$FINAL_VCF.tbi" "$OUTPUT_VCF.tbi" 2>/dev/null || tabix -p vcf "$OUTPUT_VCF"
 fi
 
-# --- Cleanup intermediate files (optional) ---
+# --- Cleanup intermediate and raw download files ---
 
-log "Cleaning up intermediate and raw download files..."
-rm -rf "$WORK_DIR"
+log "Cleaning up work directory..."
+if [[ -n "${WORK_DIR:-}" && -d "$WORK_DIR" && "$WORK_DIR" == "$OUTPUT_DIR"/work ]]; then
+    rm -rf "$WORK_DIR"
+else
+    log "Skipping cleanup: WORK_DIR ('$WORK_DIR') did not pass safety checks"
+fi
 
 # --- Done ---
 
