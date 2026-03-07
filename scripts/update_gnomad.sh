@@ -53,14 +53,15 @@ echo "  Annotated VCF: $ANNOTATED_VCF"
 echo "  gnomAD source: $GNOMAD_DIR"
 echo "  gnomAD version: $GNOMAD_VERSION"
 
-# 1. Backup (VCF + index)
+# 1. Backup (VCF + index) with timestamp to preserve history
+BACKUP_SUFFIX="bak.$(date +%Y%m%d_%H%M%S)"
 echo "Step 1: Backing up current VCF..."
-cp "$ANNOTATED_VCF" "${ANNOTATED_VCF}.bak"
+cp "$ANNOTATED_VCF" "${ANNOTATED_VCF}.${BACKUP_SUFFIX}"
 if [ -f "${ANNOTATED_VCF}.tbi" ]; then
-    cp "${ANNOTATED_VCF}.tbi" "${ANNOTATED_VCF}.bak.tbi"
+    cp "${ANNOTATED_VCF}.tbi" "${ANNOTATED_VCF}.${BACKUP_SUFFIX}.tbi"
 fi
 if [ -f "${ANNOTATED_VCF}.csi" ]; then
-    cp "${ANNOTATED_VCF}.csi" "${ANNOTATED_VCF}.bak.csi"
+    cp "${ANNOTATED_VCF}.csi" "${ANNOTATED_VCF}.${BACKUP_SUFFIX}.csi"
 fi
 
 # 2. Strip old frequency fields
@@ -86,9 +87,11 @@ GNOMAD_WORK="$WORK_DIR/gnomad_work"
 mkdir -p "$GNOMAD_WORK"
 CHR_FILES=()
 for CHR in "${CHROMS[@]}"; do
-    GNOMAD_CHR_VCF="$GNOMAD_DIR/gnomad.exomes.v4.1.sites.${CHR}.vcf.bgz"
+    # Find gnomAD file for this chromosome (supports any version/naming)
+    GNOMAD_CHR_VCF="$(find "$GNOMAD_DIR" -maxdepth 1 -type f \
+        -name "*sites.${CHR}.vcf.*" ! -name "*.tbi" ! -name "*.csi" 2>/dev/null | head -n 1 || true)"
     CHR_OUT="$GNOMAD_WORK/${CHR}.vcf.gz"
-    if [ -f "$GNOMAD_CHR_VCF" ]; then
+    if [ -n "$GNOMAD_CHR_VCF" ] && [ -f "$GNOMAD_CHR_VCF" ]; then
         echo "  Annotating $CHR with gnomAD..."
         bcftools annotate -a "$GNOMAD_CHR_VCF" \
             -c INFO/AF,INFO/AF_grpmax \
@@ -121,4 +124,4 @@ rm -f "$WORK_DIR/tmp_annotated.vcf.gz"
 rm -rf "$GNOMAD_WORK"
 
 echo "Done. gnomAD updated ($GNOMAD_VERSION, $DATE)."
-echo "Backup at: ${ANNOTATED_VCF}.bak"
+echo "Backup at: ${ANNOTATED_VCF}.${BACKUP_SUFFIX}"
