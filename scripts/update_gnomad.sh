@@ -81,7 +81,7 @@ rm -f "$AF_HEADERS"
 echo "Step 3: Annotating per-chromosome with gnomAD..."
 mapfile -t CHROMS < <(bcftools view -h "$WORK_DIR/tmp_with_headers.vcf.gz" \
     | grep "^##contig" | sed 's/.*ID=\([^,>]*\).*/\1/' \
-    | grep -E '^[A-Za-z0-9._-]+$')
+    | grep -E '^chr([0-9]+|X|Y|MT)$')
 
 GNOMAD_WORK="$WORK_DIR/gnomad_work"
 mkdir -p "$GNOMAD_WORK"

@@ -55,7 +55,7 @@ class VCFEngine:
                     if rec.type == "GENERIC" and rec.key.startswith(prefix):
                         label = rec.key[len(prefix) :]
                         versions[label] = rec.value
-        except (OSError, ValueError) as e:
+        except Exception as e:
             raise VCFEngineError(f"Cannot read VCF headers: {e}") from e
         return versions
 

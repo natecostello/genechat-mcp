@@ -63,6 +63,27 @@ class TestAnnotationVersions:
         result = engine.annotation_versions(prefix="NonExistent_")
         assert result == {}
 
+    def test_parses_genechat_headers(self, test_config, tmp_path):
+        """annotation_versions() parses ##GeneChat_* headers correctly."""
+        import pysam
+
+        # Create a VCF with GeneChat_* headers by copying the test VCF
+        src = pysam.VariantFile(str(test_config.genome.vcf_path))
+        out_path = tmp_path / "with_headers.vcf.gz"
+        header = src.header.copy()
+        header.add_line("##GeneChat_ClinVar=2026-03-01")
+        header.add_line("##GeneChat_gnomAD=v4.1")
+        with pysam.VariantFile(str(out_path), "wz", header=header) as out:
+            for rec in src:
+                out.write(rec)
+        src.close()
+        pysam.tabix_index(str(out_path), preset="vcf", force=True)
+
+        test_config.genome.vcf_path = str(out_path)
+        engine = VCFEngine(test_config)
+        result = engine.annotation_versions()
+        assert result == {"ClinVar": "2026-03-01", "gnomAD": "v4.1"}
+
 
 class TestQueryRegion:
     """Integration tests querying known variants from the test VCF."""

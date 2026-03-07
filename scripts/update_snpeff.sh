@@ -69,7 +69,7 @@ tabix -p vcf "$WORK_DIR/tmp_stripped.vcf.gz"
 echo "Step 3: Running SnpEff per-chromosome..."
 mapfile -t CHROMS < <(bcftools view -h "$WORK_DIR/tmp_stripped.vcf.gz" \
     | grep "^##contig" | sed 's/.*ID=\([^,>]*\).*/\1/' \
-    | grep -E '^[A-Za-z0-9._-]+$')
+    | grep -E '^chr([0-9]+|X|Y|MT)$')
 
 SNPEFF_WORK="$WORK_DIR/snpeff_work"
 mkdir -p "$SNPEFF_WORK"
