@@ -87,6 +87,7 @@ def register(mcp, engine, db, config):
         # VCF cross-reference: look up genotypes for result rsIDs
         genotype_map: dict[str, str] = {}
         vcf_truncated = None
+        vcf_lookup_failed = False
         if check_vcf:
             rsids_to_check = [
                 r["rsid"]
@@ -103,7 +104,7 @@ def register(mcp, engine, db, config):
                             zyg = short_zygosity(gt["zygosity"])
                             genotype_map[rs] = f"{gt['display']} ({zyg})"
                 except (ValueError, VCFEngineError):
-                    vcf_truncated = None
+                    vcf_lookup_failed = True
 
         # Build header
         search_desc = []
@@ -119,7 +120,11 @@ def register(mcp, engine, db, config):
             f"Showing {len(results)} association(s), ordered by significance\n",
         ]
 
-        if check_vcf and vcf_truncated:
+        if check_vcf and vcf_lookup_failed:
+            lines.append(
+                "*Warning: VCF genotype lookup failed — genotype column will show '—'.*\n"
+            )
+        elif check_vcf and vcf_truncated:
             lines.append(
                 "*Note: VCF genotype lookup was truncated — some variants may show '—' "
                 "due to query limits.*\n"

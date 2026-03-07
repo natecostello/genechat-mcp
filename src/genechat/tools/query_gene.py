@@ -242,7 +242,10 @@ def register(mcp, engine, db, config):
                         key = f"{tv['chrom']}:{tv['pos']}"
                         if key in pos_map:
                             vcf_results_by_region[ti] = pos_map[key]
-                    batch_query_ok = True
+                    # Check if results were truncated
+                    batch_query_ok = not (
+                        all_results and all_results[-1].get("_truncated")
+                    )
                 except (ValueError, VCFEngineError):
                     pass  # Graceful degradation
 

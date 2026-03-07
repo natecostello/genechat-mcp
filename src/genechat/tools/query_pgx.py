@@ -89,7 +89,7 @@ def _format_pgx_entry(entry, engine, db, config, include_all_variants):
                     key = f"{pv['chrom']}:{pv['pos']}"
                     if key in pos_map:
                         pv_vcf_map[pi] = pos_map[key]
-                batch_query_ok = True
+                batch_query_ok = not (all_pv and all_pv[-1].get("_truncated"))
             except (ValueError, VCFEngineError):
                 pass
 
