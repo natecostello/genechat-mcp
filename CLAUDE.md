@@ -546,7 +546,7 @@ CREATE TABLE genes (
 CREATE INDEX idx_genes_chrom ON genes(chrom, start, end);
 
 CREATE TABLE pgx_drugs (
-    drug_name TEXT NOT NULL, drug_aliases TEXT, gene TEXT NOT NULL,
+    drug_name TEXT NOT NULL, gene TEXT NOT NULL,
     guideline_source TEXT, guideline_url TEXT, clinical_summary TEXT
 );
 CREATE INDEX idx_pgx_drug ON pgx_drugs(drug_name);
@@ -561,7 +561,7 @@ CREATE INDEX idx_pgx_var_gene ON pgx_variants(gene);
 CREATE TABLE prs_weights (
     prs_id TEXT NOT NULL, trait TEXT NOT NULL, rsid TEXT NOT NULL,
     chrom TEXT NOT NULL, pos INTEGER NOT NULL, effect_allele TEXT NOT NULL,
-    weight REAL NOT NULL, reference TEXT
+    weight REAL NOT NULL
 );
 CREATE INDEX idx_prs_id ON prs_weights(prs_id);
 ```
@@ -599,7 +599,7 @@ Fixtures:
 
 **test_vcf_engine.py**: query_region returns expected variants, query_rsid correct, query_clinvar returns pathogenic, max_variants cap works, invalid region raises ValueError, missing VCF raises FileNotFoundError.
 
-**test_lookup.py**: get_gene returns correct coords, get_gene_region includes padding, search_pgx_by_drug finds name and alias, PRS weights filter by trait.
+**test_lookup.py**: get_gene returns correct coords, get_gene_region includes padding, search_pgx_by_drug finds by name, PRS weights filter by trait.
 
 **test_tools/**: Each tool produces valid formatted output. Drug lookup returns variants with genotypes. rsID lookup returns full annotation.
 

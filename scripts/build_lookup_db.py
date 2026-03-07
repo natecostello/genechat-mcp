@@ -28,7 +28,6 @@ SCHEMAS = {
     "pgx_drugs": """
         CREATE TABLE pgx_drugs (
             drug_name TEXT NOT NULL,
-            drug_aliases TEXT,
             gene TEXT NOT NULL,
             guideline_source TEXT,
             guideline_url TEXT,
@@ -60,8 +59,7 @@ SCHEMAS = {
             chrom TEXT NOT NULL,
             pos INTEGER NOT NULL,
             effect_allele TEXT NOT NULL,
-            weight REAL NOT NULL,
-            reference TEXT
+            weight REAL NOT NULL
         );
         CREATE INDEX idx_prs_id ON prs_weights(prs_id);
     """,

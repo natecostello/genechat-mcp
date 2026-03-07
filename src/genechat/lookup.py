@@ -40,12 +40,10 @@ class LookupDB:
         return f"{gene['chrom']}:{start}-{end}"
 
     def search_pgx_by_drug(self, drug_name: str) -> list[dict]:
-        """Search PGx drug entries by drug name or alias (case-insensitive)."""
+        """Search PGx drug entries by drug name (case-insensitive)."""
         rows = self._conn.execute(
-            "SELECT * FROM pgx_drugs WHERE "
-            "UPPER(drug_name) = UPPER(?) OR "
-            "UPPER(drug_aliases) LIKE '%' || UPPER(?) || '%'",
-            (drug_name, drug_name),
+            "SELECT * FROM pgx_drugs WHERE UPPER(drug_name) = UPPER(?)",
+            (drug_name,),
         ).fetchall()
         return [dict(r) for r in rows]
 

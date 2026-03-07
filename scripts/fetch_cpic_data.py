@@ -137,7 +137,6 @@ def build_pgx_drugs(pairs: list[dict]) -> list[dict]:
         rows.append(
             {
                 "drug_name": drug,
-                "drug_aliases": ".",
                 "gene": gene,
                 "guideline_source": "CPIC",
                 "guideline_url": url,
@@ -327,7 +326,6 @@ def write_drugs_tsv(rows: list[dict], path: Path):
     """Write pgx_drugs.tsv."""
     fieldnames = [
         "drug_name",
-        "drug_aliases",
         "gene",
         "guideline_source",
         "guideline_url",
