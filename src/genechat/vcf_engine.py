@@ -1,12 +1,14 @@
-"""VCF query engine using pysam."""
+"""VCF query engine using pysam, with optional patch.db annotations."""
 
 import re
+import warnings
 from pathlib import Path
 
 import pysam
 
 from genechat.config import AppConfig
 from genechat.parsers import parse_ann_field, parse_clinvar_fields, parse_genotype
+from genechat.patch import PatchDB
 
 REGION_PATTERN = re.compile(r"^chr[\dXYMT]{1,2}:\d+-\d+$")
 RSID_PATTERN = re.compile(r"^rs\d+$")
@@ -17,7 +19,12 @@ class VCFEngineError(Exception):
 
 
 class VCFEngine:
-    """Read-only VCF query engine backed by pysam."""
+    """Read-only VCF query engine backed by pysam.
+
+    Supports two modes:
+    - Annotated VCF mode (legacy): annotations read from VCF INFO fields
+    - Patch mode: genotypes from raw VCF, annotations from SQLite patch.db
+    """
 
     def __init__(self, config: AppConfig):
         self.vcf_path = Path(config.genome.vcf_path)
@@ -46,8 +53,31 @@ class VCFEngine:
         except Exception as e:
             raise VCFEngineError(f"Cannot open VCF: {e}") from e
 
+        # Open patch database if configured
+        patch_db_path = Path(config.genome.patch_db) if config.genome.patch_db else None
+        if patch_db_path and patch_db_path.exists():
+            self._patch = PatchDB(patch_db_path, readonly=True)
+            self._use_patch = True
+            if not self._patch.check_vcf_fingerprint(self.vcf_path):
+                warnings.warn(
+                    "Raw VCF has changed since patch.db was built. "
+                    "Run `genechat annotate` to update.",
+                    stacklevel=2,
+                )
+        else:
+            self._patch = None
+            self._use_patch = False
+
     def annotation_versions(self, prefix: str = "GeneChat_") -> dict[str, str]:
-        """Read ##GeneChat_* (or custom prefix) header lines from the VCF."""
+        """Read annotation version info."""
+        if self._use_patch:
+            meta = self._patch.get_metadata()
+            return {
+                k: f"{v['version']} ({v['updated_at']})"
+                for k, v in meta.items()
+                if v["status"] == "complete" and k != "vcf_fingerprint"
+            }
+        # Legacy: read ##GeneChat_* header lines from the VCF
         versions = {}
         try:
             with pysam.VariantFile(str(self.vcf_path)) as vcf:
@@ -89,20 +119,31 @@ class VCFEngine:
             if not REGION_PATTERN.match(r):
                 raise ValueError(f"Invalid region format: {r}")
 
-        # Open VCF once and iterate all regions with the same handle
         variants: list[dict] = []
         truncated = False
         try:
             with pysam.VariantFile(str(self.vcf_path)) as vcf:
                 sample_idx = self._get_sample_index()
                 for r in regions:
+                    # Pre-fetch patch annotations for the region
+                    patch_dict = self._get_patch_dict_for_region(r)
                     for record in vcf.fetch(region=r):
-                        if include_filter and not self._matches_filter(
-                            record, include_filter
+                        if (
+                            not self._use_patch
+                            and include_filter
+                            and not self._matches_filter(record, include_filter)
                         ):
                             continue
-                        parsed = self._record_to_dict(record, sample_idx)
+                        parsed = self._record_to_dict(record, sample_idx, patch_dict)
                         if parsed:
+                            if (
+                                self._use_patch
+                                and include_filter
+                                and not self._matches_filter_from_dict(
+                                    parsed, include_filter
+                                )
+                            ):
+                                continue
                             variants.append(parsed)
                         if len(variants) >= self.max_variants:
                             truncated = True
@@ -110,7 +151,6 @@ class VCFEngine:
                     if truncated:
                         break
         except ValueError:
-            # pysam raises ValueError for unknown contigs
             pass
         except Exception as e:
             raise VCFEngineError(f"Error querying regions: {e}") from e
@@ -127,9 +167,11 @@ class VCFEngine:
         """Query a specific variant by rsID (e.g. rs4149056)."""
         if not RSID_PATTERN.match(rsid):
             raise ValueError(f"Invalid rsID format: {rsid}. Expected rs<digits>")
-        # No region-based shortcut for rsID — must scan entire file.
-        # rsIDs can repeat across records (different alleles, overlapping
-        # representations), so collect all matches up to max_variants.
+
+        if self._use_patch:
+            return self._query_rsid_patch(rsid)
+
+        # Legacy: full VCF scan
         variants: list[dict] = []
         truncated = False
         try:
@@ -154,16 +196,49 @@ class VCFEngine:
             )
         return variants
 
-    def query_rsids(self, rsids: list[str]) -> dict[str, list[dict]]:
-        """Query multiple rsIDs in a single VCF scan.
+    def _query_rsid_patch(self, rsid: str) -> list[dict]:
+        """Query rsID using patch.db index + pysam point fetch."""
+        patch_rows = self._patch.lookup_rsid(rsid)
+        if not patch_rows:
+            return []
 
-        Returns a dict mapping each rsID to its list of variant dicts.
-        Much more efficient than calling query_rsid() repeatedly.
-        """
+        variants = []
+        try:
+            with pysam.VariantFile(str(self.vcf_path)) as vcf:
+                sample_idx = self._get_sample_index()
+                for pr in patch_rows:
+                    region = f"{pr['chrom']}:{pr['pos']}-{pr['pos']}"
+                    try:
+                        for record in vcf.fetch(region=region):
+                            alt = ",".join(record.alts) if record.alts else "."
+                            if (
+                                record.pos == pr["pos"]
+                                and record.ref == pr["ref"]
+                                and alt == pr["alt"]
+                            ):
+                                parsed = self._record_to_dict(
+                                    record, sample_idx, patch_override=pr
+                                )
+                                if parsed:
+                                    variants.append(parsed)
+                    except ValueError:
+                        continue
+                    if len(variants) >= self.max_variants:
+                        break
+        except Exception as e:
+            raise VCFEngineError(f"Error querying rsID {rsid}: {e}") from e
+        return variants
+
+    def query_rsids(self, rsids: list[str]) -> dict[str, list[dict]]:
+        """Query multiple rsIDs in a single operation."""
         for rsid in rsids:
             if not RSID_PATTERN.match(rsid):
                 raise ValueError(f"Invalid rsID format: {rsid}. Expected rs<digits>")
 
+        if self._use_patch:
+            return self._query_rsids_patch(rsids)
+
+        # Legacy: full VCF scan
         target_set = set(rsids)
         results: dict[str, list[dict]] = {r: [] for r in rsids}
         found_count = 0
@@ -194,7 +269,40 @@ class VCFEngine:
                     ),
                 }
             ]
+        return results
 
+    def _query_rsids_patch(self, rsids: list[str]) -> dict[str, list[dict]]:
+        """Query multiple rsIDs using patch.db batch lookup."""
+        patch_results = self._patch.lookup_rsids(rsids)
+        results: dict[str, list[dict]] = {r: [] for r in rsids}
+        found_count = 0
+
+        try:
+            with pysam.VariantFile(str(self.vcf_path)) as vcf:
+                sample_idx = self._get_sample_index()
+                for rsid, patch_rows in patch_results.items():
+                    for pr in patch_rows:
+                        region = f"{pr['chrom']}:{pr['pos']}-{pr['pos']}"
+                        try:
+                            for record in vcf.fetch(region=region):
+                                alt = ",".join(record.alts) if record.alts else "."
+                                if (
+                                    record.pos == pr["pos"]
+                                    and record.ref == pr["ref"]
+                                    and alt == pr["alt"]
+                                ):
+                                    parsed = self._record_to_dict(
+                                        record, sample_idx, patch_override=pr
+                                    )
+                                    if parsed:
+                                        results[rsid].append(parsed)
+                                        found_count += 1
+                        except ValueError:
+                            continue
+                    if found_count >= self.max_variants:
+                        break
+        except Exception as e:
+            raise VCFEngineError(f"Error querying rsIDs: {e}") from e
         return results
 
     def query_clinvar(self, significance: str, region: str | None = None) -> list[dict]:
@@ -202,6 +310,10 @@ class VCFEngine:
         if region and not REGION_PATTERN.match(region):
             raise ValueError(f"Invalid region format: {region}")
 
+        if self._use_patch:
+            return self._query_clinvar_patch(significance, region)
+
+        # Legacy: full VCF scan with ClinVar filter
         variants = []
         truncated = False
         try:
@@ -235,15 +347,57 @@ class VCFEngine:
             )
         return variants
 
-    def stats(self) -> dict:
-        """Compute basic variant statistics by iterating all records.
+    def _query_clinvar_patch(self, significance: str, region: str | None) -> list[dict]:
+        """Query ClinVar using patch.db indexed lookup."""
+        if region:
+            chrom, coords = region.split(":")
+            start, end = coords.split("-")
+            patch_rows = self._patch.query_clinvar(
+                significance, chrom, int(start), int(end)
+            )
+        else:
+            patch_rows = self._patch.query_clinvar(significance)
 
-        Returns a dict with counts for:
-        - 'Total variants'
-        - 'SNPs'
-        - 'Indels'
-        - 'Multi-allelic'
-        """
+        variants = []
+        truncated = False
+        try:
+            with pysam.VariantFile(str(self.vcf_path)) as vcf:
+                sample_idx = self._get_sample_index()
+                for pr in patch_rows:
+                    region_str = f"{pr['chrom']}:{pr['pos']}-{pr['pos']}"
+                    try:
+                        for record in vcf.fetch(region=region_str):
+                            alt = ",".join(record.alts) if record.alts else "."
+                            if (
+                                record.pos == pr["pos"]
+                                and record.ref == pr["ref"]
+                                and alt == pr["alt"]
+                            ):
+                                parsed = self._record_to_dict(
+                                    record, sample_idx, patch_override=pr
+                                )
+                                if parsed:
+                                    variants.append(parsed)
+                    except ValueError:
+                        continue
+                    if len(variants) >= self.max_variants:
+                        truncated = True
+                        break
+        except Exception as e:
+            if isinstance(e, VCFEngineError):
+                raise
+            raise VCFEngineError(f"Error querying ClinVar: {e}") from e
+
+        if truncated and variants:
+            variants[-1]["_truncated"] = True
+            variants[-1]["_truncation_notice"] = (
+                f"Results capped at {self.max_variants} variants. "
+                "Narrow your query for complete results."
+            )
+        return variants
+
+    def stats(self) -> dict:
+        """Compute basic variant statistics by iterating all records."""
         counts = {
             "Total variants": 0,
             "SNPs": 0,
@@ -259,7 +413,6 @@ class VCFEngine:
                         counts["Multi-allelic"] += 1
                     if not alts:
                         continue
-                    # Classify at record level so counts are comparable to Total
                     is_snp = all(len(record.ref) == 1 and len(a) == 1 for a in alts)
                     if is_snp:
                         counts["SNPs"] += 1
@@ -268,6 +421,14 @@ class VCFEngine:
         except Exception as e:
             raise VCFEngineError(f"Error computing stats: {e}") from e
         return counts
+
+    def _get_patch_dict_for_region(self, region: str) -> dict[tuple, dict] | None:
+        """Pre-fetch patch annotations for a region. Returns None if not in patch mode."""
+        if not self._use_patch:
+            return None
+        chrom, coords = region.split(":")
+        start, end = coords.split("-")
+        return self._patch.get_annotations_in_region(chrom, int(start), int(end))
 
     def _fetch_and_parse(
         self,
@@ -280,22 +441,33 @@ class VCFEngine:
         variants = []
         truncated = False
 
+        patch_dict = self._get_patch_dict_for_region(region)
+
         try:
             with pysam.VariantFile(str(self.vcf_path)) as vcf:
                 sample_idx = self._get_sample_index()
                 for record in vcf.fetch(region=region):
-                    if include_filter and not self._matches_filter(
-                        record, include_filter
+                    if (
+                        not self._use_patch
+                        and include_filter
+                        and not self._matches_filter(record, include_filter)
                     ):
                         continue
-                    parsed = self._record_to_dict(record, sample_idx)
+                    parsed = self._record_to_dict(record, sample_idx, patch_dict)
                     if parsed:
+                        if (
+                            self._use_patch
+                            and include_filter
+                            and not self._matches_filter_from_dict(
+                                parsed, include_filter
+                            )
+                        ):
+                            continue
                         variants.append(parsed)
                     if len(variants) >= cap:
                         truncated = True
                         break
         except ValueError:
-            # pysam raises ValueError for invalid regions (e.g. unknown contig)
             return []
         except Exception as e:
             if isinstance(e, (VCFEngineError, ValueError)):
@@ -311,14 +483,8 @@ class VCFEngine:
         return variants
 
     def _matches_filter(self, record: pysam.VariantRecord, filt: str) -> bool:
-        """Basic filter matching for impact level strings.
-
-        Supports plain strings like 'HIGH' and bcftools-style expressions
-        like 'INFO/ANN~"HIGH"'.
-        """
-        # e.g. 'INFO/ANN~"HIGH"' or plain impact strings like 'HIGH'.
+        """Basic filter matching for impact level strings (legacy mode)."""
         try:
-            # If the filter looks like INFO/ANN~"VALUE", extract VALUE.
             search = filt
             match = re.search(r'~"([^"]+)"', filt)
             if match:
@@ -329,22 +495,40 @@ class VCFEngine:
             if ann and search.upper() in ann.upper():
                 return True
         except Exception:
-            # On any error retrieving/processing the ANN field, treat as no match.
             pass
         return False
 
-    def _record_to_dict(
-        self, record: pysam.VariantRecord, sample_idx: int
-    ) -> dict | None:
-        """Convert a pysam VariantRecord to a variant dict."""
-        alt = ",".join(record.alts) if record.alts else "."
-        rsid = record.id if record.id and record.id != "." else None
+    def _matches_filter_from_dict(self, variant_dict: dict, filt: str) -> bool:
+        """Check impact filter against variant dict (patch mode)."""
+        search = filt
+        match = re.search(r'~"([^"]+)"', filt)
+        if match:
+            search = match.group(1)
+        if not search:
+            return False
+        impact = (variant_dict.get("annotation", {}).get("impact") or "").upper()
+        effect = (variant_dict.get("annotation", {}).get("effect") or "").upper()
+        return search.upper() in impact or search.upper() in effect
 
-        # Genotype
+    def _record_to_dict(
+        self,
+        record: pysam.VariantRecord,
+        sample_idx: int,
+        patch_dict: dict[tuple, dict] | None = None,
+        patch_override: dict | None = None,
+    ) -> dict | None:
+        """Convert a pysam VariantRecord to a variant dict.
+
+        In patch mode, annotations come from patch_dict (region batch) or
+        patch_override (single-variant lookup). In legacy mode, they come
+        from the VCF INFO fields.
+        """
+        alt = ",".join(record.alts) if record.alts else "."
+
+        # Genotype: always from raw VCF
         sample = record.samples[sample_idx]
         alleles = sample.alleles
         if alleles and all(a is not None for a in alleles):
-            # Reconstruct GT-style display for parse_genotype
             ref = record.ref
             alts_list = list(record.alts or [])
             allele_map = {ref: "0"}
@@ -356,22 +540,46 @@ class VCFEngine:
         else:
             genotype = {"display": "no call", "zygosity": "no_call"}
 
-        # SnpEff ANN
-        ann_raw = self._get_info_str(record, "ANN")
-        annotation = parse_ann_field(ann_raw) if ann_raw else {}
+        # Get patch row if available
+        patch_row = patch_override
+        if patch_row is None and patch_dict is not None:
+            patch_row = patch_dict.get((record.pos, record.ref, alt))
 
-        # ClinVar
-        clnsig = self._get_info_str(record, "CLNSIG")
-        clndn = self._get_info_str(record, "CLNDN")
-        clnrevstat = self._get_info_str(record, "CLNREVSTAT")
-        clinvar = parse_clinvar_fields(clnsig or "", clndn or "", clnrevstat or "")
-
-        # Population frequencies
-        af = self._get_info_float(record, "AF")
-        af_popmax = self._get_info_float(record, "AF_popmax")
-        if af_popmax is None:
-            af_popmax = self._get_info_float(record, "AF_grpmax")
-        population_freq = _parse_freq(af, af_popmax)
+        if patch_row:
+            # Annotations from patch.db
+            rsid = patch_row.get("rsid")
+            annotation = {}
+            if patch_row.get("gene"):
+                annotation = {
+                    "gene": patch_row["gene"],
+                    "effect": patch_row.get("effect"),
+                    "impact": patch_row.get("impact"),
+                    "transcript": patch_row.get("transcript"),
+                    "hgvs_c": patch_row.get("hgvs_c"),
+                    "hgvs_p": patch_row.get("hgvs_p"),
+                }
+            clinvar = parse_clinvar_fields(
+                patch_row.get("clnsig") or "",
+                patch_row.get("clndn") or "",
+                patch_row.get("clnrevstat") or "",
+            )
+            af = patch_row.get("af")
+            af_grpmax = patch_row.get("af_grpmax")
+            population_freq = _parse_freq(af, af_grpmax)
+        else:
+            # Legacy: read from VCF INFO fields
+            rsid = record.id if record.id and record.id != "." else None
+            ann_raw = self._get_info_str(record, "ANN")
+            annotation = parse_ann_field(ann_raw) if ann_raw else {}
+            clnsig = self._get_info_str(record, "CLNSIG")
+            clndn = self._get_info_str(record, "CLNDN")
+            clnrevstat = self._get_info_str(record, "CLNREVSTAT")
+            clinvar = parse_clinvar_fields(clnsig or "", clndn or "", clnrevstat or "")
+            af = self._get_info_float(record, "AF")
+            af_popmax = self._get_info_float(record, "AF_popmax")
+            if af_popmax is None:
+                af_popmax = self._get_info_float(record, "AF_grpmax")
+            population_freq = _parse_freq(af, af_popmax)
 
         return {
             "chrom": record.chrom,
@@ -387,7 +595,7 @@ class VCFEngine:
 
     @staticmethod
     def _get_info_str(record: pysam.VariantRecord, key: str) -> str | None:
-        """Safely get an INFO field as a string. Handles tuples from Number=. fields."""
+        """Safely get an INFO field as a string."""
         try:
             val = record.info[key]
         except KeyError:
@@ -400,7 +608,7 @@ class VCFEngine:
 
     @staticmethod
     def _get_info_float(record: pysam.VariantRecord, key: str) -> float | None:
-        """Safely get an INFO field as a float. Handles tuples from Number=A fields."""
+        """Safely get an INFO field as a float."""
         try:
             val = record.info[key]
         except KeyError:

@@ -13,6 +13,7 @@ class GenomeConfig(BaseModel):
     vcf_path: str = ""
     genome_build: str = "GRCh38"
     sample_name: str = ""
+    patch_db: str = ""
 
 
 class DatabasesConfig(BaseModel):
