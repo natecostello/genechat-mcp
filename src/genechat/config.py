@@ -75,6 +75,20 @@ def _find_config_file() -> Path | None:
     return None
 
 
+def write_config(vcf_path: Path, config_dir: Path) -> Path:
+    """Write a config.toml with the given VCF path. Returns the config file path."""
+    import stat
+
+    config_dir.mkdir(parents=True, exist_ok=True)
+    config_path = config_dir / "config.toml"
+    config_path.write_text(
+        f'[genome]\nvcf_path = "{vcf_path}"\n',
+        encoding="utf-8",
+    )
+    config_path.chmod(stat.S_IRUSR | stat.S_IWUSR)  # 600
+    return config_path
+
+
 def load_config(path: str | None = None) -> AppConfig:
     """Load config from a TOML file. Falls back to defaults if no file found.
 
