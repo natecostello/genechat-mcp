@@ -99,7 +99,6 @@ def parse_scoring_file(
                 "pos": pos_i,
                 "effect_allele": effect_allele,
                 "weight": weight_f,
-                "reference": f"{pgs_id}",
             }
         )
 
@@ -144,7 +143,6 @@ def main():
         "pos",
         "effect_allele",
         "weight",
-        "reference",
     ]
     with open(output_path, "w", newline="", encoding="utf-8") as f:
         f.write(
