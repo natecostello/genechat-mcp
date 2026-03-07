@@ -79,7 +79,7 @@ uv sync
 brew install bcftools brewsci/bio/snpeff
 
 # Linux
-conda install -c bioconda bcftools snpsift
+conda install -c bioconda bcftools snpeff
 ```
 
 ### 3. Download references, annotate, and initialize
@@ -91,7 +91,10 @@ bash scripts/setup_references.sh
 # Annotate your VCF (~20-30 minutes, auto-detects references)
 bash scripts/annotate.sh /path/to/your/raw.vcf.gz ./data
 
-# Initialize GeneChat (checks VCF is readable, writes config, prints MCP JSON)
+# Build lookup tables (gene coords, PGx drugs, PRS weights)
+uv run python scripts/build_lookup_db.py
+
+# Initialize GeneChat (validates VCF, writes config, prints MCP JSON)
 uv run genechat init ./data/annotated.vcf.gz
 
 # (Optional) Enable GWAS trait search (~58 MB download)
