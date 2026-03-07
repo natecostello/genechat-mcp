@@ -7,10 +7,13 @@ build/
 *.db
 data/lookup_tables.db
 src/genechat/data/lookup_tables.db
+*.vcf
 *.vcf.gz
 *.vcf.gz.tbi
+*.vcf.gz.csi
 .pytest_cache/
 giab/
 data/gwas_catalog/
 snpEff_genes.txt
 snpEff_summary.html
+config.toml

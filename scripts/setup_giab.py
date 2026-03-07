@@ -394,6 +394,18 @@ def main():
     print("Step 4/4: Annotating GIAB VCF (single pass)...")
     annotate_giab(giab_vcf, output_vcf, clinvar_vcf, dbsnp_vcf)
 
+    # --- Cleanup work directory ---
+    import shutil
+
+    print("Cleaning up intermediate files...")
+    try:
+        shutil.rmtree(work_dir)
+        print(f"  Removed {work_dir}")
+    except Exception as exc:  # noqa: BLE001
+        print(
+            f"WARNING: Failed to remove work directory {work_dir}: {exc}"
+        )
+
     # --- Done ---
     print()
     print("=" * 50)
