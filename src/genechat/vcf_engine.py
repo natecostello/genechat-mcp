@@ -61,14 +61,14 @@ class VCFEngine:
             if not self._patch.check_vcf_fingerprint(self.vcf_path):
                 warnings.warn(
                     "Raw VCF has changed since patch.db was built. "
-                    "Run `genechat annotate` to update.",
+                    "Rebuild the patch database to pick up VCF changes.",
                     stacklevel=2,
                 )
         elif patch_db_path and not patch_db_path.exists():
             warnings.warn(
                 f"Configured patch_db not found: {patch_db_path}. "
                 "Falling back to annotated VCF mode. "
-                "Run `genechat annotate` to create the patch database.",
+                "Build the patch database to enable patch mode.",
                 stacklevel=2,
             )
             self._patch = None
@@ -77,18 +77,38 @@ class VCFEngine:
             self._patch = None
             self._use_patch = False
 
+    def close(self):
+        """Close the patch database connection if open."""
+        if self._patch:
+            self._patch.close()
+            self._patch = None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        self.close()
+
+    # Map patch_metadata keys to display labels matching legacy VCF headers
+    _LABEL_MAP = {
+        "snpeff": "SnpEff",
+        "clinvar": "ClinVar",
+        "gnomad": "gnomAD",
+        "dbsnp": "dbSNP",
+    }
+
     def annotation_versions(self, prefix: str = "GeneChat_") -> dict[str, str]:
         """Read annotation version info.
 
         In patch mode, reads from patch_metadata table. The prefix argument
-        is ignored (metadata keys are returned with capitalized first letter
-        to match legacy header format, e.g. 'Snpeff', 'Clinvar').
+        is ignored (metadata keys are mapped to display labels matching
+        legacy header format, e.g. 'SnpEff', 'ClinVar').
         In legacy mode, reads ##GeneChat_* (or custom prefix) VCF headers.
         """
         if self._use_patch:
             meta = self._patch.get_metadata()
             return {
-                k.capitalize(): v["version"]
+                self._LABEL_MAP.get(k, k): v["version"]
                 for k, v in meta.items()
                 if v["status"] == "complete" and k != "vcf_fingerprint"
             }
@@ -305,6 +325,7 @@ class VCFEngine:
         try:
             with pysam.VariantFile(str(self.vcf_path)) as vcf:
                 sample_idx = self._get_sample_index()
+                capped = False
                 for rsid, patch_rows in patch_results.items():
                     for pr in patch_rows:
                         region = f"{pr['chrom']}:{pr['pos']}-{pr['pos']}"
@@ -322,9 +343,14 @@ class VCFEngine:
                                     if parsed:
                                         results[rsid].append(parsed)
                                         found_count += 1
+                                        if found_count >= self.max_variants:
+                                            capped = True
+                                            break
                         except ValueError:
                             continue
-                    if found_count >= self.max_variants:
+                        if capped:
+                            break
+                    if capped:
                         break
         except Exception as e:
             raise VCFEngineError(f"Error querying rsIDs: {e}") from e

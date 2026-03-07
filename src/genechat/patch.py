@@ -75,6 +75,11 @@ class PatchDB:
         for idx in INDEXES:
             db._conn.execute(idx)
         db._conn.commit()
+        # Restrict permissions — patch.db contains personal genomic annotations
+        try:
+            os.chmod(db_path, 0o600)
+        except OSError:
+            pass  # Best-effort on platforms that don't support chmod
         return db
 
     def close(self):
@@ -208,8 +213,8 @@ class PatchDB:
             "gene, effect, impact, transcript, hgvs_c, hgvs_p) "
             "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
             "ON CONFLICT(chrom, pos, ref, alt) DO UPDATE SET "
-            "rsid=excluded.rsid, "
-            "rsid_source=excluded.rsid_source, "
+            "rsid=COALESCE(excluded.rsid, annotations.rsid), "
+            "rsid_source=COALESCE(excluded.rsid_source, annotations.rsid_source), "
             "gene=excluded.gene, "
             "effect=excluded.effect, "
             "impact=excluded.impact, "
@@ -251,12 +256,13 @@ class PatchDB:
         return count
 
     def _update_clinvar_batch(self, batch: list[tuple]) -> int:
+        before = self._conn.total_changes
         self._conn.executemany(
             "UPDATE annotations SET clnsig=?, clndn=?, clnrevstat=? "
             "WHERE chrom=? AND pos=? AND ref=? AND alt=?",
             batch,
         )
-        return self._conn.execute("SELECT changes()").fetchone()[0]
+        return self._conn.total_changes - before
 
     def update_gnomad_from_stream(self, stream: Iterator[str]) -> int:
         """Parse bcftools gnomAD-annotated VCF stream and UPDATE rows.
@@ -266,9 +272,10 @@ class PatchDB:
         """
         count = 0
         batch = []
-        for record in parse_vcf_stream(stream, ["AF", "AF_grpmax"]):
+        for record in parse_vcf_stream(stream, ["AF", "AF_grpmax", "AF_popmax"]):
             af = record.get("AF")
-            af_grpmax = record.get("AF_grpmax")
+            # Prefer AF_popmax, fall back to AF_grpmax (gnomAD v4 renamed it)
+            af_grpmax = record.get("AF_popmax") or record.get("AF_grpmax")
             if af is None and af_grpmax is None:
                 continue
             batch.append(
@@ -290,12 +297,13 @@ class PatchDB:
         return count
 
     def _update_gnomad_batch(self, batch: list[tuple]) -> int:
+        before = self._conn.total_changes
         self._conn.executemany(
             "UPDATE annotations SET af=?, af_grpmax=? "
             "WHERE chrom=? AND pos=? AND ref=? AND alt=?",
             batch,
         )
-        return self._conn.execute("SELECT changes()").fetchone()[0]
+        return self._conn.total_changes - before
 
     def update_dbsnp_from_stream(self, stream: Iterator[str]) -> int:
         """Parse bcftools dbSNP-annotated VCF stream and UPDATE rsid where NULL.
@@ -327,12 +335,13 @@ class PatchDB:
         return count
 
     def _update_dbsnp_batch(self, batch: list[tuple]) -> int:
+        before = self._conn.total_changes
         self._conn.executemany(
             "UPDATE annotations SET rsid=?, rsid_source='dbsnp' "
             "WHERE chrom=? AND pos=? AND ref=? AND alt=? AND rsid IS NULL",
             batch,
         )
-        return self._conn.execute("SELECT changes()").fetchone()[0]
+        return self._conn.total_changes - before
 
     def clear_layer(self, layer: str):
         """Clear annotation columns for a specific layer (for incremental updates)."""

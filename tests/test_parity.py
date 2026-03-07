@@ -284,6 +284,6 @@ class TestParityAnnotationVersions:
     def test_patch_has_versions(self, parity_engines):
         _, patch = parity_engines
         versions = patch.annotation_versions()
-        assert "Snpeff" in versions
-        assert "Clinvar" in versions
-        assert "Gnomad" in versions
+        assert "SnpEff" in versions
+        assert "ClinVar" in versions
+        assert "gnomAD" in versions
