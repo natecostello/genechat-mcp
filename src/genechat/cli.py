@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import shlex
 import sys
 from importlib import resources
 from pathlib import Path
@@ -66,7 +67,7 @@ def _run_init(vcf_path_str: str):
             f"Error: No index file found. Expected {tbi.name} or {csi.name}",
             file=sys.stderr,
         )
-        print("Run: tabix -p vcf " + str(vcf_path), file=sys.stderr)
+        print(f"Run: tabix -p vcf {shlex.quote(str(vcf_path))}", file=sys.stderr)
         sys.exit(1)
 
     # 3. Try to open the VCF to verify it's valid
@@ -83,11 +84,7 @@ def _run_init(vcf_path_str: str):
         )
         sys.exit(1)
 
-    # 4. Write config.toml
-    config_dir = Path(user_config_dir("genechat"))
-    config_path = write_config(vcf_path, config_dir)
-
-    # 5. Ensure lookup_tables.db exists
+    # 4. Ensure lookup_tables.db exists (check before writing config)
     db_ref = resources.files("genechat") / "data" / "lookup_tables.db"
     with resources.as_file(db_ref) as db_path:
         if not db_path.exists():
@@ -98,6 +95,10 @@ def _run_init(vcf_path_str: str):
             print("Build it with:", file=sys.stderr)
             print("  uv run python scripts/build_lookup_db.py", file=sys.stderr)
             sys.exit(1)
+
+    # 5. Write config.toml
+    config_dir = Path(user_config_dir("genechat"))
+    config_path = write_config(vcf_path, config_dir)
 
     # 6. Print results
     print(f"\nConfig written to: {config_path}")

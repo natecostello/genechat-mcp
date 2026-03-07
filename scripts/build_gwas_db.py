@@ -10,6 +10,7 @@ Produces (or updates) the lookup database with a `gwas_associations` table.
 """
 
 import csv
+import os
 import sqlite3
 import sys
 import zipfile
@@ -125,12 +126,18 @@ GWAS_URL = "https://ftp.ebi.ac.uk/pub/databases/gwas/releases/latest/gwas-catalo
 
 
 def _download_gwas(zip_path: Path) -> None:
-    """Download the GWAS Catalog associations zip."""
+    """Download the GWAS Catalog associations zip (atomic with temp file)."""
     import urllib.request
 
     zip_path.parent.mkdir(parents=True, exist_ok=True)
+    tmp_path = zip_path.with_suffix(".tmp")
     print("Downloading GWAS Catalog (~58 MB)...")
-    urllib.request.urlretrieve(GWAS_URL, zip_path)
+    try:
+        urllib.request.urlretrieve(GWAS_URL, tmp_path)
+        os.replace(tmp_path, zip_path)
+    except Exception:
+        tmp_path.unlink(missing_ok=True)
+        raise
     print(f"Downloaded: {zip_path}")
 
 

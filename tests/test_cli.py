@@ -144,6 +144,8 @@ def test_init_missing_lookup_db(tmp_path, capsys, monkeypatch):
     assert exc_info.value.code == 1
     captured = capsys.readouterr()
     assert "lookup_tables.db not found" in captured.err
+    # Config should NOT have been written (DB check happens before config write)
+    assert not (config_dir / "config.toml").exists()
 
 
 def test_no_subcommand_invokes_serve(monkeypatch):
