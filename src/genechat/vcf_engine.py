@@ -78,11 +78,17 @@ class VCFEngine:
             self._use_patch = False
 
     def annotation_versions(self, prefix: str = "GeneChat_") -> dict[str, str]:
-        """Read annotation version info."""
+        """Read annotation version info.
+
+        In patch mode, reads from patch_metadata table. The prefix argument
+        is ignored (metadata keys are returned with capitalized first letter
+        to match legacy header format, e.g. 'Snpeff', 'Clinvar').
+        In legacy mode, reads ##GeneChat_* (or custom prefix) VCF headers.
+        """
         if self._use_patch:
             meta = self._patch.get_metadata()
             return {
-                k: f"{v['version']} ({v['updated_at']})"
+                k.capitalize(): v["version"]
                 for k, v in meta.items()
                 if v["status"] == "complete" and k != "vcf_fingerprint"
             }
@@ -528,16 +534,25 @@ class VCFEngine:
         return False
 
     def _matches_filter_from_dict(self, variant_dict: dict, filt: str) -> bool:
-        """Check impact filter against variant dict (patch mode)."""
+        """Check filter against variant dict (patch mode).
+
+        Matches the search token against annotation fields to approximate
+        legacy behavior of matching against the full raw ANN string.
+        """
         search = filt
         match = re.search(r'~"([^"]+)"', filt)
         if match:
             search = match.group(1)
         if not search:
             return False
-        impact = (variant_dict.get("annotation", {}).get("impact") or "").upper()
-        effect = (variant_dict.get("annotation", {}).get("effect") or "").upper()
-        return search.upper() in impact or search.upper() in effect
+        search_upper = search.upper()
+        ann = variant_dict.get("annotation", {})
+        # Check all annotation fields that would appear in the raw ANN string
+        for field in ("impact", "effect", "gene", "transcript", "hgvs_c", "hgvs_p"):
+            val = ann.get(field)
+            if val and search_upper in val.upper():
+                return True
+        return False
 
     def _record_to_dict(
         self,
