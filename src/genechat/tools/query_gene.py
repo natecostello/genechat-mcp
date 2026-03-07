@@ -27,7 +27,7 @@ def _should_suppress(variant: dict, protected_rsids: set[str]) -> bool:
     Never suppresses:
     - HIGH impact variants
     - ClinVar Pathogenic/Likely_pathogenic/risk_factor/drug_response/conflicting
-    - Known trait or PGx rsIDs (protected_rsids)
+    - Known PGx rsIDs (protected_rsids)
 
     Suppresses when AF available:
     - AF > 0.05 AND (no ClinVar OR ClinVar Benign/Likely_benign) AND not HIGH
