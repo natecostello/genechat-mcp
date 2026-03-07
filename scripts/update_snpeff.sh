@@ -48,22 +48,24 @@ echo "=== SnpEff Update ==="
 echo "  Annotated VCF: $ANNOTATED_VCF"
 echo "  Database: $SNPEFF_DB"
 
-# 1. Backup (VCF + index)
+# 1. Backup (VCF + index) with timestamp to preserve history
+BACKUP_SUFFIX="bak.$(date +%Y%m%d_%H%M%S)"
 echo "Step 1: Backing up current VCF..."
-cp "$ANNOTATED_VCF" "${ANNOTATED_VCF}.bak"
+cp "$ANNOTATED_VCF" "${ANNOTATED_VCF}.${BACKUP_SUFFIX}"
 if [ -f "${ANNOTATED_VCF}.tbi" ]; then
-    cp "${ANNOTATED_VCF}.tbi" "${ANNOTATED_VCF}.bak.tbi"
+    cp "${ANNOTATED_VCF}.tbi" "${ANNOTATED_VCF}.${BACKUP_SUFFIX}.tbi"
 fi
 if [ -f "${ANNOTATED_VCF}.csi" ]; then
-    cp "${ANNOTATED_VCF}.csi" "${ANNOTATED_VCF}.bak.csi"
+    cp "${ANNOTATED_VCF}.csi" "${ANNOTATED_VCF}.${BACKUP_SUFFIX}.csi"
 fi
 
 # 2. Strip old ANN field
 echo "Step 2: Stripping old SnpEff annotations..."
 bcftools annotate -x INFO/ANN \
     "$ANNOTATED_VCF" -Oz -o "$WORK_DIR/tmp_stripped.vcf.gz"
+tabix -p vcf "$WORK_DIR/tmp_stripped.vcf.gz"
 
-# 3. Decompress for SnpEff (it reads plain VCF)
+# 3. Per-chromosome SnpEff annotation
 echo "Step 3: Running SnpEff per-chromosome..."
 mapfile -t CHROMS < <(bcftools view -h "$WORK_DIR/tmp_stripped.vcf.gz" \
     | grep "^##contig" | sed 's/.*ID=\([^,>]*\).*/\1/' \
@@ -104,4 +106,4 @@ rm -f "$WORK_DIR/tmp_stripped.vcf.gz" "$WORK_DIR/tmp_annotated.vcf.gz"
 rm -rf "$SNPEFF_WORK"
 
 echo "Done. SnpEff updated ($SNPEFF_DB, $DATE)."
-echo "Backup at: ${ANNOTATED_VCF}.bak"
+echo "Backup at: ${ANNOTATED_VCF}.${BACKUP_SUFFIX}"
