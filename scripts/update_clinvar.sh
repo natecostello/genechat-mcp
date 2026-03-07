@@ -66,6 +66,12 @@ else
     CLINVAR_USE="$CLINVAR_VCF"
 fi
 
+# Ensure ClinVar annotation VCF is indexed for bcftools annotate -a
+if [ ! -f "${CLINVAR_USE}.tbi" ] && [ ! -f "${CLINVAR_USE}.csi" ]; then
+    echo "  Indexing ClinVar VCF for annotation..."
+    tabix -p vcf "$CLINVAR_USE"
+fi
+
 # 4. Re-annotate with fresh ClinVar
 echo "Step 3: Annotating with fresh ClinVar..."
 bcftools annotate -a "$CLINVAR_USE" \

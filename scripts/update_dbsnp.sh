@@ -100,6 +100,12 @@ else
     DBSNP_USE="$DBSNP_VCF"
 fi
 
+# Ensure dbSNP annotation VCF is indexed for bcftools annotate
+if [ ! -f "${DBSNP_USE}.tbi" ] && [ ! -f "${DBSNP_USE}.csi" ]; then
+    echo "  Indexing dbSNP VCF for annotation..."
+    tabix -p vcf "$DBSNP_USE"
+fi
+
 # 3. Annotate with dbSNP rsIDs (fills missing IDs only, preserves existing)
 echo "Step 3: Annotating with dbSNP rsIDs..."
 bcftools annotate -a "$DBSNP_USE" -c ID -i 'ID="."' \

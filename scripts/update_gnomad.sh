@@ -92,6 +92,11 @@ for CHR in "${CHROMS[@]}"; do
         -name "*sites.${CHR}.vcf.*" ! -name "*.tbi" ! -name "*.csi" 2>/dev/null | head -n 1 || true)"
     CHR_OUT="$GNOMAD_WORK/${CHR}.vcf.gz"
     if [ -n "$GNOMAD_CHR_VCF" ] && [ -f "$GNOMAD_CHR_VCF" ]; then
+        # Ensure gnomAD VCF is indexed for bcftools annotate -a
+        if [ ! -f "${GNOMAD_CHR_VCF}.tbi" ] && [ ! -f "${GNOMAD_CHR_VCF}.csi" ]; then
+            echo "  Indexing gnomAD $CHR VCF..."
+            tabix -p vcf "$GNOMAD_CHR_VCF"
+        fi
         echo "  Annotating $CHR with gnomAD..."
         bcftools annotate -a "$GNOMAD_CHR_VCF" \
             -c INFO/AF,INFO/AF_grpmax \

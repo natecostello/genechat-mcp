@@ -76,11 +76,10 @@ mkdir -p "$SNPEFF_WORK"
 CHR_FILES=()
 for CHR in "${CHROMS[@]}"; do
     echo "  SnpEff annotating $CHR..."
-    CHR_VCF="$SNPEFF_WORK/${CHR}.vcf"
     CHR_OUT="$SNPEFF_WORK/${CHR}_ann.vcf.gz"
-    bcftools view -r "$CHR" "$WORK_DIR/tmp_stripped.vcf.gz" > "$CHR_VCF"
-    snpEff ann "$SNPEFF_DB" "$CHR_VCF" | bgzip > "$CHR_OUT"
-    rm -f "$CHR_VCF"
+    bcftools view -r "$CHR" "$WORK_DIR/tmp_stripped.vcf.gz" \
+        | snpEff ann "$SNPEFF_DB" - \
+        | bgzip > "$CHR_OUT"
     CHR_FILES+=("$CHR_OUT")
 done
 
@@ -102,7 +101,13 @@ mv "$WORK_DIR/tmp_final.vcf.gz" "$ANNOTATED_VCF"
 tabix -p vcf "$ANNOTATED_VCF"
 
 # 7. Cleanup
-rm -f "$WORK_DIR/tmp_stripped.vcf.gz" "$WORK_DIR/tmp_annotated.vcf.gz"
+rm -f \
+    "$WORK_DIR/tmp_stripped.vcf.gz" \
+    "$WORK_DIR/tmp_stripped.vcf.gz.tbi" \
+    "$WORK_DIR/tmp_stripped.vcf.gz.csi" \
+    "$WORK_DIR/tmp_annotated.vcf.gz" \
+    "$WORK_DIR/tmp_annotated.vcf.gz.tbi" \
+    "$WORK_DIR/tmp_annotated.vcf.gz.csi"
 rm -rf "$SNPEFF_WORK"
 
 echo "Done. SnpEff updated ($SNPEFF_DB, $DATE)."
