@@ -25,7 +25,11 @@ class VCFEngine:
         self._sample_name = config.genome.sample_name or None
 
         if not self.vcf_path.exists():
-            raise FileNotFoundError(f"VCF file not found: {self.vcf_path}")
+            raise FileNotFoundError(
+                f"VCF file not found: {self.vcf_path}. "
+                "If your VCF is on an encrypted or external volume, "
+                "make sure it is mounted before starting GeneChat."
+            )
         tbi = Path(f"{self.vcf_path}.tbi")
         csi = Path(f"{self.vcf_path}.csi")
         if not tbi.exists() and not csi.exists():

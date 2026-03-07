@@ -2,6 +2,8 @@
 
 A local-first MCP server that lets you have detailed conversations with AI about your genome. Query your whole-genome sequencing data through Claude (or any MCP-compatible LLM) for pharmacogenomics, disease risk, nutrition, exercise genetics, carrier screening, and more — with your data never leaving your machine.
 
+> **Privacy Notice:** GeneChat reads your VCF locally, but tool responses — containing your genotypes, rsIDs, and clinical interpretations — are sent to your LLM provider (e.g. Anthropic, OpenAI) as part of the conversation. Your raw VCF file is never uploaded, but the LLM does see the specific variants and findings returned by each tool call. Additionally, your MCP client (Claude Desktop, Claude Code, etc.) may log conversation history locally, which will include genomic findings. See [Security Recommendations](#security-recommendations) below for how to protect your data.
+
 ## What It Does
 
 You get your genome sequenced ($250–$900 from providers like Nucleus Genomics or Nebula Genomics). You download the raw VCF file. GeneChat annotates it once with open-source tools, then serves it locally via MCP so you can ask questions like:
@@ -389,12 +391,85 @@ Default (no flags): --clinvar only (the most common update).
 | dbSNP | Annually | `update_dbsnp.sh` | ~7 min |
 | Full re-annotation | Only if starting from a new raw VCF | `annotate.sh` | ~30 min |
 
-## Privacy
+## Security Recommendations
 
-- Your genome data never leaves your machine
+Genomic data is uniquely sensitive — it is immutable, identifies you and your relatives, and can reveal health predispositions. Take these precautions seriously.
+
+### What stays local vs. what gets transmitted
+
+| Data | Where it lives | Transmitted? |
+|------|---------------|-------------|
+| Your VCF file | Your machine only | Never |
+| Tool responses (genotypes, rsIDs, clinical findings) | Sent to LLM provider per tool call | Yes |
+| Conversation history | MCP client logs (local) | Depends on client settings |
+
+GeneChat makes **zero network calls** at runtime. However, every tool response is returned to the LLM, which runs on the provider's servers. This is inherent to how MCP works — the LLM needs your actual genotype data to interpret it.
+
+### Store your VCF on an encrypted volume
+
+Your annotated VCF and `config.toml` (which contains the path to your VCF) should live on an encrypted volume:
+
+**macOS (recommended — APFS encrypted disk image):**
+
+```bash
+# Create a 5 GB encrypted sparse image (grows as needed)
+hdiutil create -size 5g -fs APFS -encryption AES-256 \
+    -volname GenomeData -type SPARSE ~/GenomeData.sparseimage
+
+# Mount it (prompts for password)
+hdiutil attach ~/GenomeData.sparseimage
+
+# Your VCF goes in /Volumes/GenomeData/
+cp /path/to/annotated.vcf.gz /Volumes/GenomeData/
+cp /path/to/annotated.vcf.gz.tbi /Volumes/GenomeData/
+
+# Point config.toml at the mounted volume
+# vcf_path = "/Volumes/GenomeData/annotated.vcf.gz"
+
+# Unmount when not in use
+hdiutil detach /Volumes/GenomeData
+```
+
+**Linux (LUKS encrypted volume):**
+
+```bash
+# Create and format an encrypted volume
+dd if=/dev/zero of=~/genome_vault.img bs=1M count=5120
+sudo cryptsetup luksFormat ~/genome_vault.img
+sudo cryptsetup open ~/genome_vault.img genome_vault
+sudo mkfs.ext4 /dev/mapper/genome_vault
+sudo mount /dev/mapper/genome_vault /mnt/genome_vault
+
+# Copy VCF and unmount when done
+sudo umount /mnt/genome_vault
+sudo cryptsetup close genome_vault
+```
+
+**External encrypted drive:** For additional isolation, store your VCF on an external encrypted USB drive. Use the same encrypted volume approach above, but on the external drive. Update `vcf_path` in `config.toml` to point to the mount path.
+
+### File permissions
+
+Restrict access to your VCF and config file:
+
+```bash
+chmod 600 /path/to/annotated.vcf.gz /path/to/annotated.vcf.gz.tbi
+chmod 600 /path/to/config.toml
+```
+
+### MCP client logs
+
+MCP clients like Claude Desktop and Claude Code store conversation history locally. These logs will contain your genomic findings (genotypes, clinical interpretations, risk assessments). Be aware of:
+
+- Where your client stores conversation logs
+- Whether cloud sync (iCloud, Dropbox) is enabled on those directories
+- Who has access to your machine
+
+### Privacy summary
+
+- Your VCF file never leaves your machine
 - No network calls during normal operation
 - No telemetry, no analytics, no data collection
-- Encrypted storage recommended (LUKS, FileVault, or VeraCrypt)
+- Tool responses are sent to your LLM provider as part of the conversation
 
 ## Development / Testing
 

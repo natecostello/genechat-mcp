@@ -367,11 +367,8 @@ fi
 
 # --- Cleanup intermediate files (optional) ---
 
-log "Cleaning up intermediate files..."
-rm -f "$STEP1_VCF" "$STEP1_VCF.tbi" "$STEP2_VCF" "$STEP2_VCF.tbi" "$STEP3_VCF" "$STEP3_VCF.tbi" "$FINAL_VCF" "$FINAL_VCF.tbi"
-rm -rf "$SNPEFF_DIR"
-rm -f "$WORK_DIR/clinvar_chrfixed.vcf.gz" "$WORK_DIR/clinvar_chrfixed.vcf.gz.tbi"
-rm -f "$WORK_DIR/dbsnp_chrfixed.vcf.gz" "$WORK_DIR/dbsnp_chrfixed.vcf.gz.tbi"
+log "Cleaning up intermediate and raw download files..."
+rm -rf "$WORK_DIR"
 
 # --- Done ---
 
