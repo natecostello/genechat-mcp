@@ -104,22 +104,15 @@ def load_tsv(path: Path) -> list[dict]:
     return rows
 
 
-def build_db(seed_dir: Path | None = None, db_path: Path | None = None):
-    """Build the SQLite database from seed TSVs.
+def build_db():
+    """Build the SQLite database from seed TSVs."""
+    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
-    Args:
-        seed_dir: Directory containing seed TSV files. Defaults to data/seed/.
-        db_path: Output database path. Defaults to src/genechat/data/lookup_tables.db.
-    """
-    seed_dir = seed_dir or SEED_DIR
-    db_path = db_path or DB_PATH
-    db_path.parent.mkdir(parents=True, exist_ok=True)
-
-    conn = sqlite3.connect(db_path)
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
     for table_name, schema_sql in SCHEMAS.items():
-        tsv_file = seed_dir / TSV_FILES[table_name]
+        tsv_file = SEED_DIR / TSV_FILES[table_name]
         if not tsv_file.exists():
             print(f"WARNING: {tsv_file} not found, skipping {table_name}")
             continue
@@ -148,8 +141,8 @@ def build_db(seed_dir: Path | None = None, db_path: Path | None = None):
         print(f"  {table_name}: {len(rows)} rows loaded from {tsv_file.name}")
 
     conn.close()
-    print(f"\nDatabase written to: {db_path}")
-    print(f"Size: {db_path.stat().st_size / 1024:.1f} KB")
+    print(f"\nDatabase written to: {DB_PATH}")
+    print(f"Size: {DB_PATH.stat().st_size / 1024:.1f} KB")
 
 
 if __name__ == "__main__":

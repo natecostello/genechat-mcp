@@ -5,19 +5,16 @@
 # Prerequisites:
 #   macOS:  brew install bcftools brewsci/bio/snpeff
 #   Linux:  conda install -c bioconda bcftools snpeff
+#   Also:   CLINVAR_VCF env var pointing to ClinVar reference VCF
 #
-# ClinVar and gnomAD are auto-detected from ./references/ (the default
-# output of setup_references.sh). Override with environment variables:
-#   CLINVAR_VCF — Path to ClinVar reference VCF
-#   GNOMAD_DIR  — Directory of per-chromosome gnomAD v4 exome VCFs
-#   GNOMAD_VCF  — Path to single gnomAD VCF (legacy fallback)
-#   SNPEFF_DB   — SnpEff database name (auto-detected if not set)
+# Optional environment variables:
+#   SNPEFF_DB  — SnpEff database name (auto-detected if not set)
+#   GNOMAD_DIR — Directory of per-chromosome gnomAD v4 exome VCFs (preferred)
+#   GNOMAD_VCF — Path to single gnomAD VCF (legacy fallback)
 #
-# gnomAD is optional — if not found, the pipeline skips frequency annotation.
+# gnomAD is optional — if neither GNOMAD_DIR nor GNOMAD_VCF is set, the
+# pipeline skips frequency annotation and produces a VCF without AF fields.
 set -euo pipefail
-
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-REPO_ROOT="$(dirname "$SCRIPT_DIR")"
 
 INPUT_VCF="$1"
 OUTPUT_DIR="${2:-.}"
@@ -27,24 +24,9 @@ if [ ! -f "$INPUT_VCF" ]; then
     exit 1
 fi
 
-# Auto-detect ClinVar from standard location if not set
 if [ -z "${CLINVAR_VCF:-}" ]; then
-    if [ -f "$REPO_ROOT/references/clinvar.vcf.gz" ]; then
-        CLINVAR_VCF="$REPO_ROOT/references/clinvar.vcf.gz"
-        echo "Auto-detected ClinVar: $CLINVAR_VCF"
-    else
-        echo "Error: ClinVar VCF not found. Run: bash scripts/setup_references.sh"
-        echo "Or set CLINVAR_VCF environment variable."
-        exit 1
-    fi
-fi
-
-# Auto-detect gnomAD from standard location if not set
-if [ -z "${GNOMAD_DIR:-}" ] && [ -z "${GNOMAD_VCF:-}" ]; then
-    if [ -d "$REPO_ROOT/references/gnomad_exomes_v4" ]; then
-        GNOMAD_DIR="$REPO_ROOT/references/gnomad_exomes_v4"
-        echo "Auto-detected gnomAD: $GNOMAD_DIR"
-    fi
+    echo "Error: Set CLINVAR_VCF environment variable to ClinVar VCF path"
+    exit 1
 fi
 
 mkdir -p "$OUTPUT_DIR"

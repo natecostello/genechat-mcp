@@ -97,9 +97,6 @@ genechat-mcp/
   CLAUDE.md
   LICENSE                          # MIT
   claude_mcp_config.json.example   # Claude Desktop/Code MCP config
-  docs/
-    annotation-updates.md          # Incremental annotation update design
-    security.md                    # Platform-specific encryption instructions
   scripts/
     setup_references.sh            # Downloads ClinVar, gnomAD, SnpEff DB
     annotate.sh                    # One-time VCF annotation pipeline
@@ -119,10 +116,9 @@ genechat-mcp/
   src/
     genechat/
       __init__.py
-      cli.py                       # CLI dispatcher: init, serve subcommands
       server.py                    # MCP server entry point
-      config.py                    # TOML config loader + write_config
-      vcf_engine.py                # pysam VCF query engine
+      config.py                    # TOML config loader
+      vcf_engine.py                # bcftools wrapper
       lookup.py                    # SQLite query layer
       tools/
         __init__.py
@@ -144,7 +140,6 @@ genechat-mcp/
       models.py                    # Pydantic models for tool I/O
   tests/
     conftest.py
-    test_cli.py
     test_vcf_engine.py
     test_lookup.py
     test_tools/
