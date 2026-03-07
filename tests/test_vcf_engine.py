@@ -50,6 +50,20 @@ class TestVCFEngineInit:
             VCFEngine(test_config)
 
 
+class TestAnnotationVersions:
+    def test_returns_dict(self, test_config):
+        """annotation_versions() returns a dict (empty if no GeneChat_ headers)."""
+        engine = VCFEngine(test_config)
+        result = engine.annotation_versions()
+        assert isinstance(result, dict)
+
+    def test_custom_prefix(self, test_config):
+        """annotation_versions() accepts a custom prefix."""
+        engine = VCFEngine(test_config)
+        result = engine.annotation_versions(prefix="NonExistent_")
+        assert result == {}
+
+
 class TestQueryRegion:
     """Integration tests querying known variants from the test VCF."""
 
