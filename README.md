@@ -106,7 +106,7 @@ This runs SnpEff functional annotation + ClinVar + optional gnomAD and produces 
 ### 4. Build lookup tables
 
 ```bash
-python scripts/build_lookup_db.py
+uv run python scripts/build_lookup_db.py
 ```
 
 ### 4b. (Optional) Load GWAS Catalog
@@ -391,6 +391,16 @@ Default (no flags): --clinvar only (the most common update).
 | dbSNP | Annually | `update_dbsnp.sh` | ~7 min |
 | Full re-annotation | Only if starting from a new raw VCF | `annotate.sh` | ~30 min |
 
+## TODO: `genechat init` Setup Command
+
+Replace manual config steps (copy config.toml.example, edit VCF path, build lookup DB, copy MCP config JSON) with a single command:
+
+```bash
+genechat init /path/to/annotated.vcf.gz
+```
+
+This would: validate the VCF + index exist, write `config.toml` with `chmod 600`, build `lookup_tables.db` if missing, and print the MCP config JSON snippet to paste into Claude Desktop/Code.
+
 ## Security Recommendations
 
 Genomic data is uniquely sensitive — it is immutable, identifies you and your relatives, and can reveal health predispositions. Take these precautions seriously.
@@ -438,6 +448,7 @@ dd if=/dev/zero of=~/genome_vault.img bs=1M count=5120
 sudo cryptsetup luksFormat ~/genome_vault.img
 sudo cryptsetup open ~/genome_vault.img genome_vault
 sudo mkfs.ext4 /dev/mapper/genome_vault
+sudo mkdir -p /mnt/genome_vault
 sudo mount /dev/mapper/genome_vault /mnt/genome_vault
 
 # Copy VCF and unmount when done
@@ -452,7 +463,7 @@ sudo cryptsetup close genome_vault
 Restrict access to your VCF and config file:
 
 ```bash
-chmod 600 /path/to/annotated.vcf.gz /path/to/annotated.vcf.gz.tbi
+chmod 600 /path/to/annotated.vcf.gz /path/to/annotated.vcf.gz.tbi /path/to/annotated.vcf.gz.csi
 chmod 600 /path/to/config.toml
 ```
 
@@ -557,7 +568,7 @@ GeneChat expects a GRCh38 VCF with `chr` prefixed chromosomes (e.g. `chr1`, not 
 **Missing lookup_tables.db**
 If tools return empty results or errors about the lookup database, rebuild it:
 ```bash
-python scripts/build_lookup_db.py
+uv run python scripts/build_lookup_db.py
 ```
 
 **pysam installation issues on macOS**
