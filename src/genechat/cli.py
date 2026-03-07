@@ -34,6 +34,16 @@ def main(argv: list[str] | None = None):
         _run_serve()
 
 
+def _find_project_root() -> Path | None:
+    """Walk up from this file's location to find a pyproject.toml (source checkout)."""
+    current = Path(__file__).resolve().parent
+    for _ in range(5):  # src/genechat → src → repo root (3 levels max)
+        if (current / "pyproject.toml").exists():
+            return current
+        current = current.parent
+    return None
+
+
 def _run_serve():
     from genechat.server import run_server
 
@@ -82,27 +92,39 @@ def _run_init(vcf_path_str: str):
     with resources.as_file(db_ref) as db_path:
         if not db_path.exists():
             print(
-                "Warning: lookup_tables.db not found. Build it with:",
+                "Error: lookup_tables.db not found. The server cannot start without it.",
                 file=sys.stderr,
             )
+            print("Build it with:", file=sys.stderr)
             print("  uv run python scripts/build_lookup_db.py", file=sys.stderr)
+            sys.exit(1)
 
-    # 5. Print results
+    # 6. Print results
     print(f"\nConfig written to: {config_path}")
     print(f"  Permissions: {oct(config_path.stat().st_mode & 0o777)}")
 
-    # Determine the project directory for MCP config
-    project_dir = str(Path(__file__).resolve().parent.parent.parent)
-
-    mcp_config = {
-        "mcpServers": {
-            "genechat": {
-                "command": "uv",
-                "args": ["run", "--directory", project_dir, "genechat"],
-                "env": {"GENECHAT_CONFIG": str(config_path)},
+    # Determine MCP config: use uv run --directory if in a source checkout,
+    # otherwise use the installed entrypoint directly
+    project_dir = _find_project_root()
+    if project_dir:
+        mcp_config = {
+            "mcpServers": {
+                "genechat": {
+                    "command": "uv",
+                    "args": ["run", "--directory", str(project_dir), "genechat"],
+                    "env": {"GENECHAT_CONFIG": str(config_path)},
+                }
             }
         }
-    }
+    else:
+        mcp_config = {
+            "mcpServers": {
+                "genechat": {
+                    "command": "genechat",
+                    "env": {"GENECHAT_CONFIG": str(config_path)},
+                }
+            }
+        }
 
     print("\nAdd this to your Claude Desktop or Claude Code MCP config:\n")
     print(json.dumps(mcp_config, indent=2))

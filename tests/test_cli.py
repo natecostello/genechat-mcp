@@ -119,6 +119,35 @@ def test_init_invalid_vcf(tmp_path, capsys, monkeypatch):
     assert "Cannot read VCF" in captured.err
 
 
+def test_init_missing_lookup_db(tmp_path, capsys, monkeypatch):
+    """init exits with error when lookup_tables.db is missing."""
+    vcf = tmp_path / "test.vcf.gz"
+    vcf.write_bytes(b"fake")
+    tbi = tmp_path / "test.vcf.gz.tbi"
+    tbi.write_bytes(b"fake")
+
+    config_dir = tmp_path / "config"
+    monkeypatch.setattr("genechat.cli.user_config_dir", lambda _app: str(config_dir))
+
+    import unittest.mock
+
+    mock_vf = unittest.mock.MagicMock()
+    mock_vf.__enter__ = lambda s: s
+    mock_vf.__exit__ = lambda s, *a: None
+    monkeypatch.setattr("pysam.VariantFile", lambda *a, **kw: mock_vf)
+
+    # Point resources.files to a dir without lookup_tables.db
+    monkeypatch.setattr("genechat.cli.resources.files", lambda _pkg: tmp_path / "pkg")
+    (tmp_path / "pkg" / "data").mkdir(parents=True)
+
+    try:
+        main(["init", str(vcf)])
+    except SystemExit as e:
+        assert e.code == 1
+    captured = capsys.readouterr()
+    assert "lookup_tables.db not found" in captured.err
+
+
 def test_no_subcommand_invokes_serve(monkeypatch):
     """Running genechat with no args calls run_server."""
     called = []
