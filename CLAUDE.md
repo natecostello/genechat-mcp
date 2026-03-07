@@ -100,6 +100,11 @@ genechat-mcp/
   scripts/
     setup_references.sh            # Downloads ClinVar, gnomAD, SnpEff DB
     annotate.sh                    # One-time VCF annotation pipeline
+    update_clinvar.sh              # Incremental ClinVar re-annotation
+    update_gnomad.sh               # Incremental gnomAD re-annotation
+    update_snpeff.sh               # Incremental SnpEff re-annotation
+    update_dbsnp.sh                # Incremental dbSNP rsID update
+    update_annotations.sh          # Wrapper: run one or more update layers
     build_seed_data.py             # Full pipeline: fetch from APIs → SQLite
     build_lookup_db.py             # Final seed TSVs → SQLite
     fetch_gene_coords.py           # HGNC + Ensembl API → gene coordinates
