@@ -16,7 +16,7 @@ review feedback.
 
 ## Project Overview
 
-GeneChat is an open-source MCP (Model Context Protocol) server that enables conversational AI assistants to query a user's whole-genome sequencing (WGS) data stored locally. It wraps pysam and curated reference databases (ClinVar, gnomAD, CPIC, GWAS Catalog) behind MCP tools, enabling natural-language questions about pharmacogenomics, disease risk, carrier status, nutrigenomics, exercise genetics, and more — with genomic data never leaving the user's machine.
+GeneChat is an open-source MCP (Model Context Protocol) server that enables conversational AI assistants to query a user's whole-genome sequencing (WGS) data stored locally. It wraps pysam and vendored reference databases (ClinVar, gnomAD, CPIC, PGS Catalog, GWAS Catalog) behind MCP tools, enabling natural-language questions about pharmacogenomics, disease risk, polygenic risk scores, and more — with genomic data never leaving the user's machine.
 
 ## Target User
 
@@ -49,9 +49,10 @@ LLM Client (Claude Desktop / Claude Code)
     │ MCP Protocol (stdio or SSE)
     ▼
 GeneChat MCP Server (Python)
-    ├── Tools: query_variant, query_gene, query_clinvar, query_pgx,
-    │         query_trait, query_carrier, calculate_prs, genome_summary
-    ├── VCF Query Engine (bcftools subprocess)
+    ├── Tools: query_variant, query_variants, query_gene, query_genes,
+    │         query_clinvar, query_gwas, query_pgx, calculate_prs,
+    │         genome_summary, rebuild_database
+    ├── VCF Query Engine (pysam)
     ├── Lookup Tables (SQLite)
     └── Config Manager (TOML)
     │ filesystem reads only
@@ -65,7 +66,7 @@ Local Data (encrypted volume recommended)
 ## Technology Stack
 
 - Python 3.11+ with `mcp` official Anthropic Python SDK
-- `bcftools` via subprocess for VCF queries (never shell=True)
+- `pysam` (htslib) for VCF queries at runtime
 - SQLite via stdlib sqlite3 for lookup tables
 - `uv` with pyproject.toml for packaging
 - TOML config (stdlib tomllib)
@@ -99,25 +100,18 @@ genechat-mcp/
   scripts/
     setup_references.sh            # Downloads ClinVar, gnomAD, SnpEff DB
     annotate.sh                    # One-time VCF annotation pipeline
-    build_seed_data.py             # Full pipeline: fetch coords → merge → SQLite
+    build_seed_data.py             # Full pipeline: fetch from APIs → SQLite
     build_lookup_db.py             # Final seed TSVs → SQLite
-    fetch_gene_coords.py           # Ensembl API → gene coordinates
-    fetch_variant_coords.py        # Ensembl API → variant coordinates
-    fetch_prs_coords.py            # Ensembl API → PRS variant coordinates
+    fetch_gene_coords.py           # HGNC + Ensembl API → gene coordinates
+    fetch_cpic_data.py             # CPIC API → pgx_drugs + pgx_variants
+    fetch_prs_data.py              # PGS Catalog FTP → prs_weights
     generate_test_vcf.py           # Creates synthetic VCF for testing
   data/
     seed/
-      curated/                     # Hand-maintained clinical metadata
-        gene_lists.tsv             # Gene symbols + category (no coordinates)
-        carrier_metadata.tsv       # Carrier conditions, inheritance, frequencies
-        trait_metadata.tsv         # Trait rsIDs, descriptions, evidence, PMIDs
-        prs_scores.tsv             # PRS weights + effect alleles (no coordinates)
       genes_grch38.tsv             # Generated: gene coordinates from Ensembl
-      pgx_drugs.tsv                # CPIC drug-gene pairs (fully curated)
-      pgx_variants.tsv             # PGx star-allele variants (coords verified by pipeline)
-      trait_variants.tsv           # Generated: trait metadata + Ensembl coordinates
-      carrier_genes.tsv            # Generated: copied from curated/carrier_metadata.tsv
-      prs_weights.tsv              # Generated: PRS scores + Ensembl coordinates
+      pgx_drugs.tsv                # Generated: CPIC drug-gene pairs
+      pgx_variants.tsv             # Generated: PGx star-allele variants from CPIC
+      prs_weights.tsv              # Generated: PRS weights from PGS Catalog
     lookup_tables.db               # Built by build_lookup_db.py (gitignored)
   src/
     genechat/
@@ -129,13 +123,15 @@ genechat-mcp/
       tools/
         __init__.py
         query_variant.py
+        query_variants.py
         query_gene.py
+        query_genes.py
         query_clinvar.py
+        query_gwas.py
         query_pgx.py
-        query_trait.py
-        query_carrier.py
         calculate_prs.py
         genome_summary.py
+        rebuild_database.py
       parsers/
         __init__.py
         snpeff.py                  # Parse SnpEff ANN field
@@ -353,9 +349,8 @@ Methods:
 - `search_pgx_by_drug(drug_name) -> list[dict]` — search drug_name and aliases
 - `search_pgx_by_gene(gene) -> list[dict]` — PGx drug entries for a gene
 - `get_pgx_variants(gene) -> list[dict]` — known PGx variants for a gene
-- `get_trait_variants(category=None, trait=None, gene=None) -> list[dict]` — filter by any combo
-- `get_carrier_genes(condition=None, acmg_only=False) -> list[dict]`
 - `get_prs_weights(trait=None, prs_id=None) -> list[dict]`
+- `list_prs_traits() -> list[dict]` — distinct PRS traits for dynamic availability listing
 
 All queries case-insensitive. Return lists of dicts.
 
@@ -442,26 +437,14 @@ Guideline: CPIC
 [Add context about user's specific genotype combination]
 ```
 
-### Tool 5: query_trait
-
-Input: `category: str` (nutrigenomics, exercise, metabolism, sleep, caffeine, alcohol, cardiovascular, inflammation), `trait: str` (optional specific trait), `gene: str` (optional)
-Logic: Query trait_variants table, for each matched variant query user VCF, combine. Group by trait, sort by evidence level.
-Output: One section per trait with genotype, interpretation, evidence level, PubMed ref.
-
-### Tool 6: query_carrier
-
-Input: `condition: str` (optional), `acmg_only: bool = true`, `max_results: int = 50`
-Logic: Get gene list from carrier_genes, for each look up coords and query VCF for ClinVar pathogenic variants.
-Output: Which genes have pathogenic variants (carrier positive) vs clear. Note that absence of known pathogenic variants does not guarantee non-carrier status.
-
-### Tool 7: calculate_prs
+### Tool 5: calculate_prs
 
 Input: `trait: str` OR `prs_id: str`
 Logic: Get PRS weights, query VCF for each variant, count effect alleles (0/1/2), multiply by weight, sum.
 Output: Raw score, variants found/total, percentile if available.
 MUST include caveats: PRS captures only common variant risk; performance varies by ancestry; one factor among many.
 
-### Tool 8: genome_summary
+### Tool 6: genome_summary
 
 Input: none
 Logic: bcftools stats (cache after first call), count by type, count ClinVar by significance, count non-ref PGx variants.
@@ -490,12 +473,8 @@ def main():
     db = LookupDB(config)
 
     # Register all tools
-    from genechat.tools import (query_variant, query_gene, query_clinvar,
-                                 query_pgx, query_trait, query_carrier,
-                                 calculate_prs, genome_summary)
-    for module in [query_variant, query_gene, query_clinvar, query_pgx,
-                   query_trait, query_carrier, calculate_prs, genome_summary]:
-        module.register(app, engine, db, config)
+    from genechat.tools import register_all
+    register_all(app, engine, db, config)
 
     asyncio.run(_run(app))
 
@@ -579,20 +558,6 @@ CREATE TABLE pgx_variants (
 );
 CREATE INDEX idx_pgx_var_gene ON pgx_variants(gene);
 
-CREATE TABLE trait_variants (
-    rsid TEXT NOT NULL, chrom TEXT NOT NULL, pos INTEGER NOT NULL,
-    ref TEXT NOT NULL, alt TEXT NOT NULL, gene TEXT,
-    trait_category TEXT NOT NULL, trait TEXT NOT NULL,
-    effect_allele TEXT NOT NULL, effect_description TEXT NOT NULL,
-    evidence_level TEXT, pmid TEXT
-);
-CREATE INDEX idx_trait_category ON trait_variants(trait_category);
-
-CREATE TABLE carrier_genes (
-    gene TEXT PRIMARY KEY, condition_name TEXT NOT NULL,
-    inheritance TEXT NOT NULL, carrier_frequency TEXT, acmg_recommended BOOLEAN
-);
-
 CREATE TABLE prs_weights (
     prs_id TEXT NOT NULL, trait TEXT NOT NULL, rsid TEXT NOT NULL,
     chrom TEXT NOT NULL, pos INTEGER NOT NULL, effect_allele TEXT NOT NULL,
@@ -603,26 +568,13 @@ CREATE INDEX idx_prs_id ON prs_weights(prs_id);
 
 ### Seed Data Specifications
 
-**genes_grch38.tsv** — Start with ~500 genes covering all genes referenced by other seed files plus common clinically relevant genes. GRCh38 coordinates, chr prefix. Source: Ensembl/NCBI Gene.
+**genes_grch38.tsv** — All ~19,000 human protein-coding genes. GRCh38 coordinates, chr prefix. Source: HGNC + Ensembl REST API. Generated by `fetch_gene_coords.py`.
 
-**pgx_drugs.tsv** — CPIC Level A and B pairs. Required entries:
-warfarin/CYP2C9, warfarin/VKORC1, clopidogrel/CYP2C19, codeine/CYP2D6, simvastatin/SLCO1B1, tamoxifen/CYP2D6, ondansetron/CYP2D6, fluorouracil/DPYD, azathioprine/TPMT, sertraline/CYP2C19, omeprazole/CYP2C19, metoprolol/CYP2D6, tramadol/CYP2D6, ibuprofen/CYP2C9, phenytoin/CYP2C9, succinylcholine/BCHE, volatile_anesthetics/RYR1, allopurinol/HLA-B, carbamazepine/HLA-B, abacavir/HLA-B.
+**pgx_drugs.tsv** — CPIC Level A and B drug-gene pairs. Fetched from ClinPGx API by `fetch_cpic_data.py`. Includes cpic_level and pgx_testing columns.
 
-**pgx_variants.tsv** — Star-allele defining variants. Required genes with key alleles:
-CYP2D6 (*3,*4,*5,*6,*10,*17,*41), CYP2C19 (*2,*3,*17), CYP2C9 (*2,*3), SLCO1B1 (*5,*15), DPYD (*2A), VKORC1 (-1639G>A), TPMT (*2,*3A,*3B,*3C), NUDT15 (*3), UGT1A1 (*6,*28).
+**pgx_variants.tsv** — Star-allele defining variants with positions. Fetched from ClinPGx API by `fetch_cpic_data.py`. One row per (gene, rsid, star_allele) triple.
 
-**trait_variants.tsv** — Well-validated trait SNPs. Required entries:
-- Nutrigenomics: FTO rs9939609 (obesity), MCM6 rs4988235 (lactose), FADS1 rs174547 (omega), MTHFR rs1801133 C677T, MTHFR rs1801131 A1298C, APOA2 rs5082 (sat fat), TAS2R38 rs713598 (bitter taste)
-- Exercise: ACTN3 rs1815739 (sprint/power), COL1A1 rs1800012 (tendon), COL5A1 rs12722 (ligament), PPARGC1A rs8192678 (endurance), IL6 rs1800795 (inflammation), TNF rs1800629
-- Metabolism: CYP1A2 rs762551 (caffeine), ADH1B rs1229984 (alcohol), ALDH2 rs671 (alcohol flush)
-- Cardiovascular: F5 rs6025 (Factor V Leiden), F2 rs1799963 (prothrombin), APOE rs429358+rs7412
-- Other: HFE rs1800562 C282Y, HFE rs1799945 H63D, UGT1A1 rs8175347 (Gilbert's)
-
-Include effect_allele, effect_description, evidence_level (strong/moderate/preliminary), PubMed IDs.
-
-**carrier_genes.tsv** — ACMG recommended + expanded: CFTR (CF), HBB (sickle cell), SMN1 (SMA), HEXA (Tay-Sachs), GBA (Gaucher), FMR1 (Fragile X), PAH (PKU), ASPA (Canavan), GAA (Pompe), GJB2 (hearing loss), SLC26A4 (Pendred), BCKDHA (MSUD), HEXA (Tay-Sachs), FANCC (Fanconi), BLM (Bloom), MCOLN1 (Mucolipidosis IV).
-
-**prs_weights.tsv** — Start with ONE validated CAD PRS (50-500 variants, not genome-wide). Source: PGS Catalog.
+**prs_weights.tsv** — Polygenic risk score weights. Downloaded from PGS Catalog FTP by `fetch_prs_data.py`. Multiple PGS IDs supported.
 
 ### IMPORTANT
 
@@ -647,7 +599,7 @@ Fixtures:
 
 **test_vcf_engine.py**: query_region returns expected variants, query_rsid correct, query_clinvar returns pathogenic, max_variants cap works, invalid region raises ValueError, missing VCF raises FileNotFoundError.
 
-**test_lookup.py**: get_gene returns correct coords, get_gene_region includes padding, search_pgx_by_drug finds name and alias, trait_variants filter by category, carrier_genes filter by acmg.
+**test_lookup.py**: get_gene returns correct coords, get_gene_region includes padding, search_pgx_by_drug finds name and alias, PRS weights filter by trait.
 
 **test_tools/**: Each tool produces valid formatted output. Drug lookup returns variants with genotypes. rsID lookup returns full annotation.
 
@@ -667,147 +619,56 @@ Fixtures:
 
 ## Seed Data Pipeline
 
-GeneChat uses a two-layer data model. **Curated metadata** (clinical knowledge) lives in `data/seed/curated/`. **Genomic coordinates** are fetched from Ensembl REST API by scripts. The pipeline merges both into final TSVs in `data/seed/`, then rebuilds the SQLite database.
+All seed data is fetched from external APIs at build time. No hand-curated files.
 
 ```
-data/seed/curated/          ← You edit these (clinical knowledge)
-  gene_lists.tsv            ← Gene symbols + category tags
-  carrier_metadata.tsv      ← Carrier screening: conditions, inheritance, frequencies
-  trait_metadata.tsv        ← Trait variants: rsid, gene, description, evidence, PMID
-  prs_scores.tsv            ← PRS weights: rsid, effect allele, weight
-
 scripts/
-  fetch_gene_coords.py      ← Ensembl → gene coordinates
-  fetch_variant_coords.py   ← Ensembl → variant coordinates (trait + pgx)
-  fetch_prs_coords.py       ← Ensembl → PRS variant coordinates
-  build_seed_data.py        ← Runs full pipeline: fetch → merge → SQLite
-  build_lookup_db.py        ← Final TSVs → SQLite (called by build_seed_data.py)
+  fetch_gene_coords.py      ← HGNC + Ensembl → gene coordinates
+  fetch_cpic_data.py         ← CPIC API → pgx_drugs + pgx_variants
+  fetch_prs_data.py          ← PGS Catalog FTP → prs_weights
+  build_seed_data.py         ← Runs full pipeline: fetch → SQLite
+  build_lookup_db.py         ← Final TSVs → SQLite (called by build_seed_data.py)
 
-data/seed/                  ← Generated output (committed to git)
-  genes_grch38.tsv, trait_variants.tsv, pgx_variants.tsv,
-  prs_weights.tsv, carrier_genes.tsv, pgx_drugs.tsv
+data/seed/                   ← Generated output (committed to git)
+  genes_grch38.tsv, pgx_drugs.tsv, pgx_variants.tsv, prs_weights.tsv
 ```
 
 **Rebuild everything:** `uv run python scripts/build_seed_data.py`
 
-This fetches latest coordinates from Ensembl and rebuilds all TSVs + SQLite. Idempotent, safe to re-run. Requires internet access (build-time only, never at runtime).
+This fetches latest data from HGNC, CPIC, and PGS Catalog, then rebuilds all TSVs + SQLite. Idempotent, safe to re-run. Requires internet access (build-time only, never at runtime).
 
 ### Gene Coverage
 
 The `genes` table includes ALL ~19,000 human protein-coding genes, fetched automatically from HGNC. **You do not need to add genes manually for the LLM to query them.** If the LLM asks about any protein-coding gene, it will already have coordinates.
 
-The curated `data/seed/curated/gene_lists.tsv` file is supplementary — it documents which genes have specific clinical roles (carrier screening, PGx, traits, etc.) and ensures non-protein-coding genes we care about are also included. You only need to edit it when adding genes to the carrier/trait/PGx curated files, to document the clinical category.
+### Data Sources
 
-### Adding a Carrier Gene
+| Data | Source API | Script | License |
+|------|-----------|--------|---------|
+| Gene coordinates | HGNC + Ensembl REST | `fetch_gene_coords.py` | Open |
+| PGx drugs + variants | [ClinPGx API](https://api.cpicpgx.org/v1/) (CPIC) | `fetch_cpic_data.py` | CC0 |
+| PRS weights | [PGS Catalog FTP](https://www.pgscatalog.org/) | `fetch_prs_data.py` | CC BY 4.0 |
 
-Two edits required:
+### Adding a New PRS Trait
 
-**1. Add to `data/seed/curated/gene_lists.tsv`** (if not already there):
-```
-SLC22A5	carrier
-```
+Edit `scripts/fetch_prs_data.py` — add the PGS ID to the `PGS_SCORES` list:
 
-**2. Add to `data/seed/curated/carrier_metadata.tsv`:**
-```
-SLC22A5	Systemic primary carnitine deficiency	AR	1 in 100	0
-```
-
-**Columns (tab-separated):**
-
-| Column | Required | Description |
-|--------|----------|-------------|
-| `gene` | yes | HGNC symbol. Must also be in `gene_lists.tsv`. |
-| `condition_name` | yes | Human-readable condition name. Source: OMIM, GeneReviews. |
-| `inheritance` | yes | `AR` (autosomal recessive), `AD` (autosomal dominant), `X-linked`. |
-| `carrier_frequency` | no | e.g., `1 in 25 (European)`. Source: GeneReviews, gnomAD. Use `.` if unknown. |
-| `acmg_recommended` | yes | `1` if on ACMG recommended list, `0` otherwise. |
-
-### Adding a Trait Variant
-
-Two edits required:
-
-**1. Add to `data/seed/curated/gene_lists.tsv`** (if gene not already there):
-```
-BCMO1	trait
+```python
+PGS_SCORES = [
+    ("PGS000010", "Coronary artery disease", None),
+    ("PGS000011", "Coronary artery disease", None),
+    ("PGS000074", "Colorectal cancer", None),
+    ("PGS000034", "Adult body mass index (BMI)", None),
+    # Add new entries here
+]
 ```
 
-**2. Add to `data/seed/curated/trait_metadata.tsv`:**
-```
-rs7501331	BCMO1	vitamins	Beta-carotene conversion	C	T	T	T allele (Ala379Val) associated with ~50% reduced beta-carotene to retinal conversion	moderate	21878437
-```
-
-**Columns (tab-separated):**
-
-| Column | Required | Description |
-|--------|----------|-------------|
-| `rsid` | yes | dbSNP rsID. Must exist in Ensembl (verify at ncbi.nlm.nih.gov/snp/). |
-| `gene` | yes | HGNC symbol of the gene this variant is in. |
-| `trait_category` | yes | One of: `nutrigenomics`, `exercise`, `metabolism`, `cardiovascular`, `sleep`, `skin`, `vitamins`, `immune`, `cognition`, `longevity`, `other`. |
-| `trait` | yes | Short trait name, e.g., `Beta-carotene conversion`. |
-| `ref` | yes | GRCh38 plus-strand reference allele. Verify against dbSNP. |
-| `alt` | yes | GRCh38 plus-strand alternate allele. Verify against dbSNP. |
-| `effect_allele` | yes | The allele that has the described effect. Must be one of `ref` or `alt`. |
-| `effect_description` | yes | What the effect allele does. Be specific: include protein change, magnitude, direction. |
-| `evidence_level` | yes | `strong` (replicated GWAS, functional validation), `moderate` (single large GWAS or replicated candidate gene), `preliminary` (small studies, not yet replicated). |
-| `pmid` | yes | PubMed ID of the primary source paper. |
-
-**Do NOT provide** `chrom` or `pos` — these are fetched from Ensembl automatically. **Do provide** curated `ref` and `alt` alleles on the GRCh38 plus strand.
-
-If adding a new trait_category value, also update `src/genechat/tools/query_trait.py`: the docstring category list and the "Available categories" message.
-
-### Adding a PGx Drug-Gene Pair
-
-Edit `data/seed/pgx_drugs.tsv` directly (this file is fully curated, no coordinates needed):
-
-```
-pantoprazole	protonix	CYP2C19	CPIC	https://cpicpgx.org/guidelines/guideline-for-proton-pump-inhibitors-and-cyp2c19/	CYP2C19 rapid/ultra-rapid metabolizers may need increased dose; poor metabolizers may have increased efficacy.
-```
-
-**Columns:** `drug_name`, `drug_aliases` (comma-separated, or `.`), `gene`, `guideline_source`, `guideline_url` (or `.`), `clinical_summary`.
-
-Source: [CPIC guidelines](https://cpicpgx.org/guidelines/).
-
-### Adding a PGx Variant (Star Allele)
-
-Edit `data/seed/pgx_variants.tsv` directly. Coordinates are verified by `fetch_variant_coords.py` on next pipeline run.
-
-```
-CYP2D6	rs28371706	chr22	42129770	G	T	*17	Decreased function	Common in African populations
-```
-
-**Columns:** `gene`, `rsid`, `chrom`, `pos`, `ref`, `alt`, `star_allele`, `function_impact`, `notes`.
-
-Source: [PharmVar](https://www.pharmvar.org/), CPIC allele tables.
-
-### Adding PRS Variants
-
-Edit `data/seed/curated/prs_scores.tsv`:
-
-```
-PGS000014	Type 2 diabetes	rs7903146	T	0.34	PGS000014_Mahajan2018
-```
-
-**Columns (tab-separated):**
-
-| Column | Required | Description |
-|--------|----------|-------------|
-| `prs_id` | yes | PGS Catalog ID (e.g., `PGS000014`). |
-| `trait` | yes | Trait name. Must match exactly across all rows with the same prs_id. |
-| `rsid` | yes | dbSNP rsID. |
-| `effect_allele` | yes | The allele whose count is multiplied by weight. |
-| `weight` | yes | Log-odds ratio weight from the scoring file. |
-| `reference` | yes | Citation, e.g., `PGS000014_Mahajan2018`. |
-
-**Do NOT provide** `chrom` or `pos` — fetched from Ensembl.
-
-Source: [PGS Catalog](https://www.pgscatalog.org/) scoring file downloads.
-
-If adding an entirely new PRS trait, also update `src/genechat/tools/calculate_prs.py`: the docstring and the "Currently available" message.
+The `calculate_prs` tool dynamically lists available traits, so no tool code changes are needed.
 
 ### After Any Edit
 
 ```bash
-uv run python scripts/build_seed_data.py    # Fetch coords + rebuild SQLite
+uv run python scripts/build_seed_data.py    # Fetch from APIs + rebuild SQLite
 uv run pytest -x                             # Verify nothing broke
 uv run ruff check . && uv run ruff format .  # Lint
 ```

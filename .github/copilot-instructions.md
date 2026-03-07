@@ -14,8 +14,8 @@ All feedback must be review comments.
 
 GeneChat is a Python MCP (Model Context Protocol) server that lets users query their
 whole-genome sequencing data through Claude or any MCP-compatible LLM. It wraps pysam
-(htslib) and curated reference databases (ClinVar, gnomAD, CPIC, GWAS Catalog) behind 16 MCP tools for
-pharmacogenomics, disease risk, carrier screening, nutrigenomics, and more. Genomic data
+(htslib) and vendored reference databases (ClinVar, gnomAD, CPIC, PGS Catalog, GWAS Catalog) behind 10 MCP tools for
+pharmacogenomics, disease risk, polygenic risk scores, and more. Genomic data
 never leaves the user's machine. Python 3.11+, uses `uv` for packaging.
 
 ## Build, Test, and Lint
@@ -38,9 +38,9 @@ LLM Client (Claude Desktop / Claude Code)
     | MCP Protocol (stdio or SSE)
     v
 FastMCP Server (server.py)
-    |-- 16 Tools (src/genechat/tools/*.py)
+    |-- 10 Tools (src/genechat/tools/*.py)
     |-- VCFEngine (vcf_engine.py) -- pysam VariantFile for VCF reads
-    |-- LookupDB (lookup.py) -- SQLite for gene coords, PGx, traits
+    |-- LookupDB (lookup.py) -- SQLite for gene coords, PGx, PRS
     |-- Parsers (parsers/) -- SnpEff ANN, ClinVar, genotype parsing
     v
 Local Data (read-only)
@@ -62,7 +62,7 @@ src/genechat/           # Main package
   vcf_engine.py         # pysam VCF query engine
   lookup.py             # SQLite query layer
   models.py             # Pydantic input models for tools
-  tools/                # 16 MCP tool modules (query_variant, query_pgx, etc.)
+  tools/                # 10 MCP tool modules (query_variant, query_pgx, etc.)
     formatting.py       # Shared helpers (short_zygosity) — tools import from here
   parsers/              # SnpEff ANN, ClinVar, genotype field parsers
   data/lookup_tables.db # Built from seed data (gitignored)
@@ -71,7 +71,7 @@ scripts/                # Setup and build scripts
   build_lookup_db.py    # Builds SQLite from seed TSVs
   annotate.sh           # One-time VCF annotation pipeline
   setup_references.sh   # Downloads reference databases
-data/seed/              # Curated TSV files for lookup database
+data/seed/              # API-generated TSV files for lookup database
 tests/                  # pytest tests
   conftest.py           # Fixtures, auto-generates test VCF
   test_vcf_engine.py    # Integration tests against test VCF
@@ -87,7 +87,7 @@ Configuration files:
 ## Key Abstractions
 
 - **`VCFEngine`** (`vcf_engine.py`) — pysam-based read-only VCF query engine with region, rsID, ClinVar, and stats methods
-- **`LookupDB`** (`lookup.py`) — SQLite wrapper for gene coords, PGx drugs/variants, traits, carrier genes, PRS weights
+- **`LookupDB`** (`lookup.py`) — SQLite wrapper for gene coords, PGx drugs/variants, PRS weights, GWAS associations
 - **`AppConfig`** (`config.py`) — Pydantic model for TOML config with genome, databases, server, and display sections
 - **`FastMCP`** (`server.py`) — Anthropic's MCP server framework; tools registered via `@mcp.tool()` decorator
 - **Tool modules** (`tools/*.py`) — each exports `register(mcp, engine, db, config)` to register one MCP tool

@@ -101,26 +101,3 @@ SAMPLE_VARIANT_CFTR = {
     },
     "population_freq": {"global": 0.02, "popmax": 0.04},
 }
-
-SAMPLE_VARIANT_MTHFR = {
-    "chrom": "chr1",
-    "pos": 11796321,
-    "rsid": "rs1801133",
-    "ref": "G",
-    "alt": "A",
-    "genotype": {"display": "G/A", "zygosity": "heterozygous"},
-    "annotation": {
-        "gene": "MTHFR",
-        "effect": "missense_variant",
-        "impact": "MODERATE",
-        "transcript": "ENST00000376592",
-        "hgvs_c": "c.665C>T",
-        "hgvs_p": "p.Ala222Val",
-    },
-    "clinvar": {
-        "significance": "risk factor",
-        "condition": "MTHFR thermolabile variant",
-        "review_status": "criteria provided, single submitter",
-    },
-    "population_freq": {"global": 0.33, "popmax": 0.44},
-}

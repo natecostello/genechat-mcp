@@ -14,11 +14,10 @@ def register(mcp, engine, db, config):
         """Rebuild the GeneChat SQLite lookup database from existing seed TSVs.
 
         This rebuilds the SQLite database from the TSV files already in data/seed/.
-        It does NOT fetch new coordinates from Ensembl (no network calls).
+        It does NOT fetch new data from APIs (no network calls).
 
-        Use this after adding new entries with add_carrier_gene, add_pgx_drug,
-        or add_trait_variant. For a full rebuild that also fetches coordinates
-        from Ensembl, run manually: `uv run python scripts/build_seed_data.py`
+        For a full rebuild that fetches from CPIC, PGS Catalog, and HGNC, run
+        manually: `uv run python scripts/build_seed_data.py`
 
         After completion, the MCP server should be restarted to pick up the new data.
         """

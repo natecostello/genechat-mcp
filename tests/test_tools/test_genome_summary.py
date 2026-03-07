@@ -84,3 +84,4 @@ class TestGenomeSummary:
 
         assert "query_pgx" in result
         assert "query_variant" in result
+        assert "query_clinvar" in result

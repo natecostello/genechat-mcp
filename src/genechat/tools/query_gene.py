@@ -1,6 +1,5 @@
 """Query all variants in a gene region."""
 
-from genechat.tools.formatting import short_zygosity
 from genechat.vcf_engine import VCFEngineError
 
 DISCLAIMER = (
@@ -128,11 +127,8 @@ def register(mcp, engine, db, config):
         suppressed_count = 0
         has_af_data = False
         if smart_filter:
-            # Build protected rsID set from trait + PGx variants
+            # Build protected rsID set from PGx variants
             protected_rsids: set[str] = set()
-            for tv in db.get_trait_variants(gene=gene.upper()):
-                if tv.get("rsid"):
-                    protected_rsids.add(tv["rsid"])
             for pv in db.get_pgx_variants(gene.upper()):
                 if pv.get("rsid"):
                     protected_rsids.add(pv["rsid"])
@@ -202,72 +198,5 @@ def register(mcp, engine, db, config):
             )
         else:
             lines.append("No clinically notable variants remain after filtering.")
-
-        # Trait overlay: show known trait associations for this gene with genotypes
-        trait_variants = db.get_trait_variants(gene=gene.upper())
-        if trait_variants:
-            lines.append("")
-            lines.append(f"### Known Trait Associations for {gene.upper()}")
-            lines.append(
-                "| rsID | Trait | Your Genotype | Effect Allele | Description | Evidence |"
-            )
-            lines.append(
-                "|------|-------|---------------|---------------|-------------|----------|"
-            )
-
-            # Batch VCF lookup: collect all regions, query once
-            tv_regions = []
-            tv_region_idx = []  # maps region index → trait_variant index
-            for i, tv in enumerate(trait_variants):
-                if tv.get("chrom") and tv.get("pos"):
-                    tv_regions.append(f"{tv['chrom']}:{tv['pos']}-{tv['pos'] + 1}")
-                    tv_region_idx.append(i)
-
-            # Query all trait variant positions in one VCF open
-            vcf_results_by_region: dict[int, list[dict]] = {}
-            batch_query_ok = False
-            if tv_regions:
-                try:
-                    all_results = engine.query_regions(tv_regions)
-                    # Map results back by position
-                    pos_map: dict[str, list[dict]] = {}
-                    for v in all_results:
-                        key = f"{v['chrom']}:{v['pos']}"
-                        pos_map.setdefault(key, []).append(v)
-                    for ri, ti in enumerate(tv_region_idx):
-                        tv = trait_variants[ti]
-                        key = f"{tv['chrom']}:{tv['pos']}"
-                        if key in pos_map:
-                            vcf_results_by_region[ti] = pos_map[key]
-                    # Check if results were truncated
-                    batch_query_ok = not (
-                        all_results and all_results[-1].get("_truncated")
-                    )
-                except (ValueError, VCFEngineError):
-                    pass  # Graceful degradation
-
-            for i, tv in enumerate(trait_variants):
-                tv_rsid = tv.get("rsid", ".")
-                trait = tv.get("trait", ".")
-                ea = tv.get("effect_allele", ".")
-                desc = tv.get("effect_description", ".")
-                evid = tv.get("evidence_level", ".")
-
-                gt_display = "—"
-                if tv.get("chrom") and tv.get("pos"):
-                    tv_results = vcf_results_by_region.get(i)
-                    if tv_results:
-                        gt = tv_results[0]["genotype"]
-                        gt_display = (
-                            f"{gt['display']} ({short_zygosity(gt['zygosity'])})"
-                        )
-                    elif batch_query_ok:
-                        gt_display = "ref or not covered"
-                    elif tv_regions and not batch_query_ok:
-                        gt_display = "query error"
-
-                lines.append(
-                    f"| {tv_rsid} | {trait} | {gt_display} | {ea} | {desc} | {evid} |"
-                )
 
         return "\n".join(lines) + DISCLAIMER

@@ -22,8 +22,8 @@ class TestRebuildDatabase:
         mock_result.stdout = (
             "Building GeneChat lookup database...\n"
             "  genes: 19345 rows loaded from genes_grch38.tsv\n"
-            "  pgx_drugs: 22 rows loaded from pgx_drugs.tsv\n"
-            "  trait_variants: 40 rows loaded from trait_variants.tsv\n"
+            "  pgx_drugs: 55 rows loaded from pgx_drugs.tsv\n"
+            "  pgx_variants: 120 rows loaded from pgx_variants.tsv\n"
             "Done."
         )
         mock_result.stderr = ""

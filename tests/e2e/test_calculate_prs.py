@@ -22,10 +22,10 @@ class TestCalculatePrsGIAB:
         # Should have scored some variants
         assert "Variants scored" in result or "scored" in result.lower()
 
-    def test_t2d_prs(self, giab_engine, giab_db, giab_config):
-        """Type 2 diabetes PRS should return a numeric score."""
+    def test_bmi_prs(self, giab_engine, giab_db, giab_config):
+        """BMI PRS should return a numeric score."""
         fn = _get_tool(giab_engine, giab_db, giab_config)
-        result = fn(trait="type 2 diabetes")
+        result = fn(trait="body mass index")
         assert "Polygenic Risk Score" in result
         assert "score" in result.lower()
 
@@ -58,5 +58,5 @@ class TestCalculatePrsGIAB:
     def test_prs_by_id(self, giab_engine, giab_db, giab_config):
         """Query PRS by PGS catalog ID."""
         fn = _get_tool(giab_engine, giab_db, giab_config)
-        result = fn(prs_id="PGS000013")
+        result = fn(prs_id="PGS000010")
         assert "Polygenic Risk Score" in result or "no prs data" in result.lower()

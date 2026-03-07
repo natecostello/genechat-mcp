@@ -219,8 +219,8 @@ class TestSmartFilter:
         assert "rs100010" in result
         assert "suppressed" not in result
 
-    def test_known_trait_rsid_never_suppressed(self, mock_engine, test_db, test_config):
-        """Known trait/PGx rsIDs should never be suppressed even if common."""
+    def test_known_pgx_rsid_never_suppressed(self, mock_engine, test_db, test_config):
+        """Known PGx rsIDs should never be suppressed even if common."""
         # rs4149056 is a known PGx variant for SLCO1B1
         from tests.conftest import SAMPLE_VARIANT_SLCO1B1
 

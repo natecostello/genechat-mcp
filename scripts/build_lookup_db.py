@@ -32,7 +32,9 @@ SCHEMAS = {
             gene TEXT NOT NULL,
             guideline_source TEXT,
             guideline_url TEXT,
-            clinical_summary TEXT
+            clinical_summary TEXT,
+            cpic_level TEXT,
+            pgx_testing TEXT
         );
         CREATE INDEX idx_pgx_drug ON pgx_drugs(drug_name);
     """,
@@ -49,32 +51,6 @@ SCHEMAS = {
             notes TEXT
         );
         CREATE INDEX idx_pgx_var_gene ON pgx_variants(gene);
-    """,
-    "trait_variants": """
-        CREATE TABLE trait_variants (
-            rsid TEXT NOT NULL,
-            chrom TEXT NOT NULL,
-            pos INTEGER NOT NULL,
-            ref TEXT NOT NULL,
-            alt TEXT NOT NULL,
-            gene TEXT,
-            trait_category TEXT NOT NULL,
-            trait TEXT NOT NULL,
-            effect_allele TEXT NOT NULL,
-            effect_description TEXT NOT NULL,
-            evidence_level TEXT,
-            pmid TEXT
-        );
-        CREATE INDEX idx_trait_category ON trait_variants(trait_category);
-    """,
-    "carrier_genes": """
-        CREATE TABLE carrier_genes (
-            gene TEXT PRIMARY KEY,
-            condition_name TEXT NOT NULL,
-            inheritance TEXT NOT NULL,
-            carrier_frequency TEXT,
-            acmg_recommended BOOLEAN
-        );
     """,
     "prs_weights": """
         CREATE TABLE prs_weights (
@@ -96,13 +72,11 @@ TSV_FILES = {
     "genes": "genes_grch38.tsv",
     "pgx_drugs": "pgx_drugs.tsv",
     "pgx_variants": "pgx_variants.tsv",
-    "trait_variants": "trait_variants.tsv",
-    "carrier_genes": "carrier_genes.tsv",
     "prs_weights": "prs_weights.tsv",
 }
 
 # Columns that should be stored as INTEGER
-INT_COLUMNS = {"start", "end", "pos", "acmg_recommended"}
+INT_COLUMNS = {"start", "end", "pos"}
 # Columns that should be stored as REAL
 FLOAT_COLUMNS = {"weight"}
 
