@@ -84,7 +84,7 @@ if [ -n "${GNOMAD_DIR:-}" ] && [ -d "${GNOMAD_DIR}" ]; then
     # Extract contig IDs and validate (only allow alphanumeric, underscore, dash, dot)
     mapfile -t CHROMS < <(bcftools view -h "$STEP2_WITH_HEADERS" \
         | grep "^##contig" | sed 's/.*ID=\([^,>]*\).*/\1/' \
-        | grep -E '^[A-Za-z0-9._-]+$' | sort -V)
+        | grep -E '^[A-Za-z0-9._-]+$')
 
     # First pass: annotate per-chrom into temp files, then concat
     GNOMAD_WORK="$OUTPUT_DIR/gnomad_work"

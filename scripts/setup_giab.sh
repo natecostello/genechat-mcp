@@ -317,7 +317,7 @@ if [ -n "${GNOMAD_DIR:-}" ] && [ -d "${GNOMAD_DIR}" ]; then
     mkdir -p "$GNOMAD_WORK"
     mapfile -t VCF_CHROMS < <(bcftools view -h "$STEP3_WITH_HEADERS" \
         | grep "^##contig" | sed 's/.*ID=\([^,>]*\).*/\1/' \
-        | grep -E '^[A-Za-z0-9._-]+$' | sort -V)
+        | grep -E '^[A-Za-z0-9._-]+$')
     CHR_FILES=()
     for CHR in "${VCF_CHROMS[@]}"; do
         GNOMAD_CHR_VCF="$GNOMAD_DIR/gnomad.exomes.v4.1.sites.${CHR}.vcf.bgz"

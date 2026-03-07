@@ -86,6 +86,7 @@ def register(mcp, engine, db, config):
 
         # VCF cross-reference: look up genotypes for result rsIDs
         genotype_map: dict[str, str] = {}
+        vcf_truncated = None
         if check_vcf:
             rsids_to_check = [
                 r["rsid"]
@@ -95,14 +96,14 @@ def register(mcp, engine, db, config):
             if rsids_to_check:
                 try:
                     vcf_results = engine.query_rsids(rsids_to_check)
-                    vcf_results.pop("_truncated", None)
+                    vcf_truncated = vcf_results.pop("_truncated", None)
                     for rs, vlist in vcf_results.items():
                         if vlist:
                             gt = vlist[0]["genotype"]
                             zyg = short_zygosity(gt["zygosity"])
                             genotype_map[rs] = f"{gt['display']} ({zyg})"
                 except (ValueError, VCFEngineError):
-                    pass  # Graceful degradation — just omit genotypes
+                    vcf_truncated = None
 
         # Build header
         search_desc = []
@@ -117,6 +118,12 @@ def register(mcp, engine, db, config):
             f"## GWAS Catalog Results ({' | '.join(search_desc)})",
             f"Showing {len(results)} association(s), ordered by significance\n",
         ]
+
+        if check_vcf and vcf_truncated:
+            lines.append(
+                "*Note: VCF genotype lookup was truncated — some variants may show '—' "
+                "due to query limits.*\n"
+            )
 
         if check_vcf:
             lines.append(

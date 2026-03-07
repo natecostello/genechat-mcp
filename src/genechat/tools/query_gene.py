@@ -46,19 +46,28 @@ def _should_suppress(variant: dict, protected_rsids: set[str]) -> bool:
         return False
 
     clinvar = variant.get("clinvar", {})
-    sig = (clinvar.get("significance") or "").lower()
-    if sig and sig in _PROTECTED_CLINVAR:
+    sig_raw = (clinvar.get("significance") or "").lower()
+
+    # Tokenize multi-valued ClinVar significance (e.g. "pathogenic/likely_pathogenic"
+    # or "conflicting_interpretations_of_pathogenicity, benign")
+    sig_terms = {t.strip() for t in sig_raw.replace("/", ",").split(",") if t.strip()}
+
+    # Never suppress if any term is protected
+    if sig_terms & _PROTECTED_CLINVAR:
         return False
 
     freq = variant.get("population_freq", {})
     af = freq.get("global")
 
+    # Only treat as benign if ALL terms are benign/likely_benign
+    all_benign = sig_terms and all("benign" in t for t in sig_terms)
+
     if af is not None:
-        # AF available: suppress common benign variants
-        return af > 0.05 and (not sig or "benign" in sig)
+        # AF available: suppress common variants that are benign or unannotated
+        return af > 0.05 and (not sig_terms or all_benign)
     else:
         # AF unavailable: suppress unannotated (no ClinVar) non-HIGH variants
-        return not sig
+        return not sig_terms
 
 
 def register(mcp, engine, db, config):
