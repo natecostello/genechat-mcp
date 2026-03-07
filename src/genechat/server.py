@@ -11,7 +11,8 @@ from genechat.tools import register_all
 from genechat.vcf_engine import VCFEngine
 
 
-def main():
+def run_server():
+    """Initialize and run the MCP server."""
     config_path = os.environ.get("GENECHAT_CONFIG")
     config = load_config(config_path)
 
@@ -51,6 +52,12 @@ def main():
         mcp.run(transport="sse", host=config.server.host, port=config.server.port)
     else:
         mcp.run(transport="stdio")
+
+
+def main():
+    from genechat.cli import main as cli_main
+
+    cli_main()
 
 
 if __name__ == "__main__":
