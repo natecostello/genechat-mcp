@@ -84,12 +84,16 @@ def write_config(vcf_path: Path, config_dir: Path) -> Path:
     vcf_literal = str(vcf_path).replace("'", "''")
     content = f"[genome]\nvcf_path = '{vcf_literal}'\n"
 
-    # Create file with 0o600 permissions atomically (no world-readable window)
-    fd = os.open(config_path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    # Write via temp file with 0o600 permissions, then atomically replace.
+    # This ensures correct permissions even when overwriting an existing file.
+    tmp_path = config_path.with_suffix(".tmp")
+    fd = os.open(tmp_path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
     try:
         os.write(fd, content.encode("utf-8"))
+        os.fsync(fd)
     finally:
         os.close(fd)
+    os.replace(tmp_path, config_path)
 
     return config_path
 
