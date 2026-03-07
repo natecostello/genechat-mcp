@@ -7,9 +7,21 @@
 # Optional environment variables:
 #   SNPEFF_DB — SnpEff database name (auto-detected if not set)
 #
-# Prerequisites: bcftools, tabix, snpEff
+# Prerequisites: bcftools, tabix, snpEff, bgzip
 # Output: Updates annotated.vcf.gz in place (with backup).
 set -euo pipefail
+
+if [ "$#" -lt 1 ]; then
+    echo "Usage: $0 <annotated.vcf.gz>" >&2
+    exit 1
+fi
+
+for cmd in bcftools tabix snpEff bgzip; do
+    if ! command -v "$cmd" >/dev/null 2>&1; then
+        echo "Error: Required command '$cmd' not found in PATH" >&2
+        exit 1
+    fi
+done
 
 ANNOTATED_VCF="$1"
 
@@ -36,9 +48,15 @@ echo "=== SnpEff Update ==="
 echo "  Annotated VCF: $ANNOTATED_VCF"
 echo "  Database: $SNPEFF_DB"
 
-# 1. Backup
+# 1. Backup (VCF + index)
 echo "Step 1: Backing up current VCF..."
 cp "$ANNOTATED_VCF" "${ANNOTATED_VCF}.bak"
+if [ -f "${ANNOTATED_VCF}.tbi" ]; then
+    cp "${ANNOTATED_VCF}.tbi" "${ANNOTATED_VCF}.bak.tbi"
+fi
+if [ -f "${ANNOTATED_VCF}.csi" ]; then
+    cp "${ANNOTATED_VCF}.csi" "${ANNOTATED_VCF}.bak.csi"
+fi
 
 # 2. Strip old ANN field
 echo "Step 2: Stripping old SnpEff annotations..."

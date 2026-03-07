@@ -8,6 +8,11 @@
 # Output: Updates annotated.vcf.gz in place (with backup).
 set -euo pipefail
 
+if [ "$#" -lt 2 ]; then
+    echo "Usage: $0 <annotated.vcf.gz> <clinvar.vcf.gz>" >&2
+    exit 1
+fi
+
 ANNOTATED_VCF="$1"
 CLINVAR_VCF="$2"
 
@@ -27,9 +32,15 @@ echo "=== ClinVar Update ==="
 echo "  Annotated VCF: $ANNOTATED_VCF"
 echo "  ClinVar source: $CLINVAR_VCF"
 
-# 1. Backup
+# 1. Backup (VCF + index)
 echo "Step 1: Backing up current VCF..."
 cp "$ANNOTATED_VCF" "${ANNOTATED_VCF}.bak"
+if [ -f "${ANNOTATED_VCF}.tbi" ]; then
+    cp "${ANNOTATED_VCF}.tbi" "${ANNOTATED_VCF}.bak.tbi"
+fi
+if [ -f "${ANNOTATED_VCF}.csi" ]; then
+    cp "${ANNOTATED_VCF}.csi" "${ANNOTATED_VCF}.bak.csi"
+fi
 
 # 2. Strip old ClinVar fields
 echo "Step 2: Stripping old ClinVar annotations..."
@@ -38,7 +49,7 @@ bcftools annotate -x INFO/CLNSIG,INFO/CLNDN,INFO/CLNREVSTAT,INFO/CLNVC \
 
 # 3. ClinVar contig rename if needed (bare 1,2,... → chr1,chr2,...)
 FIRST_CONTIG=$(bcftools view -h "$CLINVAR_VCF" | grep "^##contig" | head -1 || true)
-if echo "$FIRST_CONTIG" | grep -qP "ID=\d"; then
+if echo "$FIRST_CONTIG" | grep -Eq "ID=[0-9]"; then
     echo "  Renaming ClinVar contigs to chr prefix..."
     CHR_MAP="$WORK_DIR/clinvar_chr_rename.txt"
     for i in $(seq 1 22); do echo "$i chr$i"; done > "$CHR_MAP"

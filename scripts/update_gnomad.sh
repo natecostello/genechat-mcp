@@ -6,11 +6,16 @@
 #
 # Environment variables:
 #   GNOMAD_DIR — Directory containing per-chromosome gnomAD v4 exome VCFs (required)
-#   GNOMAD_VERSION — Version string for header (default: auto-detected from filename)
+#   GNOMAD_VERSION — Version string for header (default: auto-detected from filenames)
 #
 # Prerequisites: bcftools, tabix
 # Output: Updates annotated.vcf.gz in place (with backup).
 set -euo pipefail
+
+if [ "$#" -lt 1 ]; then
+    echo "Usage: GNOMAD_DIR=/path/to/gnomad_exomes_v4 $0 <annotated.vcf.gz>" >&2
+    exit 1
+fi
 
 ANNOTATED_VCF="$1"
 
@@ -24,16 +29,39 @@ if [ -z "${GNOMAD_DIR:-}" ] || [ ! -d "${GNOMAD_DIR}" ]; then
 fi
 
 WORK_DIR="$(dirname "$ANNOTATED_VCF")"
-GNOMAD_VERSION="${GNOMAD_VERSION:-v4}"
+
+# Auto-detect GNOMAD_VERSION from a representative VCF filename if not provided
+if [ -z "${GNOMAD_VERSION:-}" ]; then
+    SAMPLE_FILE="$(find "$GNOMAD_DIR" -maxdepth 1 -type f -name '*.vcf.*' 2>/dev/null | head -n 1 || true)"
+    if [ -n "$SAMPLE_FILE" ]; then
+        SAMPLE_BASENAME="$(basename "$SAMPLE_FILE")"
+        DETECTED_VERSION="$(printf '%s\n' "$SAMPLE_BASENAME" | sed -n 's/.*\(v[0-9][0-9]*\(\.[0-9][0-9]*\)*\).*/\1/p' | head -n 1)"
+        if [ -n "$DETECTED_VERSION" ]; then
+            GNOMAD_VERSION="$DETECTED_VERSION"
+        else
+            GNOMAD_VERSION="unknown"
+        fi
+    else
+        GNOMAD_VERSION="unknown"
+    fi
+fi
+
 DATE=$(date +%Y-%m-%d)
 
 echo "=== gnomAD Update ==="
 echo "  Annotated VCF: $ANNOTATED_VCF"
 echo "  gnomAD source: $GNOMAD_DIR"
+echo "  gnomAD version: $GNOMAD_VERSION"
 
-# 1. Backup
+# 1. Backup (VCF + index)
 echo "Step 1: Backing up current VCF..."
 cp "$ANNOTATED_VCF" "${ANNOTATED_VCF}.bak"
+if [ -f "${ANNOTATED_VCF}.tbi" ]; then
+    cp "${ANNOTATED_VCF}.tbi" "${ANNOTATED_VCF}.bak.tbi"
+fi
+if [ -f "${ANNOTATED_VCF}.csi" ]; then
+    cp "${ANNOTATED_VCF}.csi" "${ANNOTATED_VCF}.bak.csi"
+fi
 
 # 2. Strip old frequency fields
 echo "Step 2: Stripping old AF annotations..."
