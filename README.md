@@ -82,37 +82,25 @@ brew install bcftools brewsci/bio/snpeff
 conda install -c bioconda bcftools snpsift
 ```
 
-### 3. Download reference databases and annotate your VCF
+### 3. Download references, annotate, and initialize
 
 ```bash
 # Download ClinVar + SnpEff database + gnomAD exome frequencies (~8 GB, optional)
-bash scripts/setup_references.sh ./references
+bash scripts/setup_references.sh
 
-# Annotate your VCF (~20-30 minutes)
-CLINVAR_VCF=./references/clinvar.vcf.gz \
-GNOMAD_DIR=./references/gnomad_exomes_v4 \
+# Annotate your VCF (~20-30 minutes, auto-detects references)
 bash scripts/annotate.sh /path/to/your/raw.vcf.gz ./data
-```
 
-gnomAD is optional — without it, `query_gene` smart_filter falls back to ClinVar-only mode.
-
-### 4. Initialize GeneChat
-
-```bash
+# Initialize GeneChat (writes config, prints MCP JSON to paste into Claude)
 uv run genechat init ./data/annotated.vcf.gz
-```
 
-This validates your VCF and index, writes a config file, and prints the MCP config JSON to paste into Claude Desktop or Claude Code.
-
-### 5. (Optional) Load GWAS Catalog
-
-```bash
+# (Optional) Enable GWAS trait search (~58 MB download)
 uv run python scripts/build_gwas_db.py
 ```
 
-Enables the `query_gwas` tool (~58 MB download, 1M+ genome-wide association study findings).
+`setup_references.sh` downloads to `./references/`. `annotate.sh` auto-detects ClinVar and gnomAD from there — no env vars needed. gnomAD is optional; without it, `query_gene` falls back to ClinVar-only filtering.
 
-### 6. Start asking questions
+### 4. Start asking questions
 
 Open Claude and ask about your genetics. GeneChat's tools will appear automatically.
 
