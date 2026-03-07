@@ -32,14 +32,15 @@ echo "=== ClinVar Update ==="
 echo "  Annotated VCF: $ANNOTATED_VCF"
 echo "  ClinVar source: $CLINVAR_VCF"
 
-# 1. Backup (VCF + index)
+# 1. Backup (VCF + index) with timestamp to preserve history
+BACKUP_SUFFIX="bak.$(date +%Y%m%d_%H%M%S)"
 echo "Step 1: Backing up current VCF..."
-cp "$ANNOTATED_VCF" "${ANNOTATED_VCF}.bak"
+cp "$ANNOTATED_VCF" "${ANNOTATED_VCF}.${BACKUP_SUFFIX}"
 if [ -f "${ANNOTATED_VCF}.tbi" ]; then
-    cp "${ANNOTATED_VCF}.tbi" "${ANNOTATED_VCF}.bak.tbi"
+    cp "${ANNOTATED_VCF}.tbi" "${ANNOTATED_VCF}.${BACKUP_SUFFIX}.tbi"
 fi
 if [ -f "${ANNOTATED_VCF}.csi" ]; then
-    cp "${ANNOTATED_VCF}.csi" "${ANNOTATED_VCF}.bak.csi"
+    cp "${ANNOTATED_VCF}.csi" "${ANNOTATED_VCF}.${BACKUP_SUFFIX}.csi"
 fi
 
 # 2. Strip old ClinVar fields
@@ -89,4 +90,4 @@ rm -f "$WORK_DIR/tmp_stripped.vcf.gz" "$WORK_DIR/tmp_annotated.vcf.gz"
 rm -f "$WORK_DIR/clinvar_chrfixed.vcf.gz" "$WORK_DIR/clinvar_chrfixed.vcf.gz.tbi"
 
 echo "Done. ClinVar updated to $DATE."
-echo "Backup at: ${ANNOTATED_VCF}.bak"
+echo "Backup at: ${ANNOTATED_VCF}.${BACKUP_SUFFIX}"
