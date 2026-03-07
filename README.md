@@ -269,7 +269,7 @@ At runtime, GeneChat uses **only** local files — no external tools, no network
 
 ## TODO: Incremental Annotation Updates
 
-The current annotation pipeline (`annotate.sh`) is a linear chain that must be re-run from scratch. This plan outlines how to support incremental updates of each annotation layer independently, so users can stay current without repeating hours of work.
+The current annotation pipeline (`annotate.sh`) is a linear chain that must be re-run from scratch. This plan outlines how to support incremental updates of each annotation layer independently, so users can stay current without re-running the full pipeline.
 
 ### Background
 
@@ -278,7 +278,7 @@ The current annotation pipeline (`annotate.sh`) is a linear chain that must be r
 | ClinVar | Variant reclassifications (VUS→Pathogenic, etc.) | Monthly | Full pipeline (~30 min) |
 | gnomAD | Population allele frequencies | Major releases every 1–2 years | Full pipeline (~30 min) |
 | SnpEff | Gene models, transcript definitions | Tied to Ensembl (~2/year) | Full pipeline (~30 min) |
-| dbSNP | rsID assignments for new variants | Quarterly | Full pipeline (~30 min) |
+| dbSNP | rsID assignments for new variants | Quarterly | `setup_giab.sh` test data only (~30 min) |
 | GWAS Catalog | New association study results | Weekly | `build_gwas_db.py` (~2 min, already incremental) |
 | Seed data | Curated PGx/trait/carrier metadata | As we edit it | `build_seed_data.py` (~5 min, already incremental) |
 
@@ -306,12 +306,14 @@ ClinVar reclassifications are the most clinically impactful updates. Recommended
 2. Strip old ClinVar fields:
    bcftools annotate -x INFO/CLNSIG,INFO/CLNDN,INFO/CLNREVSTAT,INFO/CLNVC \
        annotated.vcf.gz -Oz -o tmp_stripped.vcf.gz
-3. Re-annotate with fresh ClinVar (with contig rename if needed):
+3. Re-annotate with fresh ClinVar (with contig rename if needed) to a temp file:
    bcftools annotate -a clinvar_new.vcf.gz \
        -c INFO/CLNSIG,INFO/CLNDN,INFO/CLNREVSTAT,INFO/CLNVC \
-       tmp_stripped.vcf.gz -Oz -o annotated.vcf.gz
-4. Re-index: tabix -p vcf annotated.vcf.gz
-5. Clean up temp files
+       tmp_stripped.vcf.gz -Oz -o tmp_annotated.vcf.gz
+4. Atomically replace the existing annotated VCF:
+   mv tmp_annotated.vcf.gz annotated.vcf.gz
+5. Re-index: tabix -p vcf annotated.vcf.gz
+6. Clean up temp files
 ```
 
 Estimated time: 2–5 minutes. Preserves all SnpEff, gnomAD, and dbSNP annotations.
@@ -355,7 +357,7 @@ Only needed if the original annotation was done without dbSNP, or on a new dbSNP
 3. mv + re-index
 ```
 
-Note: unlike the others, dbSNP updates the `ID` column (not INFO), so `-x` stripping isn't needed — bcftools overwrites `.` IDs with rsIDs.
+Note: unlike the others, dbSNP primarily uses the `ID` column (not INFO), so `-x` stripping isn't needed here. The command above will fill in missing (`.`) IDs with rsIDs, but it will not overwrite existing IDs unless you add `--force` or strip the ID column first (so merged/retired rsIDs are not updated by default).
 
 Estimated time: 5–10 minutes.
 
