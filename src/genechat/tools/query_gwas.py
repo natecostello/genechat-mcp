@@ -1,5 +1,12 @@
 """Search GWAS Catalog for trait-variant associations."""
 
+import re
+
+from genechat.tools.formatting import short_zygosity
+from genechat.vcf_engine import VCFEngineError
+
+_RSID_RE = re.compile(r"^rs\d+$")
+
 DISCLAIMER = (
     "\n\n---\n*NOTE: This is informational only and not a medical diagnosis. "
     "Discuss findings with a healthcare provider before making health decisions.*"
@@ -13,6 +20,8 @@ def register(mcp, engine, db, config):
         gene: str | None = None,
         rsid: str | None = None,
         max_results: int = 30,
+        deduplicate: bool = True,
+        check_vcf: bool = False,
     ) -> str:
         """Search the GWAS Catalog for genome-wide association study findings.
 
@@ -34,9 +43,12 @@ def register(mcp, engine, db, config):
         # Clamp max_results to a safe range
         max_results = max(1, min(max_results, 200))
 
+        # Fetch extra rows if deduplicating, to have enough after dedup
+        fetch_limit = max_results * 3 if deduplicate else max_results
+
         try:
             results = db.search_gwas(
-                trait=trait, gene=gene, rsid=rsid, max_results=max_results
+                trait=trait, gene=gene, rsid=rsid, max_results=fetch_limit
             )
         except Exception:
             return (
@@ -44,6 +56,23 @@ def register(mcp, engine, db, config):
                 "Try rebuilding the GWAS database with "
                 "`uv run python scripts/build_gwas_db.py`."
             )
+
+        # Deduplicate: keep first occurrence per rsid (best p-value)
+        if deduplicate and results:
+            seen_rsids: set[str] = set()
+            deduped = []
+            for r in results:
+                rs = r.get("rsid") or ""
+                if rs and rs in seen_rsids:
+                    continue
+                if rs:
+                    seen_rsids.add(rs)
+                deduped.append(r)
+                if len(deduped) >= max_results:
+                    break
+            results = deduped
+        else:
+            results = results[:max_results]
 
         if not results:
             parts = []
@@ -54,6 +83,28 @@ def register(mcp, engine, db, config):
             if rsid:
                 parts.append(f"rsid='{rsid}'")
             return f"No GWAS associations found for {', '.join(parts)}."
+
+        # VCF cross-reference: look up genotypes for result rsIDs
+        genotype_map: dict[str, str] = {}
+        vcf_truncated = None
+        vcf_lookup_failed = False
+        if check_vcf:
+            rsids_to_check = [
+                r["rsid"]
+                for r in results
+                if r.get("rsid") and _RSID_RE.match(r["rsid"])
+            ]
+            if rsids_to_check:
+                try:
+                    vcf_results = engine.query_rsids(rsids_to_check)
+                    vcf_truncated = vcf_results.pop("_truncated", None)
+                    for rs, vlist in vcf_results.items():
+                        if vlist:
+                            gt = vlist[0]["genotype"]
+                            zyg = short_zygosity(gt["zygosity"])
+                            genotype_map[rs] = f"{gt['display']} ({zyg})"
+                except (ValueError, VCFEngineError):
+                    vcf_lookup_failed = True
 
         # Build header
         search_desc = []
@@ -69,12 +120,30 @@ def register(mcp, engine, db, config):
             f"Showing {len(results)} association(s), ordered by significance\n",
         ]
 
-        lines.append(
-            "| rsID | Gene | Trait | Risk Allele | P-value | OR/Beta | Author |"
-        )
-        lines.append(
-            "|------|------|-------|-------------|---------|---------|--------|"
-        )
+        if check_vcf and vcf_lookup_failed:
+            lines.append(
+                "*Warning: VCF genotype lookup failed — genotype column will show '—'.*\n"
+            )
+        elif check_vcf and vcf_truncated:
+            lines.append(
+                "*Note: VCF genotype lookup was truncated — some variants may show '—' "
+                "due to query limits.*\n"
+            )
+
+        if check_vcf:
+            lines.append(
+                "| rsID | Gene | Trait | Risk Allele | P-value | OR/Beta | Your Genotype |"
+            )
+            lines.append(
+                "|------|------|-------|-------------|---------|---------|---------------|"
+            )
+        else:
+            lines.append(
+                "| rsID | Gene | Trait | Risk Allele | P-value | OR/Beta | Author |"
+            )
+            lines.append(
+                "|------|------|-------|-------------|---------|---------|--------|"
+            )
 
         for r in results:
             rs = r.get("rsid") or "."
@@ -88,9 +157,16 @@ def register(mcp, engine, db, config):
             pv_str = f"{pv:.1e}" if pv is not None else "."
             ob = r.get("or_beta")
             ob_str = f"{ob:.2f}" if ob is not None else "."
-            author = r.get("first_author") or "."
-            lines.append(
-                f"| {rs} | {g} | {t} | {ra} | {pv_str} | {ob_str} | {author} |"
-            )
+
+            if check_vcf:
+                gt = genotype_map.get(rs, "—")
+                lines.append(
+                    f"| {rs} | {g} | {t} | {ra} | {pv_str} | {ob_str} | {gt} |"
+                )
+            else:
+                author = r.get("first_author") or "."
+                lines.append(
+                    f"| {rs} | {g} | {t} | {ra} | {pv_str} | {ob_str} | {author} |"
+                )
 
         return "\n".join(lines) + DISCLAIMER

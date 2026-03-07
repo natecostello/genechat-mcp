@@ -16,7 +16,7 @@ class TestQueryPgx:
     def test_drug_lookup(self, mock_engine, test_db, test_config):
         from tests.conftest import SAMPLE_VARIANT_SLCO1B1
 
-        mock_engine.query_region.return_value = [SAMPLE_VARIANT_SLCO1B1]
+        mock_engine.query_regions.return_value = [SAMPLE_VARIANT_SLCO1B1]
         fn = _setup_tool(mock_engine, test_db, test_config)
         result = fn(drug="simvastatin")
 
@@ -27,7 +27,7 @@ class TestQueryPgx:
     def test_gene_lookup(self, mock_engine, test_db, test_config):
         from tests.conftest import SAMPLE_VARIANT_SLCO1B1
 
-        mock_engine.query_region.return_value = [SAMPLE_VARIANT_SLCO1B1]
+        mock_engine.query_regions.return_value = [SAMPLE_VARIANT_SLCO1B1]
         fn = _setup_tool(mock_engine, test_db, test_config)
         result = fn(gene="CYP2D6")
 

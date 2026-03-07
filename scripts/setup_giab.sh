@@ -22,7 +22,8 @@
 #   SNPEFF_DB    — SnpEff database name (default: auto-detect)
 #                  brew SnpEff 4.3t → GRCh38.86, SnpEff 5.x → GRCh38.p14
 #   JAVA_MEM     — Java heap size for SnpEff (default: -Xmx4g)
-#   GNOMAD_VCF   — Path to gnomAD af-only VCF for frequency annotation
+#   GNOMAD_DIR   — Directory of per-chromosome gnomAD v4 exome VCFs (preferred)
+#   GNOMAD_VCF   — Path to single gnomAD af-only VCF for frequency annotation (legacy)
 #   SNPEFF_JAR   — Path to snpEff.jar (default: snpEff in PATH)
 #
 # Output: $OUTPUT_DIR/HG001_annotated.vcf.gz + .tbi (~5 GB downloads, ~30 min annotation)
@@ -298,15 +299,57 @@ fi
 # --- Step 5c: Optional gnomAD annotation ---
 
 FINAL_VCF="$WORK_DIR/annotated.vcf.gz"
-if [ -n "${GNOMAD_VCF:-}" ] && [ -f "${GNOMAD_VCF}" ]; then
-    log "Step 5c/6: Annotating with gnomAD frequencies..."
+if [ -n "${GNOMAD_DIR:-}" ] && [ -d "${GNOMAD_DIR}" ]; then
+    # Per-chromosome gnomAD v4 exome annotation
+    log "Step 5c/6: Annotating with per-chromosome gnomAD exomes from: $GNOMAD_DIR"
+    STEP5C_START=$(date +%s)
+    # Inject AF/AF_grpmax headers so all per-chrom outputs share the same header
+    AF_HEADERS="$WORK_DIR/gnomad_headers.txt"
+    echo '##INFO=<ID=AF,Number=A,Type=Float,Description="Alternate allele frequency">' > "$AF_HEADERS"
+    echo '##INFO=<ID=AF_grpmax,Number=A,Type=Float,Description="Maximum allele frequency across genetic ancestry groups">' >> "$AF_HEADERS"
+    STEP3_WITH_HEADERS="$WORK_DIR/step3_with_headers.vcf.gz"
+    bcftools annotate -h "$AF_HEADERS" "$STEP3_VCF" -Oz -o "$STEP3_WITH_HEADERS"
+    tabix -p vcf "$STEP3_WITH_HEADERS"
+    rm -f "$AF_HEADERS"
+
+    # Extract contig IDs and validate (only allow alphanumeric, underscore, dash, dot)
+    GNOMAD_WORK="$WORK_DIR/gnomad_work"
+    mkdir -p "$GNOMAD_WORK"
+    mapfile -t VCF_CHROMS < <(bcftools view -h "$STEP3_WITH_HEADERS" \
+        | grep "^##contig" | sed 's/.*ID=\([^,>]*\).*/\1/' \
+        | grep -E '^[A-Za-z0-9._-]+$')
+    CHR_FILES=()
+    for CHR in "${VCF_CHROMS[@]}"; do
+        GNOMAD_CHR_VCF="$GNOMAD_DIR/gnomad.exomes.v4.1.sites.${CHR}.vcf.bgz"
+        CHR_OUT="$GNOMAD_WORK/${CHR}.vcf.gz"
+        if [ -f "$GNOMAD_CHR_VCF" ]; then
+            log "   Annotating $CHR with gnomAD..."
+            bcftools annotate -a "$GNOMAD_CHR_VCF" \
+                -c INFO/AF,INFO/AF_grpmax \
+                <(bcftools view -r "$CHR" "$STEP3_WITH_HEADERS") \
+                -Oz -o "$CHR_OUT"
+        else
+            log "   No gnomAD file for $CHR, passing through."
+            bcftools view -r "$CHR" "$STEP3_WITH_HEADERS" -Oz -o "$CHR_OUT"
+        fi
+        CHR_FILES+=("$CHR_OUT")
+    done
+    bcftools concat "${CHR_FILES[@]}" -Oz -o "${FINAL_VCF}.tmp"
+    mv "${FINAL_VCF}.tmp" "$FINAL_VCF"
+    tabix -p vcf "$FINAL_VCF"
+    rm -rf "$GNOMAD_WORK"
+    rm -f "$STEP3_WITH_HEADERS" "$STEP3_WITH_HEADERS.tbi"
+    STEP5C_ELAPSED=$(( $(date +%s) - STEP5C_START ))
+    log "Step 5c/6: gnomAD annotation done in ${STEP5C_ELAPSED}s"
+elif [ -n "${GNOMAD_VCF:-}" ] && [ -f "${GNOMAD_VCF}" ]; then
+    log "Step 5c/6: Annotating with gnomAD frequencies (single VCF)..."
     bcftools annotate -a "$GNOMAD_VCF" \
         -c INFO/AF,INFO/AF_popmax \
         "$STEP3_VCF" -Oz -o "${FINAL_VCF}.tmp"
     mv "${FINAL_VCF}.tmp" "$FINAL_VCF"
     tabix -p vcf "$FINAL_VCF"
 else
-    log "Step 5c/6: Skipping gnomAD (GNOMAD_VCF not set). Copying ClinVar output..."
+    log "Step 5c/6: Skipping gnomAD (neither GNOMAD_DIR nor GNOMAD_VCF set). Copying ClinVar output..."
     cp "$STEP3_VCF" "$FINAL_VCF"
     cp "$STEP3_VCF.tbi" "$FINAL_VCF.tbi" 2>/dev/null || tabix -p vcf "$FINAL_VCF"
 fi
