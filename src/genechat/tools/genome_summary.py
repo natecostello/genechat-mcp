@@ -1,6 +1,24 @@
 """Genome summary — overview of variant counts and key findings."""
 
+import pysam
+
 from genechat.vcf_engine import VCFEngineError
+
+
+def _read_annotation_versions(vcf_path: str) -> dict[str, str]:
+    """Read ##GeneChat_* header lines from a VCF file."""
+    versions = {}
+    try:
+        with pysam.VariantFile(vcf_path) as vcf:
+            for rec in vcf.header.records:
+                if rec.type == "GENERIC":
+                    key = rec.key
+                    if key.startswith("GeneChat_"):
+                        label = key.replace("GeneChat_", "")
+                        versions[label] = rec.value
+    except Exception:
+        pass
+    return versions
 
 
 def register(mcp, engine, db, config):
@@ -19,6 +37,13 @@ def register(mcp, engine, db, config):
         lines = ["## Genome Summary"]
         lines.append(f"**Build:** {config.genome.genome_build}")
         lines.append(f"**VCF:** {config.genome.vcf_path}")
+
+        # Annotation versions from VCF headers
+        versions = _read_annotation_versions(config.genome.vcf_path)
+        if versions:
+            lines.append("\n### Annotation Versions")
+            for label, value in sorted(versions.items()):
+                lines.append(f"- **{label}:** {value}")
 
         # Variant stats
         try:
