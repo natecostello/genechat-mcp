@@ -398,8 +398,13 @@ def main():
     import shutil
 
     print("Cleaning up intermediate files...")
-    shutil.rmtree(work_dir)
-    print(f"  Removed {work_dir}")
+    try:
+        shutil.rmtree(work_dir)
+        print(f"  Removed {work_dir}")
+    except Exception as exc:  # noqa: BLE001
+        print(
+            f"WARNING: Failed to remove work directory {work_dir}: {exc}"
+        )
 
     # --- Done ---
     print()
