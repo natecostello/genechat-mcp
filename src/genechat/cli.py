@@ -37,7 +37,7 @@ def main(argv: list[str] | None = None):
 def _find_project_root() -> Path | None:
     """Walk up from this file's location to find a pyproject.toml (source checkout)."""
     current = Path(__file__).resolve().parent
-    for _ in range(5):  # src/genechat → src → repo root (3 levels max)
+    for _ in range(5):  # src/genechat → src → repo root (up to 5 levels)
         if (current / "pyproject.toml").exists():
             return current
         current = current.parent
@@ -51,7 +51,7 @@ def _run_serve():
 
 
 def _run_init(vcf_path_str: str):
-    vcf_path = Path(vcf_path_str).resolve()
+    vcf_path = Path(vcf_path_str).expanduser().resolve()
 
     # 1. Validate VCF exists
     if not vcf_path.exists():

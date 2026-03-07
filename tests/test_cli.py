@@ -1,14 +1,15 @@
 """Tests for the genechat CLI (init subcommand)."""
 
+import pytest
+
 from genechat.cli import main
 
 
 def test_init_missing_vcf(tmp_path, capsys):
     """init fails when VCF does not exist."""
-    try:
+    with pytest.raises(SystemExit) as exc_info:
         main(["init", str(tmp_path / "nonexistent.vcf.gz")])
-    except SystemExit as e:
-        assert e.code == 1
+    assert exc_info.value.code == 1
     captured = capsys.readouterr()
     assert "not found" in captured.err
 
@@ -17,10 +18,9 @@ def test_init_missing_index(tmp_path, capsys):
     """init fails when VCF exists but index is missing."""
     vcf = tmp_path / "test.vcf.gz"
     vcf.write_bytes(b"fake")
-    try:
+    with pytest.raises(SystemExit) as exc_info:
         main(["init", str(vcf)])
-    except SystemExit as e:
-        assert e.code == 1
+    assert exc_info.value.code == 1
     captured = capsys.readouterr()
     assert "No index file" in captured.err
 
@@ -111,10 +111,9 @@ def test_init_invalid_vcf(tmp_path, capsys, monkeypatch):
         lambda *a, **kw: (_ for _ in ()).throw(ValueError("not a valid VCF")),
     )
 
-    try:
+    with pytest.raises(SystemExit) as exc_info:
         main(["init", str(vcf)])
-    except SystemExit as e:
-        assert e.code == 1
+    assert exc_info.value.code == 1
     captured = capsys.readouterr()
     assert "Cannot read VCF" in captured.err
 
@@ -140,10 +139,9 @@ def test_init_missing_lookup_db(tmp_path, capsys, monkeypatch):
     monkeypatch.setattr("genechat.cli.resources.files", lambda _pkg: tmp_path / "pkg")
     (tmp_path / "pkg" / "data").mkdir(parents=True)
 
-    try:
+    with pytest.raises(SystemExit) as exc_info:
         main(["init", str(vcf)])
-    except SystemExit as e:
-        assert e.code == 1
+    assert exc_info.value.code == 1
     captured = capsys.readouterr()
     assert "lookup_tables.db not found" in captured.err
 
