@@ -35,6 +35,14 @@ def test_init_writes_config(tmp_path, capsys, monkeypatch):
     config_dir = tmp_path / "config"
     monkeypatch.setattr("genechat.cli.user_config_dir", lambda _app: str(config_dir))
 
+    # Mock pysam.VariantFile so we don't need a real VCF
+    import unittest.mock
+
+    mock_vf = unittest.mock.MagicMock()
+    mock_vf.__enter__ = lambda s: s
+    mock_vf.__exit__ = lambda s, *a: None
+    monkeypatch.setattr("pysam.VariantFile", lambda *a, **kw: mock_vf)
+
     # Stub out the DB existence check to avoid importing build_db
     monkeypatch.setattr(
         "genechat.cli.resources.files",
@@ -76,10 +84,39 @@ def test_init_accepts_csi_index(tmp_path, capsys, monkeypatch):
     pkg_data.mkdir(parents=True)
     (pkg_data / "lookup_tables.db").write_bytes(b"fake")
 
+    # Mock pysam.VariantFile
+    import unittest.mock
+
+    mock_vf = unittest.mock.MagicMock()
+    mock_vf.__enter__ = lambda s: s
+    mock_vf.__exit__ = lambda s, *a: None
+    monkeypatch.setattr("pysam.VariantFile", lambda *a, **kw: mock_vf)
+
     main(["init", str(vcf)])
 
     config_path = config_dir / "config.toml"
     assert config_path.exists()
+
+
+def test_init_invalid_vcf(tmp_path, capsys, monkeypatch):
+    """init fails when VCF exists with index but cannot be opened by pysam."""
+    vcf = tmp_path / "test.vcf.gz"
+    vcf.write_bytes(b"not a real vcf")
+    tbi = tmp_path / "test.vcf.gz.tbi"
+    tbi.write_bytes(b"fake")
+
+    # pysam.VariantFile will raise on invalid data
+    monkeypatch.setattr(
+        "pysam.VariantFile",
+        lambda *a, **kw: (_ for _ in ()).throw(ValueError("not a valid VCF")),
+    )
+
+    try:
+        main(["init", str(vcf)])
+    except SystemExit as e:
+        assert e.code == 1
+    captured = capsys.readouterr()
+    assert "Cannot read VCF" in captured.err
 
 
 def test_no_subcommand_invokes_serve(monkeypatch):

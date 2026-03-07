@@ -91,7 +91,7 @@ bash scripts/setup_references.sh
 # Annotate your VCF (~20-30 minutes, auto-detects references)
 bash scripts/annotate.sh /path/to/your/raw.vcf.gz ./data
 
-# Initialize GeneChat (writes config, prints MCP JSON to paste into Claude)
+# Initialize GeneChat (checks VCF is readable, writes config, prints MCP JSON)
 uv run genechat init ./data/annotated.vcf.gz
 
 # (Optional) Enable GWAS trait search (~58 MB download)

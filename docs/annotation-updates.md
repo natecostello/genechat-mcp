@@ -113,7 +113,7 @@ Default (no flags): --clinvar only (the most common update).
   ##GeneChat_SnpEff=GRCh38.p14
   ##GeneChat_dbSNP=b156
   ```
-  The `genome_summary` tool reads these headers and reports annotation freshness.
+  These headers help you track which annotation sources and versions were used. Future versions of `genome_summary` will parse and report them automatically.
 
 ## Recommended Update Cadence
 

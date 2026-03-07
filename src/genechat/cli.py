@@ -59,18 +59,33 @@ def _run_init(vcf_path_str: str):
         print("Run: tabix -p vcf " + str(vcf_path), file=sys.stderr)
         sys.exit(1)
 
-    # 3. Write config.toml
+    # 3. Try to open the VCF to verify it's valid
+    try:
+        import pysam
+
+        with pysam.VariantFile(str(vcf_path)) as _vf:
+            pass
+    except Exception as exc:
+        print(f"Error: Cannot read VCF: {exc}", file=sys.stderr)
+        print(
+            "Ensure the file is bgzip-compressed and the index matches.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    # 4. Write config.toml
     config_dir = Path(user_config_dir("genechat"))
     config_path = write_config(vcf_path, config_dir)
 
-    # 4. Ensure lookup_tables.db exists
+    # 5. Ensure lookup_tables.db exists
     db_ref = resources.files("genechat") / "data" / "lookup_tables.db"
     with resources.as_file(db_ref) as db_path:
         if not db_path.exists():
-            print("Building lookup database...")
-            from scripts.build_lookup_db import build_db
-
-            build_db()
+            print(
+                "Warning: lookup_tables.db not found. Build it with:",
+                file=sys.stderr,
+            )
+            print("  uv run python scripts/build_lookup_db.py", file=sys.stderr)
 
     # 5. Print results
     print(f"\nConfig written to: {config_path}")

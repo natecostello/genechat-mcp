@@ -77,15 +77,20 @@ def _find_config_file() -> Path | None:
 
 def write_config(vcf_path: Path, config_dir: Path) -> Path:
     """Write a config.toml with the given VCF path. Returns the config file path."""
-    import stat
-
     config_dir.mkdir(parents=True, exist_ok=True)
     config_path = config_dir / "config.toml"
-    config_path.write_text(
-        f'[genome]\nvcf_path = "{vcf_path}"\n',
-        encoding="utf-8",
-    )
-    config_path.chmod(stat.S_IRUSR | stat.S_IWUSR)  # 600
+
+    # Use TOML literal string (single quotes) so backslashes aren't treated as escapes
+    vcf_literal = str(vcf_path).replace("'", "''")
+    content = f"[genome]\nvcf_path = '{vcf_literal}'\n"
+
+    # Create file with 0o600 permissions atomically (no world-readable window)
+    fd = os.open(config_path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    try:
+        os.write(fd, content.encode("utf-8"))
+    finally:
+        os.close(fd)
+
     return config_path
 
 
