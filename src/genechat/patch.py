@@ -169,10 +169,11 @@ class PatchDB:
     # -- Write methods (used during annotation) --
 
     def populate_from_snpeff_stream(self, stream: Iterator[str]) -> int:
-        """Parse SnpEff-annotated VCF stream and INSERT rows.
+        """Parse SnpEff-annotated VCF stream and upsert rows.
 
-        Step 1: creates ALL rows. Extracts ANN field + ID column.
-        Returns the number of rows inserted.
+        Step 1: creates or updates ALL rows. Extracts ANN field + ID column.
+        Uses UPSERT to preserve ClinVar/gnomAD/dbSNP columns on re-runs.
+        Returns the number of rows processed.
         """
         count = 0
         batch = []
