@@ -75,33 +75,6 @@ class TestGenomeSummary:
 
         assert "non-reference variant" in result
 
-    def test_annotation_versions_displayed(self, mock_engine, test_db, test_config):
-        mock_engine.annotation_versions.return_value = {
-            "ClinVar": "2026-03-01",
-            "gnomAD": "v4.1",
-        }
-        mock_engine.stats.return_value = {"total_variants": 100}
-        mock_engine.query_clinvar.return_value = []
-        mock_engine.query_region.return_value = []
-        fn = _setup_tool(mock_engine, test_db, test_config)
-        result = fn()
-
-        assert "Annotation Versions" in result
-        assert "ClinVar" in result
-        assert "2026-03-01" in result
-        assert "gnomAD" in result
-        assert "v4.1" in result
-
-    def test_annotation_versions_empty(self, mock_engine, test_db, test_config):
-        mock_engine.annotation_versions.return_value = {}
-        mock_engine.stats.return_value = {"total_variants": 100}
-        mock_engine.query_clinvar.return_value = []
-        mock_engine.query_region.return_value = []
-        fn = _setup_tool(mock_engine, test_db, test_config)
-        result = fn()
-
-        assert "Annotation Versions" not in result
-
     def test_tool_suggestions(self, mock_engine, test_db, test_config):
         mock_engine.stats.return_value = {"total_variants": 100}
         mock_engine.query_clinvar.return_value = []

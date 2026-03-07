@@ -46,19 +46,6 @@ class VCFEngine:
         except Exception as e:
             raise VCFEngineError(f"Cannot open VCF: {e}") from e
 
-    def annotation_versions(self, prefix: str = "GeneChat_") -> dict[str, str]:
-        """Read ##GeneChat_* (or custom prefix) header lines from the VCF."""
-        versions = {}
-        try:
-            with pysam.VariantFile(str(self.vcf_path)) as vcf:
-                for rec in vcf.header.records:
-                    if rec.type == "GENERIC" and rec.key.startswith(prefix):
-                        label = rec.key[len(prefix) :]
-                        versions[label] = rec.value
-        except (OSError, ValueError) as e:
-            raise VCFEngineError(f"Cannot read VCF headers: {e}") from e
-        return versions
-
     def _get_sample_index(self) -> int:
         """Return the sample index to use (0 unless sample_name specified)."""
         if self._sample_name:
