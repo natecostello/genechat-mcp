@@ -194,10 +194,11 @@ def register(mcp, engine, db, config):
                 lines.append(f"| {rsid} | {pos} | {gt} | {effect} | {impact} | {sig} |")
         elif suppressed_count == 0:
             lines.append(
-                f"No {'/'.join(impacts)} impact variants found. "
-                "Your sequence matches the reference genome in this region "
-                "for the impact levels queried. Try broadening the impact filter "
-                "(e.g. impact_filter='HIGH,MODERATE,LOW,MODIFIER') to see all variants."
+                f"No {'/'.join(impacts)} impact variants found in the returned results "
+                "for this region. Try broadening the impact filter "
+                "(e.g. impact_filter='HIGH,MODERATE,LOW,MODIFIER') to see more variants. "
+                "Note: unannotated variants without rsID or ClinVar data are excluded "
+                "by default."
             )
         else:
             lines.append("No clinically notable variants remain after filtering.")
