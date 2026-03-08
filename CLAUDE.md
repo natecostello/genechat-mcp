@@ -17,6 +17,7 @@ review feedback.
 ## TODO
 
 - [ ] Make GeneChat installable via `uv tool install` / `pip install` — [plan](docs/pip-install-plan.md)
+- [ ] Multi-genome support: named genomes, paired queries — [plan](docs/multi-genome-plan.md)
 
 ## Project Overview
 
@@ -41,7 +42,6 @@ Technically capable individuals with WGS data from consumer providers (Nucleus G
 - Not a diagnostic tool (always includes medical disclaimers)
 - Not a variant caller (assumes pre-called provider VCF)
 - Not a FASTQ/CRAM processor
-- Not multi-user (single genome, local)
 - Not a GUI (MCP server only; UI is the LLM chat)
 
 ---
