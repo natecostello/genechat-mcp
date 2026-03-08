@@ -33,17 +33,17 @@ The `patch.py` layer was fully implemented. The gap was entirely in `download.py
 
 ## Rules That Were Not Followed
 
-1. **Plan Completion Protocol (Global CLAUDE.md):**
+1. **Plan Completion Protocol (`CLAUDE.md`):**
    > "For EACH numbered item or table row, verify implementation by reading the actual code"
 
    The plan's Step 4 (lines 272-289) describes specific bcftools commands and Python parsing. Reading `cli.py:_annotate_dbsnp()` would have immediately shown it was a stub. This verification step was skipped or done at too high a level.
 
-2. **Independent Verification (Global CLAUDE.md):**
+2. **Independent Verification (`CLAUDE.md`):**
    > "Re-read the plan file (not from memory — use the Read tool)"
 
    The plan file was not re-read systematically before reporting complete. Had it been, lines 156-164 (download --dbsnp spec) and 272-289 (Step 4 annotation spec) would have flagged the stubs as incomplete.
 
-3. **Never speculate about implementation status (Global CLAUDE.md):**
+3. **Never speculate about implementation status (`CLAUDE.md`):**
    > "Always read the code before making claims about what is or isn't built"
 
    The stub functions' existence was treated as evidence of implementation without reading what they actually did.
