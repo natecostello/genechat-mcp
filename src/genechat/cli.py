@@ -459,7 +459,8 @@ def _annotate_snpeff(patch, vcf_path: Path, step: int, total: int, is_update: bo
             chroms = list(vf.header.contigs)
 
         total_rows = 0
-        for chrom in chroms:
+        for i, chrom in enumerate(chroms, 1):
+            print(f"    {chrom} ({i}/{len(chroms)})...", end="", flush=True)
             # Per-chromosome to avoid SnpEff OOM
             bcf_proc = subprocess.Popen(
                 ["bcftools", "view", "-r", chrom, str(vcf_path)],
@@ -480,6 +481,7 @@ def _annotate_snpeff(patch, vcf_path: Path, step: int, total: int, is_update: bo
             total_rows += rows
             snpeff_rc = snpeff_proc.wait()
             bcf_rc = bcf_proc.wait()
+            print(f" {rows:,} variants")
             if snpeff_rc != 0:
                 raise RuntimeError(
                     f"snpEff ann failed with exit code {snpeff_rc} on {chrom}"
@@ -588,7 +590,7 @@ def _annotate_gnomad(patch, vcf_path: Path, step: int, total: int, is_update: bo
             vcf_chroms = set(vf.header.contigs)
 
         total_rows = 0
-        for chrom in GNOMAD_CHROMS:
+        for i, chrom in enumerate(GNOMAD_CHROMS, 1):
             chr_name = f"chr{chrom}"
             if chr_name not in vcf_chroms:
                 continue
@@ -596,6 +598,7 @@ def _annotate_gnomad(patch, vcf_path: Path, step: int, total: int, is_update: bo
             if not gnomad_file.exists():
                 continue
 
+            print(f"    chr{chrom} ({i}/{len(GNOMAD_CHROMS)})...", end="", flush=True)
             proc = subprocess.Popen(
                 [
                     "bcftools",
@@ -615,6 +618,7 @@ def _annotate_gnomad(patch, vcf_path: Path, step: int, total: int, is_update: bo
             rows = patch.update_gnomad_from_stream(iter(proc.stdout))
             total_rows += rows
             rc = proc.wait()
+            print(f" {rows:,} variants")
             if rc != 0:
                 stderr = proc.stderr.read() if proc.stderr else ""
                 raise RuntimeError(
