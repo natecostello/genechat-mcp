@@ -130,17 +130,17 @@ Open Claude and ask about your genetics. GeneChat's tools will appear automatica
 
 ```mermaid
 flowchart TD
-    subgraph local["YOUR MACHINE (Local Only)"]
-        vcf["Raw VCF from\nSequencing Provider"]
-        init["genechat init\n(one-time)"]
-        subgraph patch["patch.db (SQLite)"]
-            snpeff["SnpEff → functional impact\n(effect, impact, gene)"]
-            clinvar["ClinVar → clinical significance\n(clnsig, clndn)"]
-            gnomad["gnomAD → population frequency\n(af, af_grpmax)"]
-            dbsnp["dbSNP → rsID identifiers\n(optional, ~20 GB)"]
+    subgraph local["YOUR MACHINE -- Local Only"]
+        vcf["Raw VCF from Sequencing Provider"]
+        init["genechat init -- one-time"]
+        subgraph patch["patch.db -- SQLite"]
+            snpeff["SnpEff: functional impact"]
+            clinvar["ClinVar: clinical significance"]
+            gnomad["gnomAD: population frequency"]
+            dbsnp["dbSNP: rsID identifiers"]
         end
-        subgraph runtime["RUNTIME (no network)"]
-            engine["pysam reads raw VCF ↔\npatch.db + lookup_tables.db"]
+        subgraph runtime["RUNTIME -- no network"]
+            engine["pysam reads raw VCF\npatch.db + lookup_tables.db"]
         end
         server["MCP Server"]
     end
