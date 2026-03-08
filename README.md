@@ -128,25 +128,27 @@ Open Claude and ask about your genetics. GeneChat's tools will appear automatica
 
 ## Architecture
 
-```
-┌─── YOUR MACHINE (Local Only) ─────────────────────────────────┐
-│                                                                │
-│  Raw VCF from Sequencing Provider                              │
-│      ↓                                                         │
-│  genechat init (one-time)                                      │
-│      ↓                                                         │
-│  patch.db (SQLite)                                             │
-│      SnpEff → functional impact    (effect, impact, gene)      │
-│      ClinVar → clinical significance (clnsig, clndn)           │
-│      gnomAD → population frequency  (af, af_grpmax)            │
-│      dbSNP → rsID identifiers       (optional, ~20 GB)         │
-│      ↓                                                         │
-│  RUNTIME (no network)                                          │
-│      pysam reads raw VCF  ←→  patch.db + lookup_tables.db      │
-│      ↓                                                         │
-│  MCP Server ←──── Claude asks questions via MCP protocol       │
-│                                                                │
-└────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph local["YOUR MACHINE (Local Only)"]
+        vcf["Raw VCF from\nSequencing Provider"]
+        init["genechat init\n(one-time)"]
+        subgraph patch["patch.db (SQLite)"]
+            snpeff["SnpEff → functional impact\n(effect, impact, gene)"]
+            clinvar["ClinVar → clinical significance\n(clnsig, clndn)"]
+            gnomad["gnomAD → population frequency\n(af, af_grpmax)"]
+            dbsnp["dbSNP → rsID identifiers\n(optional, ~20 GB)"]
+        end
+        subgraph runtime["RUNTIME (no network)"]
+            engine["pysam reads raw VCF ↔\npatch.db + lookup_tables.db"]
+        end
+        server["MCP Server"]
+    end
+    claude["Claude / LLM Client"]
+
+    vcf --> init --> patch
+    patch --> engine --> server
+    claude -- "MCP protocol" --> server
 ```
 
 Your raw VCF is never modified. Annotations are stored in a separate SQLite patch database (`patch.db`), making updates fast and non-destructive.
