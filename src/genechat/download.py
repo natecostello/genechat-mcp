@@ -174,6 +174,16 @@ def download_dbsnp(force: bool = False) -> Path | None:
     Returns path to the chr-fixed VCF, or None on failure.
     Requires bcftools and tabix for contig rename.
     """
+    # Validate tools upfront before starting a ~20 GB download
+    if not shutil.which("bcftools"):
+        print("  ERROR: bcftools not found. Cannot rename contigs.", file=sys.stderr)
+        print("  Install: brew install bcftools (macOS)", file=sys.stderr)
+        return None
+    if not shutil.which("tabix"):
+        print("  ERROR: tabix not found. Cannot index.", file=sys.stderr)
+        print("  Install: brew install htslib (macOS)", file=sys.stderr)
+        return None
+
     ddir = dbsnp_dir()
     ddir.mkdir(parents=True, exist_ok=True)
 
@@ -200,20 +210,11 @@ def download_dbsnp(force: bool = False) -> Path | None:
 
     # Rename RefSeq contig names (NC_000001.11 → chr1) for bcftools compatibility
     print("  Renaming dbSNP contigs to chr prefix...")
-    if not shutil.which("bcftools"):
-        print("  ERROR: bcftools not found. Cannot rename contigs.", file=sys.stderr)
-        print("  Install: brew install bcftools (macOS)", file=sys.stderr)
-        return None
-    if not shutil.which("tabix"):
-        print("  ERROR: tabix not found. Cannot index.", file=sys.stderr)
-        print("  Install: brew install htslib (macOS)", file=sys.stderr)
-        return None
-
     chr_map = ddir / "refseq_to_chr.txt"
     _write_refseq_chr_map(chr_map)
 
+    tmp = chrfixed.with_suffix(".tmp.vcf.gz")
     try:
-        tmp = chrfixed.with_suffix(".tmp.vcf.gz")
         subprocess.run(
             [
                 "bcftools",
@@ -241,6 +242,7 @@ def download_dbsnp(force: bool = False) -> Path | None:
         if hasattr(e, "stderr") and e.stderr:
             print(f"  {e.stderr.decode()[:500]}", file=sys.stderr)
         chrfixed.unlink(missing_ok=True)
+        tmp.unlink(missing_ok=True)
         return None
     finally:
         chr_map.unlink(missing_ok=True)
