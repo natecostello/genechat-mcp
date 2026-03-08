@@ -108,9 +108,25 @@ def _run_init(vcf_path_str: str):
                 spec = importlib.util.spec_from_file_location(
                     "build_lookup_db", str(build_script)
                 )
-                mod = importlib.util.module_from_spec(spec)
-                spec.loader.exec_module(mod)
-                mod.build_db(seed_dir=seed_dir, db_path=db_path)
+                if spec is None or spec.loader is None:
+                    print(
+                        "Error: unable to load scripts/build_lookup_db.py; "
+                        "cannot build lookup_tables.db.",
+                        file=sys.stderr,
+                    )
+                    sys.exit(1)
+
+                try:
+                    mod = importlib.util.module_from_spec(spec)
+                    spec.loader.exec_module(mod)
+                    mod.build_db(seed_dir=seed_dir, db_path=db_path)
+                except Exception as exc:
+                    print(
+                        "Error: failed to build lookup_tables.db from seed data.",
+                        file=sys.stderr,
+                    )
+                    print(f"  Reason: {exc}", file=sys.stderr)
+                    sys.exit(1)
                 print(f"  Built: {db_path}")
             else:
                 print(
