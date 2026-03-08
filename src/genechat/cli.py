@@ -451,42 +451,46 @@ def _annotate_snpeff(patch, vcf_path: Path, step: int, total: int, is_update: bo
 
     patch.set_metadata("snpeff", db_name, status="pending")
 
-    # Get chromosome list from VCF
-    import pysam
+    try:
+        # Get chromosome list from VCF
+        import pysam
 
-    with pysam.VariantFile(str(vcf_path)) as vf:
-        chroms = list(vf.header.contigs)
+        with pysam.VariantFile(str(vcf_path)) as vf:
+            chroms = list(vf.header.contigs)
 
-    total_rows = 0
-    for chrom in chroms:
-        # Per-chromosome to avoid SnpEff OOM
-        bcf_proc = subprocess.Popen(
-            ["bcftools", "view", "-r", chrom, str(vcf_path)],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,
-        )
-        snpeff_proc = subprocess.Popen(
-            ["snpEff", "ann", "-noStats", db_name, "-"],
-            stdin=bcf_proc.stdout,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,
-            text=True,
-        )
-        # Allow bcf_proc to receive SIGPIPE if snpeff_proc exits
-        bcf_proc.stdout.close()
-
-        rows = patch.populate_from_snpeff_stream(iter(snpeff_proc.stdout))
-        total_rows += rows
-        snpeff_rc = snpeff_proc.wait()
-        bcf_rc = bcf_proc.wait()
-        if snpeff_rc != 0:
-            raise RuntimeError(
-                f"snpEff ann failed with exit code {snpeff_rc} on {chrom}"
+        total_rows = 0
+        for chrom in chroms:
+            # Per-chromosome to avoid SnpEff OOM
+            bcf_proc = subprocess.Popen(
+                ["bcftools", "view", "-r", chrom, str(vcf_path)],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
             )
-        if bcf_rc != 0:
-            raise RuntimeError(
-                f"bcftools view failed with exit code {bcf_rc} on {chrom}"
+            snpeff_proc = subprocess.Popen(
+                ["snpEff", "ann", "-noStats", db_name, "-"],
+                stdin=bcf_proc.stdout,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+                text=True,
             )
+            # Allow bcf_proc to receive SIGPIPE if snpeff_proc exits
+            bcf_proc.stdout.close()
+
+            rows = patch.populate_from_snpeff_stream(iter(snpeff_proc.stdout))
+            total_rows += rows
+            snpeff_rc = snpeff_proc.wait()
+            bcf_rc = bcf_proc.wait()
+            if snpeff_rc != 0:
+                raise RuntimeError(
+                    f"snpEff ann failed with exit code {snpeff_rc} on {chrom}"
+                )
+            if bcf_rc != 0:
+                raise RuntimeError(
+                    f"bcftools view failed with exit code {bcf_rc} on {chrom}"
+                )
+    except Exception:
+        patch.set_metadata("snpeff", db_name, status="failed")
+        raise
 
     patch.set_metadata("snpeff", db_name, status="complete")
     print(f"    {total_rows} variants processed")
@@ -510,9 +514,10 @@ def _annotate_clinvar(patch, vcf_path: Path, step: int, total: int, is_update: b
     import tempfile
 
     work_dir = Path(tempfile.mkdtemp(prefix="genechat_"))
-    clinvar_use = _contig_rename_clinvar(clinvar_vcf, work_dir)
 
     try:
+        clinvar_use = _contig_rename_clinvar(clinvar_vcf, work_dir)
+
         proc = subprocess.Popen(
             [
                 "bcftools",
@@ -534,8 +539,15 @@ def _annotate_clinvar(patch, vcf_path: Path, step: int, total: int, is_update: b
             raise RuntimeError(
                 f"bcftools annotate (ClinVar) failed with exit code {rc}: {stderr}"
             )
-    finally:
-        # Clean up work directory
+    except Exception:
+        patch.set_metadata("clinvar", version or "unknown", status="failed")
+        # Clean up work directory before re-raising
+        import shutil as _shutil
+
+        _shutil.rmtree(work_dir, ignore_errors=True)
+        raise
+    else:
+        # Clean up work directory on success
         import shutil as _shutil
 
         _shutil.rmtree(work_dir, ignore_errors=True)
@@ -569,45 +581,49 @@ def _annotate_gnomad(patch, vcf_path: Path, step: int, total: int, is_update: bo
 
     patch.set_metadata("gnomad", "v4.1", status="pending")
 
-    import pysam
+    try:
+        import pysam
 
-    with pysam.VariantFile(str(vcf_path)) as vf:
-        vcf_chroms = set(vf.header.contigs)
+        with pysam.VariantFile(str(vcf_path)) as vf:
+            vcf_chroms = set(vf.header.contigs)
 
-    total_rows = 0
-    for chrom in GNOMAD_CHROMS:
-        chr_name = f"chr{chrom}"
-        if chr_name not in vcf_chroms:
-            continue
-        gnomad_file = gnomad_chr_path(chrom)
-        if not gnomad_file.exists():
-            continue
+        total_rows = 0
+        for chrom in GNOMAD_CHROMS:
+            chr_name = f"chr{chrom}"
+            if chr_name not in vcf_chroms:
+                continue
+            gnomad_file = gnomad_chr_path(chrom)
+            if not gnomad_file.exists():
+                continue
 
-        proc = subprocess.Popen(
-            [
-                "bcftools",
-                "annotate",
-                "-a",
-                str(gnomad_file),
-                "-c",
-                "INFO/AF,INFO/AF_grpmax",
-                "-r",
-                chr_name,
-                str(vcf_path),
-            ],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-        )
-        rows = patch.update_gnomad_from_stream(iter(proc.stdout))
-        total_rows += rows
-        rc = proc.wait()
-        if rc != 0:
-            stderr = proc.stderr.read() if proc.stderr else ""
-            raise RuntimeError(
-                f"bcftools annotate (gnomAD) failed with exit code {rc} "
-                f"on chr{chrom}: {stderr}"
+            proc = subprocess.Popen(
+                [
+                    "bcftools",
+                    "annotate",
+                    "-a",
+                    str(gnomad_file),
+                    "-c",
+                    "INFO/AF,INFO/AF_grpmax",
+                    "-r",
+                    chr_name,
+                    str(vcf_path),
+                ],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
             )
+            rows = patch.update_gnomad_from_stream(iter(proc.stdout))
+            total_rows += rows
+            rc = proc.wait()
+            if rc != 0:
+                stderr = proc.stderr.read() if proc.stderr else ""
+                raise RuntimeError(
+                    f"bcftools annotate (gnomAD) failed with exit code {rc} "
+                    f"on chr{chrom}: {stderr}"
+                )
+    except Exception:
+        patch.set_metadata("gnomad", "v4.1", status="failed")
+        raise
 
     patch.set_metadata("gnomad", "v4.1", status="complete")
     print(f"    {total_rows} variants updated")
@@ -789,6 +805,21 @@ def _run_init(args):
 # ---------------------------------------------------------------------------
 
 
+def _is_version_stale(installed: str, latest: str) -> bool:
+    """Check if installed version is older than latest.
+
+    Only compares lexicographically when both look like ISO dates (YYYY-MM-DD).
+    Non-date strings like 'unknown' or 'GRCh38.p14' are always treated as stale.
+    """
+    import re
+
+    date_re = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+    if date_re.match(latest) and date_re.match(installed):
+        return latest > installed
+    # Non-date installed version — treat as stale
+    return True
+
+
 def _run_update(args):
     """Check for newer reference versions, optionally apply updates."""
     from genechat.update import check_all_versions, format_status_table
@@ -817,7 +848,7 @@ def _run_update(args):
             meta = installed.get(source, {})
             inst_ver = meta.get("version", "")
             latest_ver = latest.get(source)
-            if latest_ver and (not inst_ver or latest_ver > inst_ver):
+            if latest_ver and (not inst_ver or _is_version_stale(inst_ver, latest_ver)):
                 stale.append(source)
 
         if not stale:
@@ -880,12 +911,20 @@ def _run_status():
         print("\nAnnotations:")
         for source in ["snpeff", "clinvar", "gnomad", "dbsnp"]:
             info = meta.get(source, {})
-            if info and info.get("status") == "complete":
+            if info:
+                status = info.get("status", "unknown")
                 version = info.get("version", "?")
                 date = info.get("updated_at", "?")
-                print(f"  {source:<10} {version:<20} (applied {date})")
+                if status == "complete":
+                    print(f"  {source:<10} {version:<20} (applied {date})")
+                elif status == "pending":
+                    print(f"  {source:<10} {version:<20} (in progress)")
+                elif status == "failed":
+                    print(f"  {source:<10} {version:<20} (FAILED)")
+                else:
+                    print(f"  {source:<10} {version:<20} ({status})")
             else:
-                print(f"  {source:<10} not installed")
+                print(f"  {source:<10} not applied")
     else:
         print("  Patch DB: not built")
         print("  Run: genechat annotate")

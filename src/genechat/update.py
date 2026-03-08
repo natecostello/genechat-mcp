@@ -31,6 +31,25 @@ def check_clinvar_version() -> str | None:
     return None
 
 
+def _is_newer(latest: str, installed: str) -> bool:
+    """Compare version strings safely.
+
+    Only treats both as comparable if they look like ISO dates (YYYY-MM-DD).
+    Non-date strings like 'unknown' or 'GRCh38.p14' are always considered stale
+    (returns True), since we can't reliably compare them.
+    """
+    import re
+
+    date_re = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+    if date_re.match(latest) and date_re.match(installed):
+        return latest > installed
+    # If installed version is non-date (e.g. "unknown"), treat as stale
+    if not date_re.match(installed):
+        return True
+    # Latest is non-date but installed is a date — can't compare, assume stale
+    return True
+
+
 def format_status_table(
     installed: dict[str, dict], latest: dict[str, str | None]
 ) -> str:
@@ -65,7 +84,7 @@ def format_status_table(
         elif inst_ver == "not installed":
             status = "not installed"
             latest_display = latest_ver
-        elif latest_ver != inst_ver and latest_ver > inst_ver:
+        elif latest_ver != inst_ver and _is_newer(latest_ver, inst_ver):
             status = "update available"
             latest_display = latest_ver
         else:
