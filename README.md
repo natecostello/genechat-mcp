@@ -137,6 +137,7 @@ Open Claude and ask about your genetics. GeneChat's tools will appear automatica
 │      SnpEff → functional impact    (effect, impact, gene)      │
 │      ClinVar → clinical significance (clnsig, clndn)           │
 │      gnomAD → population frequency  (af, af_grpmax)            │
+│      dbSNP → rsID identifiers       (optional, ~20 GB)         │
 │      ↓                                                         │
 │  RUNTIME (no network)                                          │
 │      pysam reads raw VCF  ←→  patch.db + lookup_tables.db      │
