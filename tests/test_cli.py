@@ -300,6 +300,66 @@ class TestAnnotate:
         assert "snpeff" in out
         assert "GRCh38.p14" in out
 
+    def test_annotate_dbsnp_calls_bcftools(self, tmp_path, monkeypatch, capsys):
+        """_annotate_dbsnp invokes bcftools with correct args and updates metadata."""
+        from genechat.cli import _annotate_dbsnp
+        from genechat.patch import PatchDB
+
+        patch_path = tmp_path / "test.patch.db"
+        patch = PatchDB.create(patch_path)
+
+        # Populate a variant without rsID
+        snpeff_lines = [
+            "chr12\t21178615\t.\tT\tC\t.\tPASS\t"
+            "ANN=C|missense_variant|MODERATE|SLCO1B1||\n"
+        ]
+        patch.populate_from_snpeff_stream(iter(snpeff_lines))
+
+        # Mock dbsnp_path and _dbsnp_version
+        fake_dbsnp = tmp_path / "dbsnp_chrfixed.vcf.gz"
+        fake_dbsnp.write_bytes(b"fake")
+        monkeypatch.setattr("genechat.download.dbsnp_path", lambda: fake_dbsnp)
+        monkeypatch.setattr("genechat.cli._dbsnp_version", lambda _path: "Build 156")
+
+        popen_calls = []
+        fake_vcf = tmp_path / "raw.vcf.gz"
+        fake_vcf.write_bytes(b"fake")
+
+        # Mock Popen to return dbSNP-annotated VCF lines
+        class MockProc:
+            def __init__(self, cmd, **kw):
+                popen_calls.append(cmd)
+                self.stdout = iter(
+                    ["chr12\t21178615\trs4149056\tT\tC\t.\tPASS\t.\tGT\t0/1\n"]
+                )
+                self.returncode = 0
+
+            def wait(self):
+                return 0
+
+        monkeypatch.setattr("genechat.cli.subprocess.Popen", MockProc)
+
+        _annotate_dbsnp(patch, fake_vcf, step=1, total=1, is_update=False)
+
+        # Verify bcftools was called with -c ID
+        assert len(popen_calls) == 1
+        cmd = popen_calls[0]
+        assert "bcftools" in cmd[0]
+        assert "-c" in cmd
+        assert "ID" in cmd
+
+        # Verify rsID was written to patch.db
+        ann = patch.get_annotation("chr12", 21178615, "T", "C")
+        assert ann["rsid"] == "rs4149056"
+        assert ann["rsid_source"] == "dbsnp"
+
+        # Verify metadata was set
+        meta = patch.get_metadata()
+        assert meta["dbsnp"]["version"] == "Build 156"
+        assert meta["dbsnp"]["status"] == "complete"
+
+        patch.close()
+
 
 # ---------------------------------------------------------------------------
 # genechat status
