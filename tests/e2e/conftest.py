@@ -3,9 +3,11 @@
 These tests are auto-skipped when GENECHAT_GIAB_VCF is not set.
 To run:
     uv run python scripts/setup_giab.py ./giab
-    uv run genechat init ./giab/HG001_annotated.vcf.gz
     export GENECHAT_GIAB_VCF=./giab/HG001_annotated.vcf.gz
     uv run pytest tests/e2e/ -v
+
+Optional — to also exercise patch-db mode:
+    uv run genechat init ./giab/HG001_annotated.vcf.gz
 """
 
 import os

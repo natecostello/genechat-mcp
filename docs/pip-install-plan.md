@@ -335,6 +335,6 @@ Phase E: Testing (Items 13-14)
 | Risk | Mitigation |
 |------|------------|
 | Committing binary DB to git | At 1.7 MB it's negligible. Use `.gitattributes binary`. Only regenerate when seed data changes. |
-| `importlib.resources` breaks for zip packages | We ship a wheel (not zip). `files()` returns a `Path` for wheels installed to disk. |
+| `importlib.resources` breaks for zip packages | Use `importlib.resources.files(...).joinpath(...).as_file()` to obtain a real filesystem `Path` even when the package is loaded from a zip importer. |
 | GWAS `ATTACH DATABASE` needs write access | Open GWAS DB in read-only mode via URI: `file:path?mode=ro`. |
 | `uv tool install` isolated environments | pysam ships binary wheels on supported platforms. Same as today. |
