@@ -64,7 +64,7 @@ GeneChat and bio-mcp-blast are the heaviest here — bioinformatics reference da
 
 | Server | Method | Command |
 |--------|--------|---------|
-| **GeneChat** | `genechat init` (writes config + prints MCP JSON) | `uv run genechat init ./data/annotated.vcf.gz` |
+| **GeneChat** | `genechat init` (writes config + prints MCP JSON) | `uv run genechat init /path/to/raw.vcf.gz` |
 | **bio-mcp-blast** | 6+ env vars | `export BLASTDB=... BLAST_NUM_THREADS=...` |
 | **SCMCP** | None needed | — |
 | **Graphiti** | `.env` file (6+ vars) | `cp .env.example .env && edit` |
