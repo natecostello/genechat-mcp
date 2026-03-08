@@ -22,7 +22,7 @@ Each annotation layer writes to distinct columns in `patch.db` with no cross-dep
 | ClinVar | `clnsig`, `clndn`, `clnrevstat` | No (matches on CHROM/POS/REF/ALT) |
 | gnomAD | `af`, `af_grpmax` | No (matches on CHROM/POS/REF/ALT) |
 
-Because the columns are independent, any single layer can be updated in isolation. The `genechat annotate` command uses UPSERT with COALESCE to preserve existing annotations when updating a single layer.
+Because the columns are independent, any single layer can be updated in isolation without overwriting other layers. Base rows in `patch.db` are populated by the initial SnpEff run using an UPSERT, and subsequent ClinVar/gnomAD (and other layer) updates use targeted `UPDATE` statements that only modify their own columns, preserving all other annotation layers.
 
 ## Updating Individual Layers
 
