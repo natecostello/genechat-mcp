@@ -180,6 +180,105 @@ class TestDbsnpDownload:
         assert result == ddir / "dbsnp_chrfixed.vcf.gz"
         assert "already downloaded" in capsys.readouterr().out
 
+    def test_fails_without_bcftools(self, monkeypatch, tmp_path, capsys):
+        monkeypatch.setattr("genechat.download.REFERENCES_DIR", tmp_path / "refs")
+        monkeypatch.setattr("shutil.which", lambda name: None)
+
+        result = download_dbsnp()
+        assert result is None
+        assert "bcftools not found" in capsys.readouterr().err
+
+    def test_fails_without_tabix(self, monkeypatch, tmp_path, capsys):
+        monkeypatch.setattr("genechat.download.REFERENCES_DIR", tmp_path / "refs")
+        monkeypatch.setattr(
+            "shutil.which",
+            lambda name: "/usr/bin/bcftools" if name == "bcftools" else None,
+        )
+
+        result = download_dbsnp()
+        assert result is None
+        assert "tabix not found" in capsys.readouterr().err
+
+    def test_calls_bcftools_rename_and_tabix(self, monkeypatch, tmp_path, capsys):
+        """Verify bcftools annotate --rename-chrs and tabix are called correctly."""
+        import subprocess
+
+        refs = tmp_path / "refs"
+        monkeypatch.setattr("genechat.download.REFERENCES_DIR", refs)
+        monkeypatch.setattr("shutil.which", lambda name: f"/usr/bin/{name}")
+
+        # Pre-create raw dbSNP files so download is skipped
+        ddir = refs / "dbsnp"
+        ddir.mkdir(parents=True)
+        raw = ddir / "GCF_000001405.40.gz"
+        raw.write_bytes(b"fake-vcf")
+        raw.with_suffix(raw.suffix + ".tbi").write_bytes(b"fake-tbi")
+
+        calls = []
+
+        def mock_run(cmd, **kwargs):
+            calls.append(cmd)
+            # For bcftools annotate, create the output file
+            if "annotate" in cmd and "-o" in cmd:
+                out_idx = cmd.index("-o") + 1
+                from pathlib import Path as P
+
+                P(cmd[out_idx]).write_bytes(b"renamed")
+            return subprocess.CompletedProcess(cmd, 0)
+
+        monkeypatch.setattr("subprocess.run", mock_run)
+
+        # Mock _download_file to avoid network
+        monkeypatch.setattr(
+            "genechat.download._download_file", lambda url, dest, label="": None
+        )
+
+        result = download_dbsnp()
+        assert result is not None
+
+        # Verify bcftools was called with --rename-chrs
+        bcf_call = [c for c in calls if "bcftools" in c[0] and "--rename-chrs" in c]
+        assert len(bcf_call) == 1
+        assert "-Oz" in bcf_call[0]
+
+        # Verify tabix was called
+        tabix_call = [c for c in calls if "tabix" in c[0]]
+        assert len(tabix_call) == 1
+        assert "-p" in tabix_call[0]
+        assert "vcf" in tabix_call[0]
+
+    def test_cleans_up_tmp_on_failure(self, monkeypatch, tmp_path, capsys):
+        """Verify tmp file is cleaned up when bcftools fails."""
+        import subprocess
+
+        refs = tmp_path / "refs"
+        monkeypatch.setattr("genechat.download.REFERENCES_DIR", refs)
+        monkeypatch.setattr("shutil.which", lambda name: f"/usr/bin/{name}")
+
+        # Pre-create raw dbSNP files
+        ddir = refs / "dbsnp"
+        ddir.mkdir(parents=True)
+        raw = ddir / "GCF_000001405.40.gz"
+        raw.write_bytes(b"fake-vcf")
+        raw.with_suffix(raw.suffix + ".tbi").write_bytes(b"fake-tbi")
+
+        def mock_run(cmd, **kwargs):
+            if "annotate" in cmd:
+                raise subprocess.CalledProcessError(1, cmd, stderr=b"bcf error")
+            return subprocess.CompletedProcess(cmd, 0)
+
+        monkeypatch.setattr("subprocess.run", mock_run)
+        monkeypatch.setattr(
+            "genechat.download._download_file", lambda url, dest, label="": None
+        )
+
+        result = download_dbsnp()
+        assert result is None
+
+        # Verify no tmp file left behind
+        tmp_files = list(ddir.glob("*.tmp*"))
+        assert len(tmp_files) == 0
+
 
 class TestRefseqChrMap:
     def test_writes_all_chromosomes(self, tmp_path):
