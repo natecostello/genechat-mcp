@@ -2,6 +2,8 @@
 
 Annotations are stored in a SQLite patch database (`patch.db`), separate from the raw VCF. Each annotation layer can be updated independently using `genechat annotate`.
 
+> **Invocation:** Commands below assume `genechat` is on your PATH. In a clone-based setup, prefix with `uv run` (e.g., `uv run genechat annotate --clinvar`).
+
 ## Background
 
 | Layer | What changes | Release cadence | Update command |
