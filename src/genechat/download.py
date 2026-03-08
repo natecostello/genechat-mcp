@@ -60,7 +60,9 @@ def _download_file(url: str, dest: Path, label: str = "") -> None:
             print(f"  Downloading {display}{total_mb}...")
             with open(tmp, "wb") as f:
                 shutil.copyfileobj(resp, f)
-        tmp.rename(dest)
+        import os
+
+        os.replace(tmp, dest)
     except Exception:
         tmp.unlink(missing_ok=True)
         raise
@@ -89,7 +91,7 @@ def download_snpeff_db() -> str | None:
             file=sys.stderr,
         )
         print("  Install: brew install brewsci/bio/snpeff (macOS)", file=sys.stderr)
-        print("           conda install -c bioconda snpsift (Linux)", file=sys.stderr)
+        print("           conda install -c bioconda snpeff (Linux)", file=sys.stderr)
         return None
 
     db_name = _detect_snpeff_db()
@@ -157,12 +159,13 @@ def download_dbsnp(force: bool = False) -> Path | None:
 
 
 def gnomad_installed() -> bool:
-    """Check if gnomAD exome VCFs are fully installed."""
+    """Check if gnomAD exome VCFs and indexes are fully installed."""
     gdir = gnomad_dir()
     if not gdir.exists():
         return False
     return all(
         (gdir / f"gnomad.exomes.v4.1.sites.chr{c}.vcf.bgz").exists()
+        and (gdir / f"gnomad.exomes.v4.1.sites.chr{c}.vcf.bgz.tbi").exists()
         for c in GNOMAD_CHROMS
     )
 

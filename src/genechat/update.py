@@ -65,7 +65,7 @@ def format_status_table(
         elif inst_ver == "not installed":
             status = "not installed"
             latest_display = latest_ver
-        elif latest_ver != inst_date and latest_ver > (inst_date or ""):
+        elif latest_ver != inst_ver and latest_ver > inst_ver:
             status = "update available"
             latest_display = latest_ver
         else:

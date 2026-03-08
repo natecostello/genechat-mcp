@@ -54,8 +54,19 @@ class TestInstalled:
         gdir.mkdir(parents=True)
         for c in GNOMAD_CHROMS:
             (gdir / f"gnomad.exomes.v4.1.sites.chr{c}.vcf.bgz").write_bytes(b"x")
+            (gdir / f"gnomad.exomes.v4.1.sites.chr{c}.vcf.bgz.tbi").write_bytes(b"x")
         monkeypatch.setattr("genechat.download.REFERENCES_DIR", refs)
         assert gnomad_installed() is True
+
+    def test_gnomad_installed_missing_tbi(self, monkeypatch, tmp_path):
+        refs = tmp_path / "refs"
+        gdir = refs / "gnomad_exomes_v4"
+        gdir.mkdir(parents=True)
+        for c in GNOMAD_CHROMS:
+            (gdir / f"gnomad.exomes.v4.1.sites.chr{c}.vcf.bgz").write_bytes(b"x")
+        # No .tbi files
+        monkeypatch.setattr("genechat.download.REFERENCES_DIR", refs)
+        assert gnomad_installed() is False
 
     def test_snpeff_installed(self, monkeypatch):
         monkeypatch.setattr("shutil.which", lambda name: "/usr/bin/snpEff")
