@@ -378,6 +378,56 @@ class TestAnnotate:
 
         patch.close()
 
+    def test_annotate_dbsnp_failure_sets_metadata(self, tmp_path, monkeypatch, capsys):
+        """_annotate_dbsnp sets metadata to 'failed' on bcftools failure."""
+        from genechat.cli import _annotate_dbsnp
+        from genechat.patch import PatchDB
+
+        patch_path = tmp_path / "test.patch.db"
+        patch = PatchDB.create(patch_path)
+
+        snpeff_lines = [
+            "chr12\t21178615\t.\tT\tC\t.\tPASS\t"
+            "ANN=C|missense_variant|MODERATE|SLCO1B1||\n"
+        ]
+        patch.populate_from_snpeff_stream(iter(snpeff_lines))
+
+        fake_dbsnp = tmp_path / "dbsnp_chrfixed.vcf.gz"
+        fake_dbsnp.write_bytes(b"fake")
+        monkeypatch.setattr("genechat.download.dbsnp_path", lambda: fake_dbsnp)
+        monkeypatch.setattr("genechat.cli._dbsnp_version", lambda _path: "Build 156")
+
+        fake_vcf = tmp_path / "raw.vcf.gz"
+        fake_vcf.write_bytes(b"fake")
+
+        class MockStdout:
+            def __iter__(self):
+                return iter([])
+
+            def close(self):
+                pass
+
+        class MockProc:
+            def __init__(self, cmd, **kw):
+                self.stdout = MockStdout()
+                self.returncode = 1
+
+            def wait(self):
+                return 1
+
+            def poll(self):
+                return 1
+
+        monkeypatch.setattr("genechat.cli.subprocess.Popen", MockProc)
+
+        with pytest.raises(RuntimeError, match="failed with exit code 1"):
+            _annotate_dbsnp(patch, fake_vcf, step=1, total=1, is_update=False)
+
+        meta = patch.get_metadata()
+        assert meta["dbsnp"]["status"] == "failed"
+
+        patch.close()
+
 
 # ---------------------------------------------------------------------------
 # genechat status
