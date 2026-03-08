@@ -67,11 +67,11 @@ genechat annotate --all
 
 ## Checking for Updates
 
-`genechat update` checks installed reference versions against the latest available:
+`genechat update` shows installed reference versions and automatically checks ClinVar against the latest available release. For other sources (gnomAD, SnpEff, dbSNP), it reports the installed state but may show "check unavailable" when no programmatic version check exists:
 
 ```bash
-genechat update           # Check for newer versions (display only)
-genechat update --apply   # Download newer versions and re-annotate
+genechat update           # Check ClinVar for newer versions; report other layer status
+genechat update --apply   # Download newer ClinVar and re-annotate (other layers unchanged)
 ```
 
 ## Viewing Current State
