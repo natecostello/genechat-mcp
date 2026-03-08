@@ -174,16 +174,6 @@ def download_dbsnp(force: bool = False) -> Path | None:
     Returns path to the chr-fixed VCF, or None on failure.
     Requires bcftools and tabix for contig rename.
     """
-    # Validate tools upfront before starting a ~20 GB download
-    if not shutil.which("bcftools"):
-        print("  ERROR: bcftools not found. Cannot rename contigs.", file=sys.stderr)
-        print("  Install: brew install bcftools (macOS)", file=sys.stderr)
-        return None
-    if not shutil.which("tabix"):
-        print("  ERROR: tabix not found. Cannot index.", file=sys.stderr)
-        print("  Install: brew install htslib (macOS)", file=sys.stderr)
-        return None
-
     ddir = dbsnp_dir()
     ddir.mkdir(parents=True, exist_ok=True)
 
@@ -193,6 +183,16 @@ def download_dbsnp(force: bool = False) -> Path | None:
     if chrfixed.exists() and chrfixed_tbi.exists() and not force:
         print(f"  dbSNP already downloaded: {chrfixed}")
         return chrfixed
+
+    # Validate tools before starting a ~20 GB download
+    if not shutil.which("bcftools"):
+        print("  ERROR: bcftools not found. Cannot rename contigs.", file=sys.stderr)
+        print("  Install: brew install bcftools (macOS)", file=sys.stderr)
+        return None
+    if not shutil.which("tabix"):
+        print("  ERROR: tabix not found. Cannot index.", file=sys.stderr)
+        print("  Install: brew install htslib (macOS)", file=sys.stderr)
+        return None
 
     raw_vcf = dbsnp_raw_path()
     raw_tbi = raw_vcf.with_suffix(raw_vcf.suffix + ".tbi")

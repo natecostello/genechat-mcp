@@ -175,6 +175,8 @@ class TestDbsnpDownload:
         (ddir / "dbsnp_chrfixed.vcf.gz").write_bytes(b"fake")
         (ddir / "dbsnp_chrfixed.vcf.gz.tbi").write_bytes(b"fake")
         monkeypatch.setattr("genechat.download.REFERENCES_DIR", refs)
+        # Ensure test is hermetic even without bcftools/tabix on PATH
+        monkeypatch.setattr("shutil.which", lambda name: None)
 
         result = download_dbsnp()
         assert result == ddir / "dbsnp_chrfixed.vcf.gz"
