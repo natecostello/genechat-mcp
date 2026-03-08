@@ -107,7 +107,7 @@ uv run genechat init /path/to/your/raw.vcf.gz
 This will:
 1. Download ClinVar and SnpEff databases
 2. Build a patch database with functional annotations and clinical significance
-3. Write a config file to `~/.config/genechat/config.toml`
+3. Write a `config.toml` to your OS config directory (`~/Library/Application Support/genechat/` on macOS, `~/.config/genechat/` on Linux)
 4. Print the MCP JSON to paste into Claude Desktop or Claude Code
 
 **Optional extras:**
