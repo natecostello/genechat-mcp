@@ -36,7 +36,7 @@ Most complex servers require cloning. Only SCMCP, GDAL MCP, and Engram (binary) 
 
 | Server | Data | Size | Command |
 |--------|------|------|---------|
-| **GeneChat** | ClinVar + SnpEff DB + gnomAD (optional) | ~10 GB | `genechat download [--gnomad]` |
+| **GeneChat** | ClinVar + SnpEff DB + gnomAD (optional) | ~10 GB | `uv run genechat download [--gnomad]` |
 | **bio-mcp-blast** | BLAST databases (nt, nr, swissprot) | 100+ GB | `update_blastdb.pl --decompress nt` |
 | **SCMCP** | None (operates on user data) | — | — |
 | **Graphiti** | Neo4j (Docker container) | ~500 MB | `docker compose up` |
@@ -50,7 +50,7 @@ GeneChat and bio-mcp-blast are the heaviest here — bioinformatics reference da
 
 | Server | What | Time | Command |
 |--------|------|------|---------|
-| **GeneChat** | Build patch.db (SnpEff → ClinVar → gnomAD) | ~20-30 min | `genechat annotate --all` (or via `genechat init`) |
+| **GeneChat** | Build patch.db (SnpEff → ClinVar → gnomAD) | ~20-30 min | `uv run genechat annotate --all` (or via `uv run genechat init`) |
 | **bio-mcp-blast** | None (databases used as-is) | — | — |
 | **SCMCP** | None | — | — |
 | **Graphiti** | None (graph built at runtime) | — | — |
@@ -92,7 +92,7 @@ GeneChat follows the standard `uv run` pattern. GDAL MCP is the gold standard (`
 
 | Server | Total commands to working server | External services needed |
 |--------|--------------------------------|------------------------|
-| **GeneChat** | 5 (install tools, clone, setup refs, annotate, init) | None |
+| **GeneChat** | 5 (install tools, clone, download refs, annotate, init) | None |
 | **bio-mcp-blast** | 4+ (install BLAST, clone, download DBs, set env vars) | None |
 | **SCMCP** | 1 (`pip install scmcp`) | None |
 | **Graphiti** | 5 (install uv, clone, configure .env, docker compose, start server) | Docker (Neo4j), OpenAI API |
