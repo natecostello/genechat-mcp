@@ -2,10 +2,16 @@
 
 from genechat.download import (
     GNOMAD_CHROMS,
+    _write_refseq_chr_map,
     clinvar_installed,
     clinvar_path,
     clinvar_tbi_path,
+    dbsnp_dir,
+    dbsnp_installed,
+    dbsnp_path,
+    dbsnp_raw_path,
     download_clinvar,
+    download_dbsnp,
     gnomad_installed,
     references_dir,
     snpeff_installed,
@@ -121,3 +127,69 @@ class TestDetectSnpeffDb:
 
         monkeypatch.setattr("subprocess.run", mock_run)
         assert _detect_snpeff_db() == "GRCh38.86"
+
+
+class TestDbsnpPaths:
+    def test_dbsnp_dir(self, monkeypatch, tmp_path):
+        monkeypatch.setattr("genechat.download.REFERENCES_DIR", tmp_path / "refs")
+        d = dbsnp_dir()
+        assert d == tmp_path / "refs" / "dbsnp"
+
+    def test_dbsnp_raw_path(self, monkeypatch, tmp_path):
+        monkeypatch.setattr("genechat.download.REFERENCES_DIR", tmp_path / "refs")
+        assert dbsnp_raw_path().name == "GCF_000001405.40.gz"
+
+    def test_dbsnp_path(self, monkeypatch, tmp_path):
+        monkeypatch.setattr("genechat.download.REFERENCES_DIR", tmp_path / "refs")
+        assert dbsnp_path().name == "dbsnp_chrfixed.vcf.gz"
+
+
+class TestDbsnpInstalled:
+    def test_false_when_missing(self, monkeypatch, tmp_path):
+        monkeypatch.setattr("genechat.download.REFERENCES_DIR", tmp_path / "refs")
+        assert dbsnp_installed() is False
+
+    def test_false_when_no_tbi(self, monkeypatch, tmp_path):
+        refs = tmp_path / "refs"
+        ddir = refs / "dbsnp"
+        ddir.mkdir(parents=True)
+        (ddir / "dbsnp_chrfixed.vcf.gz").write_bytes(b"fake")
+        monkeypatch.setattr("genechat.download.REFERENCES_DIR", refs)
+        assert dbsnp_installed() is False
+
+    def test_true_when_both_exist(self, monkeypatch, tmp_path):
+        refs = tmp_path / "refs"
+        ddir = refs / "dbsnp"
+        ddir.mkdir(parents=True)
+        (ddir / "dbsnp_chrfixed.vcf.gz").write_bytes(b"fake")
+        (ddir / "dbsnp_chrfixed.vcf.gz.tbi").write_bytes(b"fake")
+        monkeypatch.setattr("genechat.download.REFERENCES_DIR", refs)
+        assert dbsnp_installed() is True
+
+
+class TestDbsnpDownload:
+    def test_skips_when_existing(self, monkeypatch, tmp_path, capsys):
+        refs = tmp_path / "refs"
+        ddir = refs / "dbsnp"
+        ddir.mkdir(parents=True)
+        (ddir / "dbsnp_chrfixed.vcf.gz").write_bytes(b"fake")
+        (ddir / "dbsnp_chrfixed.vcf.gz.tbi").write_bytes(b"fake")
+        monkeypatch.setattr("genechat.download.REFERENCES_DIR", refs)
+
+        result = download_dbsnp()
+        assert result == ddir / "dbsnp_chrfixed.vcf.gz"
+        assert "already downloaded" in capsys.readouterr().out
+
+
+class TestRefseqChrMap:
+    def test_writes_all_chromosomes(self, tmp_path):
+        mapfile = tmp_path / "map.txt"
+        _write_refseq_chr_map(mapfile)
+
+        lines = mapfile.read_text().strip().split("\n")
+        assert len(lines) == 25  # 22 autosomes + X + Y + MT
+
+        # Check first and last entries
+        assert lines[0] == "NC_000001.11 chr1"
+        assert any("NC_000023.11 chrX" in line for line in lines)
+        assert any("NC_012920.1 chrMT" in line for line in lines)

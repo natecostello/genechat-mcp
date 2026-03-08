@@ -259,6 +259,13 @@ class TestDownload:
         main(["download", "--all"])
         assert set(calls) == {"clinvar", "snpeff", "gnomad", "dbsnp"}
 
+    def test_dbsnp_flag_only(self, monkeypatch, capsys):
+        """--dbsnp alone downloads only dbSNP (not ClinVar/SnpEff)."""
+        calls = _mock_downloads(monkeypatch)
+        main(["download", "--dbsnp"])
+        assert "dbsnp" in calls
+        assert "clinvar" not in calls
+
 
 # ---------------------------------------------------------------------------
 # genechat annotate
@@ -317,6 +324,7 @@ class TestStatus:
         monkeypatch.setattr("genechat.download.clinvar_installed", lambda: False)
         monkeypatch.setattr("genechat.download.snpeff_installed", lambda: False)
         monkeypatch.setattr("genechat.download.gnomad_installed", lambda: False)
+        monkeypatch.setattr("genechat.download.dbsnp_installed", lambda: False)
 
         main(["status"])
 
@@ -324,6 +332,7 @@ class TestStatus:
         assert "test" in out
         assert "exists" in out
         assert "Patch DB: not built" in out
+        assert "dbSNP" in out
 
 
 # ---------------------------------------------------------------------------
