@@ -666,16 +666,13 @@ def _annotate_dbsnp(patch, vcf_path: Path, step: int, total: int, is_update: boo
                 str(vcf_path),
             ],
             stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
             text=True,
         )
         rows = patch.update_dbsnp_from_stream(iter(proc.stdout))
         rc = proc.wait()
         if rc != 0:
-            stderr = proc.stderr.read() if proc.stderr else ""
-            raise RuntimeError(
-                f"bcftools annotate (dbSNP) failed with exit code {rc}: {stderr}"
-            )
+            raise RuntimeError(f"bcftools annotate (dbSNP) failed with exit code {rc}")
     except Exception:
         patch.set_metadata("dbsnp", version or "unknown", status="failed")
         raise
