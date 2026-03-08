@@ -92,15 +92,17 @@ def write_config(vcf_path: Path, config_dir: Path, sample_name: str = "") -> Pat
             with open(config_path, "rb") as f:
                 data = tomllib.load(f)
         except tomllib.TOMLDecodeError:
+            import sys as _sys
+
             print(
-                f"WARNING: Existing config is corrupt: {config_path}",
-                file=__import__("sys").stderr,
+                f"Error: Existing config is corrupt: {config_path}",
+                file=_sys.stderr,
             )
             print(
-                "  Refusing to overwrite — fix or delete the file manually.",
-                file=__import__("sys").stderr,
+                "  Fix or delete the file manually, then retry.",
+                file=_sys.stderr,
             )
-            raise
+            _sys.exit(1)
 
     # Update genome section, preserving other genome fields (e.g. patch_db)
     genome = data.setdefault("genome", {})

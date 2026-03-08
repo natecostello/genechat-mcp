@@ -665,7 +665,9 @@ def _print_annotation_status(patch_db_path: Path):
 def _update_config_patch_db(patch_db_path: Path):
     """Update config.toml with the patch_db path if not already set."""
     import os
-    import re
+    import tomllib
+
+    from genechat.config import _serialize_config
 
     config = load_config()
     if config.genome.patch_db:
@@ -676,16 +678,11 @@ def _update_config_patch_db(patch_db_path: Path):
     if not config_path.exists():
         return
 
-    content = config_path.read_text()
-    patch_literal = str(patch_db_path).replace("'", "''")
-    if "patch_db" not in content:
-        content = content.replace("[genome]", f"[genome]\npatch_db = '{patch_literal}'")
-    else:
-        content = re.sub(
-            r"patch_db\s*=\s*['\"].*['\"]",
-            f"patch_db = '{patch_literal}'",
-            content,
-        )
+    with open(config_path, "rb") as f:
+        data = tomllib.load(f)
+
+    data.setdefault("genome", {})["patch_db"] = str(patch_db_path)
+    content = _serialize_config(data)
 
     # Atomic write with correct permissions
     tmp_path = config_path.with_suffix(".tmp")
