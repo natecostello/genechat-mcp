@@ -42,7 +42,6 @@ Your genome data stays on your machine. GeneChat only reads from local files. No
 | `query_gwas` | Search the GWAS Catalog by trait, gene, or variant |
 | `calculate_prs` | Polygenic risk scores (PGS Catalog data) |
 | `genome_summary` | High-level overview of your genome |
-| `rebuild_database` | Rebuild SQLite from existing seed TSVs |
 
 ## CLI Commands
 

@@ -58,7 +58,6 @@ Tools that support paired analysis:
 Tools where pairing doesn't apply:
 - `query_gwas` — trait associations, not genome-specific
 - `query_genes` — thin wrapper around `query_gene`
-- `rebuild_database` — admin operation
 
 **Output format for paired results:**
 
@@ -120,7 +119,6 @@ cli.py
 | `src/genechat/tools/calculate_prs.py` | Add `genome`, `genome2` params |
 | `src/genechat/tools/genome_summary.py` | Add `genome`, `genome2` params |
 | `src/genechat/tools/query_gwas.py` | Add `genome` param only (no pairing) |
-| `src/genechat/tools/rebuild_database.py` | No genome param needed |
 | `src/genechat/cli.py` | `init`/`add` write to `[genomes.<label>]`, `status` lists all |
 | `config.toml.example` | Update to show `[genomes.personal]` format |
 

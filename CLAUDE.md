@@ -56,7 +56,7 @@ GeneChat MCP Server (Python)
     ├── CLI: init, add, download, annotate, update, status, serve
     ├── Tools: query_variant, query_variants, query_gene, query_genes,
     │         query_clinvar, query_gwas, query_pgx, calculate_prs,
-    │         genome_summary, rebuild_database
+    │         genome_summary
     ├── VCF Query Engine (pysam) — dual-mode: raw VCF + patch.db or annotated VCF
     ├── Patch Database (SQLite) — annotations stored separately from raw VCF
     ├── Lookup Tables (SQLite)
@@ -140,7 +140,6 @@ genechat-mcp/
         query_pgx.py
         calculate_prs.py
         genome_summary.py
-        rebuild_database.py
       parsers/
         __init__.py
         snpeff.py                  # Parse SnpEff ANN field
