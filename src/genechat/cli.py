@@ -654,35 +654,48 @@ def _annotate_dbsnp(patch, vcf_path: Path, step: int, total: int, is_update: boo
     version = _dbsnp_version(dbsnp_vcf)
     patch.set_metadata("dbsnp", version or "unknown", status="pending")
 
-    try:
-        import tempfile
+    import tempfile
 
-        stderr_file = tempfile.SpooledTemporaryFile(max_size=64 * 1024, mode="w+")
-        proc = subprocess.Popen(
-            [
-                "bcftools",
-                "annotate",
-                "-a",
-                str(dbsnp_vcf),
-                "-c",
-                "ID",
-                str(vcf_path),
-            ],
-            stdout=subprocess.PIPE,
-            stderr=stderr_file,
-            text=True,
-        )
-        rows = patch.update_dbsnp_from_stream(iter(proc.stdout))
-        rc = proc.wait()
-        if rc != 0:
-            stderr_file.seek(0)
-            stderr_tail = stderr_file.read()[-500:]
-            stderr_file.close()
-            raise RuntimeError(
-                f"bcftools annotate (dbSNP) failed with exit code {rc}: {stderr_tail}"
+    proc = None
+    try:
+        with tempfile.SpooledTemporaryFile(
+            max_size=64 * 1024, mode="w+"
+        ) as stderr_file:
+            proc = subprocess.Popen(
+                [
+                    "bcftools",
+                    "annotate",
+                    "-a",
+                    str(dbsnp_vcf),
+                    "-c",
+                    "ID",
+                    str(vcf_path),
+                ],
+                stdout=subprocess.PIPE,
+                stderr=stderr_file,
+                text=True,
             )
-        stderr_file.close()
+            try:
+                rows = patch.update_dbsnp_from_stream(iter(proc.stdout))
+                rc = proc.wait()
+                if rc != 0:
+                    stderr_file.seek(0)
+                    stderr_tail = stderr_file.read()[-500:]
+                    raise RuntimeError(
+                        f"bcftools annotate (dbSNP) failed with exit code {rc}:"
+                        f" {stderr_tail}"
+                    )
+            finally:
+                if proc.stdout is not None:
+                    proc.stdout.close()
     except Exception:
+        if proc is not None and proc.poll() is None:
+            proc.terminate()
+            try:
+                proc.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+                proc.wait()
         patch.set_metadata("dbsnp", version or "unknown", status="failed")
         raise
 

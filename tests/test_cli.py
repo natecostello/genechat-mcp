@@ -326,15 +326,33 @@ class TestAnnotate:
         fake_vcf.write_bytes(b"fake")
 
         # Mock Popen to return dbSNP-annotated VCF lines
+        class MockStdout:
+            """Iterable stdout mock with close() support."""
+
+            def __init__(self, lines):
+                self._iter = iter(lines)
+
+            def __iter__(self):
+                return self._iter
+
+            def __next__(self):
+                return next(self._iter)
+
+            def close(self):
+                pass
+
         class MockProc:
             def __init__(self, cmd, **kw):
                 popen_calls.append(cmd)
-                self.stdout = iter(
+                self.stdout = MockStdout(
                     ["chr12\t21178615\trs4149056\tT\tC\t.\tPASS\t.\tGT\t0/1\n"]
                 )
                 self.returncode = 0
 
             def wait(self):
+                return 0
+
+            def poll(self):
                 return 0
 
         monkeypatch.setattr("genechat.cli.subprocess.Popen", MockProc)
