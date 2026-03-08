@@ -48,7 +48,7 @@ Your genome data stays on your machine. GeneChat only reads from local files. No
 
 | Command | Purpose |
 |---------|---------|
-| `genechat init <vcf> [--dbsnp]` | Full first-time setup: download refs, annotate, write config |
+| `genechat init <vcf> [--gnomad] [--dbsnp]` | Full first-time setup: download refs, annotate, write config |
 | `genechat add <vcf>` | Register a VCF file without annotation |
 | `genechat download [--gnomad] [--dbsnp] [--all] [--force]` | Download reference databases |
 | `genechat annotate [--clinvar] [--gnomad] [--snpeff] [--dbsnp] [--all]` | Build or update patch.db annotation layers |
@@ -56,7 +56,7 @@ Your genome data stays on your machine. GeneChat only reads from local files. No
 | `genechat status` | Show genome info and annotation state |
 | `genechat serve` / `genechat` | Start the MCP server |
 
-> **Note:** dbSNP rsID backfill (`--dbsnp`) downloads ~20 GB from NCBI and requires `bcftools` and `tabix`. It is not included in the default `genechat init` — pass `--dbsnp` explicitly to enable it.
+> **Note:** `bcftools` and `tabix` are required for annotation (ClinVar contig rename, gnomAD, and dbSNP). dbSNP rsID backfill (`--dbsnp`) downloads ~20 GB from NCBI and is not included in the default `genechat init` — pass `--dbsnp` explicitly to enable it.
 
 ## Prerequisites
 
