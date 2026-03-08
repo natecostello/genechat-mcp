@@ -50,8 +50,8 @@ Your genome data stays on your machine. GeneChat only reads from local files. No
 |---------|---------|
 | `genechat init <vcf>` | Full first-time setup: download refs, annotate, write config |
 | `genechat add <vcf>` | Register a VCF file without annotation |
-| `genechat download [--gnomad] [--all]` | Download reference databases |
-| `genechat annotate [--clinvar] [--gnomad] [--snpeff] [--all]` | Build or update patch.db annotation layers |
+| `genechat download [--gnomad] [--dbsnp] [--all] [--force]` | Download reference databases |
+| `genechat annotate [--clinvar] [--gnomad] [--dbsnp] [--snpeff] [--all]` | Build or update patch.db annotation layers |
 | `genechat update [--apply]` | Check for newer reference versions |
 | `genechat status` | Show genome info and annotation state |
 | `genechat serve` / `genechat` | Start the MCP server |
