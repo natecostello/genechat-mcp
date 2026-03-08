@@ -21,6 +21,7 @@ Each annotation layer writes to distinct columns in `patch.db` with no cross-dep
 | SnpEff | `effect`, `impact`, `gene`, `hgvs_c`, `hgvs_p`, `transcript` | No (reads REF/ALT only) |
 | ClinVar | `clnsig`, `clndn`, `clnrevstat` | No (matches on CHROM/POS/REF/ALT) |
 | gnomAD | `af`, `af_grpmax` | No (matches on CHROM/POS/REF/ALT) |
+| dbSNP | `rsid`, `rsid_source` | No (stored per variant, independent of other layers) |
 
 Because the columns are independent, any single layer can be updated in isolation without overwriting other layers. Base rows in `patch.db` are populated by the initial SnpEff run using an UPSERT, and subsequent ClinVar/gnomAD (and other layer) updates use targeted `UPDATE` statements that only modify their own columns, preserving all other annotation layers.
 
