@@ -49,17 +49,20 @@ LLM Client (Claude Desktop / Claude Code)
     │ MCP Protocol (stdio or SSE)
     ▼
 GeneChat MCP Server (Python)
+    ├── CLI: init, add, download, annotate, update, status, serve
     ├── Tools: query_variant, query_variants, query_gene, query_genes,
     │         query_clinvar, query_gwas, query_pgx, calculate_prs,
     │         genome_summary, rebuild_database
-    ├── VCF Query Engine (pysam)
+    ├── VCF Query Engine (pysam) — dual-mode: raw VCF + patch.db or annotated VCF
+    ├── Patch Database (SQLite) — annotations stored separately from raw VCF
     ├── Lookup Tables (SQLite)
     └── Config Manager (TOML)
     │ filesystem reads only
     ▼
 Local Data (encrypted volume recommended)
-    ├── annotated.vcf.gz + .tbi
-    ├── reference databases
+    ├── raw.vcf.gz + .tbi (never modified)
+    ├── patch.db (annotation overlay)
+    ├── reference databases (~/.local/share/genechat/references/)
     └── lookup_tables.db
 ```
 
@@ -71,13 +74,12 @@ Local Data (encrypted volume recommended)
 - `uv` with pyproject.toml for packaging
 - TOML config (stdlib tomllib)
 - pytest for testing
-- SnpSift + SnpEff for one-time annotation (not runtime dependency)
+- SnpEff + bcftools for one-time annotation via `genechat init` (not runtime dependency)
 
 ## Prerequisites (User's Machine, NOT installed by project)
 
 - bcftools >= 1.17 (conda install -c bioconda bcftools)
-- SnpSift/SnpEff >= 5.2 (annotation step only)
-- tabix (part of htslib, comes with bcftools)
+- SnpEff (annotation step only; brew install brewsci/bio/snpeff)
 - Python 3.11+
 - ~15 GB for reference databases, ~2 GB for annotated VCF
 
@@ -101,13 +103,6 @@ genechat-mcp/
     annotation-updates.md          # Incremental annotation update design
     security.md                    # Platform-specific encryption instructions
   scripts/
-    setup_references.sh            # Downloads ClinVar, gnomAD, SnpEff DB
-    annotate.sh                    # One-time VCF annotation pipeline
-    update_clinvar.sh              # Incremental ClinVar re-annotation
-    update_gnomad.sh               # Incremental gnomAD re-annotation
-    update_snpeff.sh               # Incremental SnpEff re-annotation
-    update_dbsnp.sh                # Incremental dbSNP rsID update
-    update_annotations.sh          # Wrapper: run one or more update layers
     build_seed_data.py             # Full pipeline: fetch from APIs → SQLite
     build_lookup_db.py             # Final seed TSVs → SQLite
     fetch_gene_coords.py           # HGNC + Ensembl API → gene coordinates
@@ -124,7 +119,7 @@ genechat-mcp/
   src/
     genechat/
       __init__.py
-      cli.py                       # CLI dispatcher: init, serve subcommands
+      cli.py                       # CLI dispatcher: init, add, download, annotate, update, status, serve
       server.py                    # MCP server entry point
       config.py                    # TOML config loader + write_config
       vcf_engine.py                # pysam VCF query engine
@@ -516,29 +511,16 @@ Create synthetic VCF for testing. Include:
 - Mix of genotypes. Proper VCF header with INFO field definitions for ANN, CLNSIG, CLNDN, CLNREVSTAT, AF, AF_popmax.
 - bgzip and tabix the output (if available, otherwise note they're needed)
 
-### scripts/annotate.sh
+### Annotation (CLI subcommands, replacing former shell scripts)
 
-```bash
-#!/bin/bash
-set -euo pipefail
-INPUT_VCF="$1"
-OUTPUT_DIR="${2:-.}"
-echo "Step 1: SnpEff functional annotation..."
-snpEff ann -v GRCh38.p14 "$INPUT_VCF" > "$OUTPUT_DIR/step1_snpeff.vcf"
-echo "Step 2: ClinVar annotation..."
-SnpSift annotate "$CLINVAR_VCF" "$OUTPUT_DIR/step1_snpeff.vcf" > "$OUTPUT_DIR/step2_clinvar.vcf"
-echo "Step 3: gnomAD frequency annotation..."
-SnpSift annotate -info AF,AF_popmax "$GNOMAD_VCF" "$OUTPUT_DIR/step2_clinvar.vcf" > "$OUTPUT_DIR/annotated.vcf"
-echo "Step 4: Compress and index..."
-bgzip "$OUTPUT_DIR/annotated.vcf"
-tabix -p vcf "$OUTPUT_DIR/annotated.vcf.gz"
-rm -f "$OUTPUT_DIR/step1_snpeff.vcf" "$OUTPUT_DIR/step2_clinvar.vcf"
-echo "Done: $OUTPUT_DIR/annotated.vcf.gz"
-```
+Annotation is now handled entirely by Python CLI subcommands:
 
-### scripts/setup_references.sh
+- `genechat init <vcf>` — Full first-time setup: downloads references, runs SnpEff + ClinVar annotation into patch.db, writes config
+- `genechat download [--gnomad] [--all]` — Downloads reference databases (ClinVar, SnpEff DB, optionally gnomAD)
+- `genechat annotate [--clinvar] [--gnomad] [--snpeff] [--all]` — Rebuild or update individual annotation layers in patch.db
+- `genechat update [--apply]` — Check for newer reference versions and optionally re-annotate
 
-Download ClinVar VCF from NCBI FTP, download SnpEff DB. Note gnomAD requires manual download due to size.
+The raw VCF is never modified. Annotations are stored in a SQLite patch database (`patch.db`).
 
 ---
 
