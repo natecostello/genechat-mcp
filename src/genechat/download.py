@@ -213,8 +213,12 @@ def download_dbsnp(force: bool = False) -> Path | None:
     chr_map = ddir / "refseq_to_chr.txt"
     _write_refseq_chr_map(chr_map)
 
-    tmp = chrfixed.with_suffix(".tmp.vcf.gz")
-    tmp_tbi = tmp.with_suffix(tmp.suffix + ".tbi")
+    # Build temp path that preserves .vcf.gz extension for bcftools/tabix
+    base_name = (
+        chrfixed.name[:-7] if chrfixed.name.endswith(".vcf.gz") else chrfixed.stem
+    )
+    tmp = chrfixed.with_name(f"{base_name}.tmp.vcf.gz")
+    tmp_tbi = tmp.with_name(f"{tmp.name}.tbi")
     try:
         subprocess.run(
             [
