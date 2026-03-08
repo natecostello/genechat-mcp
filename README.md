@@ -48,15 +48,15 @@ Your genome data stays on your machine. GeneChat only reads from local files. No
 
 | Command | Purpose |
 |---------|---------|
-| `genechat init <vcf>` | Full first-time setup: download refs, annotate, write config |
+| `genechat init <vcf> [--dbsnp]` | Full first-time setup: download refs, annotate, write config |
 | `genechat add <vcf>` | Register a VCF file without annotation |
-| `genechat download [--gnomad] [--all] [--force]` | Download reference databases |
-| `genechat annotate [--clinvar] [--gnomad] [--snpeff] [--all]` | Build or update patch.db annotation layers |
+| `genechat download [--gnomad] [--dbsnp] [--all] [--force]` | Download reference databases |
+| `genechat annotate [--clinvar] [--gnomad] [--snpeff] [--dbsnp] [--all]` | Build or update patch.db annotation layers |
 | `genechat update [--apply]` | Check for newer reference versions |
 | `genechat status` | Show genome info and annotation state |
 | `genechat serve` / `genechat` | Start the MCP server |
 
-> **Note:** dbSNP rsID backfill (`--dbsnp`) is modeled in the code but not yet fully automated. See [docs/annotation-updates.md](docs/annotation-updates.md) for details.
+> **Note:** dbSNP rsID backfill (`--dbsnp`) downloads ~20 GB from NCBI and requires `bcftools` and `tabix`. It is not included in the default `genechat init` — pass `--dbsnp` explicitly to enable it.
 
 ## Prerequisites
 
@@ -156,7 +156,7 @@ Your raw VCF is never modified. Annotations are stored in a separate SQLite patc
 | Tool | What it adds | Install |
 |------|-------------|---------|
 | [SnpEff](https://pcingola.github.io/SnpEff/) | Functional annotation — gene name, effect type, impact level, protein change | `brew install brewsci/bio/snpeff` |
-| [bcftools](https://samtools.github.io/bcftools/) | Database annotation — transfers ClinVar/gnomAD fields into patch.db | `brew install bcftools` |
+| [bcftools](https://samtools.github.io/bcftools/) | Database annotation — transfers ClinVar/gnomAD/dbSNP fields into patch.db | `brew install bcftools` |
 
 For incremental updates of individual annotation layers (e.g., updating ClinVar without re-running the full pipeline), see [docs/annotation-updates.md](docs/annotation-updates.md).
 

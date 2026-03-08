@@ -11,7 +11,7 @@ Annotations are stored in a SQLite patch database (`patch.db`), separate from th
 | ClinVar | Variant reclassifications (VUS→Pathogenic, etc.) | Monthly | `genechat annotate --clinvar` |
 | gnomAD | Population allele frequencies | Major releases every 1-2 years | `genechat annotate --gnomad` |
 | SnpEff | Gene models, transcript definitions | Tied to Ensembl (~2/year) | `genechat annotate --snpeff` |
-| dbSNP | rsID identifiers for variants | Major releases | `genechat annotate --dbsnp` (not yet fully automated) |
+| dbSNP | rsID identifiers for variants | Major releases | `genechat annotate --dbsnp` |
 | GWAS Catalog | New association study results | Weekly | `uv run python scripts/build_gwas_db.py` |
 | Seed data | PGx (CPIC) + PRS (PGS Catalog) | When APIs update | `uv run python scripts/build_seed_data.py` |
 
@@ -58,6 +58,8 @@ genechat annotate --snpeff
 ```
 
 ### All layers at once
+
+`--all` runs SnpEff, ClinVar, gnomAD (if installed), and dbSNP (if installed):
 
 ```bash
 genechat annotate --all
