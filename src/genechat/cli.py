@@ -97,35 +97,39 @@ def _run_init(vcf_path_str: str):
             )
             seed_dir = project_root / "data" / "seed" if project_root else None
 
-            required_tsvs = [
-                "genes_grch38.tsv",
-                "pgx_drugs.tsv",
-                "pgx_variants.tsv",
-                "prs_weights.tsv",
-            ]
-            has_seed_files = seed_dir and all(
-                (seed_dir / f).exists() for f in required_tsvs
-            )
-
-            if build_script and build_script.exists() and has_seed_files:
-                print("Building lookup_tables.db from seed data...")
+            # Try to load the build module and derive required seed files
+            build_mod = None
+            if build_script and build_script.exists():
                 import importlib.util
 
                 spec = importlib.util.spec_from_file_location(
                     "genechat_build_lookup_db", str(build_script)
                 )
-                if spec is None or spec.loader is None:
-                    print(
-                        "Error: unable to load scripts/build_lookup_db.py; "
-                        "cannot build lookup_tables.db.",
-                        file=sys.stderr,
-                    )
-                    sys.exit(1)
+                if spec is not None and spec.loader is not None:
+                    try:
+                        build_mod = importlib.util.module_from_spec(spec)
+                        spec.loader.exec_module(build_mod)
+                    except Exception:
+                        build_mod = None
 
+            required_tsvs = (
+                list(build_mod.TSV_FILES.values())
+                if build_mod and hasattr(build_mod, "TSV_FILES")
+                else [
+                    "genes_grch38.tsv",
+                    "pgx_drugs.tsv",
+                    "pgx_variants.tsv",
+                    "prs_weights.tsv",
+                ]
+            )
+            has_seed_files = seed_dir and all(
+                (seed_dir / f).exists() for f in required_tsvs
+            )
+
+            if build_mod and has_seed_files:
+                print("Building lookup_tables.db from seed data...")
                 try:
-                    mod = importlib.util.module_from_spec(spec)
-                    spec.loader.exec_module(mod)
-                    mod.build_db(seed_dir=seed_dir, db_path=db_path)
+                    build_mod.build_db(seed_dir=seed_dir, db_path=db_path)
                 except Exception as exc:
                     print(
                         "Error: failed to build lookup_tables.db from seed data.",
@@ -142,12 +146,24 @@ def _run_init(vcf_path_str: str):
                     sys.exit(1)
                 print(f"  Built: {db_path}")
             elif project_root:
+                missing = []
+                if not build_script or not build_script.exists():
+                    missing.append(
+                        f"  - {build_script or 'scripts/build_lookup_db.py'}"
+                    )
+                if not seed_dir or not seed_dir.exists():
+                    missing.append(f"  - {seed_dir or 'data/seed/'}")
+                elif not has_seed_files:
+                    for f in required_tsvs:
+                        if not (seed_dir / f).exists():
+                            missing.append(f"  - {seed_dir / f}")
                 print(
-                    "Error: lookup_tables.db not found and seed data is missing.",
+                    "Error: lookup_tables.db not found. Missing prerequisites:",
                     file=sys.stderr,
                 )
+                print("\n".join(missing), file=sys.stderr)
                 print("Build it with:", file=sys.stderr)
-                print("  uv run python scripts/build_lookup_db.py", file=sys.stderr)
+                print("  uv run python scripts/build_seed_data.py", file=sys.stderr)
                 sys.exit(1)
             else:
                 print(

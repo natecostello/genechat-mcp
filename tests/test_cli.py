@@ -140,11 +140,22 @@ def test_init_auto_builds_lookup_db(tmp_path, capsys, monkeypatch):
     seed = fake_root / "data" / "seed"
     seed.mkdir(parents=True)
     # Create all required seed TSVs
-    for tsv in ["genes_grch38.tsv", "pgx_drugs.tsv", "pgx_variants.tsv", "prs_weights.tsv"]:
+    for tsv in [
+        "genes_grch38.tsv",
+        "pgx_drugs.tsv",
+        "pgx_variants.tsv",
+        "prs_weights.tsv",
+    ]:
         (seed / tsv).write_text("col1\tcol2\n")
     build_script = fake_root / "scripts" / "build_lookup_db.py"
     build_script.parent.mkdir(parents=True)
     build_script.write_text(
+        "TSV_FILES = {\n"
+        '    "genes": "genes_grch38.tsv",\n'
+        '    "pgx_drugs": "pgx_drugs.tsv",\n'
+        '    "pgx_variants": "pgx_variants.tsv",\n'
+        '    "prs_weights": "prs_weights.tsv",\n'
+        "}\n"
         "def build_db(seed_dir=None, db_path=None):\n"
         "    db_path.parent.mkdir(parents=True, exist_ok=True)\n"
         "    db_path.write_bytes(b'built')\n"
