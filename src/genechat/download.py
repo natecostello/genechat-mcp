@@ -24,6 +24,10 @@ GNOMAD_BASE = (
 )
 GNOMAD_CHROMS = [str(i) for i in range(1, 23)] + ["X", "Y"]
 
+DBSNP_BASE = "https://ftp.ncbi.nlm.nih.gov/snp/latest_release/VCF"
+DBSNP_VCF_NAME = "GCF_000001405.40.gz"
+DBSNP_TBI_NAME = "GCF_000001405.40.gz.tbi"
+
 
 def references_dir() -> Path:
     """Return the shared references directory, creating it if needed."""
@@ -150,13 +154,148 @@ def download_gnomad(force: bool = False) -> Path:
     return gdir
 
 
+def dbsnp_dir() -> Path:
+    return references_dir() / "dbsnp"
+
+
+def dbsnp_raw_path() -> Path:
+    """Path to the raw dbSNP VCF (RefSeq contig names)."""
+    return dbsnp_dir() / DBSNP_VCF_NAME
+
+
+def dbsnp_path() -> Path:
+    """Path to the chr-prefix renamed dbSNP VCF (ready for bcftools annotate)."""
+    return dbsnp_dir() / "dbsnp_chrfixed.vcf.gz"
+
+
 def download_dbsnp(force: bool = False) -> Path | None:
-    """Placeholder for dbSNP download. Returns None (manual download required)."""
-    print(
-        "  NOTE: dbSNP (~20 GB) requires manual download from:\n"
-        "  https://ftp.ncbi.nlm.nih.gov/snp/latest_release/VCF/"
+    """Download dbSNP VCF + index, rename contigs to chr prefix.
+
+    Returns path to the chr-fixed VCF on success.
+    Returns None only if required tools are missing or post-download
+    processing (rename/index) fails; download/network errors will raise.
+    """
+    ddir = dbsnp_dir()
+    ddir.mkdir(parents=True, exist_ok=True)
+
+    chrfixed = dbsnp_path()
+    chrfixed_tbi = chrfixed.with_suffix(chrfixed.suffix + ".tbi")
+
+    if chrfixed.exists() and chrfixed_tbi.exists() and not force:
+        print(f"  dbSNP already downloaded: {chrfixed}")
+        return chrfixed
+
+    # Validate tools before starting a ~20 GB download
+    if not shutil.which("bcftools"):
+        print("  ERROR: bcftools not found. Cannot rename contigs.", file=sys.stderr)
+        print("  Install: brew install bcftools (macOS)", file=sys.stderr)
+        return None
+    if not shutil.which("tabix"):
+        print("  ERROR: tabix not found. Cannot index.", file=sys.stderr)
+        print("  Install: brew install htslib (macOS)", file=sys.stderr)
+        return None
+
+    raw_vcf = dbsnp_raw_path()
+    raw_tbi = raw_vcf.with_suffix(raw_vcf.suffix + ".tbi")
+
+    # Download raw dbSNP VCF and index
+    if not raw_vcf.exists() or force:
+        _download_file(f"{DBSNP_BASE}/{DBSNP_VCF_NAME}", raw_vcf, "dbSNP VCF")
+    else:
+        print(f"  dbSNP raw VCF already downloaded: {raw_vcf}")
+
+    if not raw_tbi.exists() or force:
+        _download_file(f"{DBSNP_BASE}/{DBSNP_TBI_NAME}", raw_tbi, "dbSNP index")
+    else:
+        print(f"  dbSNP raw index already downloaded: {raw_tbi}")
+
+    # Rename RefSeq contig names (NC_000001.11 → chr1) for bcftools compatibility
+    print("  Renaming dbSNP contigs to chr prefix...")
+    chr_map = ddir / "refseq_to_chr.txt"
+    _write_refseq_chr_map(chr_map)
+
+    # Build temp path that preserves .vcf.gz extension for bcftools/tabix
+    base_name = (
+        chrfixed.name[:-7] if chrfixed.name.endswith(".vcf.gz") else chrfixed.stem
     )
-    return None
+    tmp = chrfixed.with_name(f"{base_name}.tmp.vcf.gz")
+    tmp_tbi = tmp.with_name(f"{tmp.name}.tbi")
+    try:
+        subprocess.run(
+            [
+                "bcftools",
+                "annotate",
+                "--rename-chrs",
+                str(chr_map),
+                str(raw_vcf),
+                "-Oz",
+                "-o",
+                str(tmp),
+            ],
+            check=True,
+            capture_output=True,
+        )
+        subprocess.run(
+            ["tabix", "-p", "vcf", str(tmp)],
+            check=True,
+            capture_output=True,
+        )
+        # Both VCF and index succeeded — atomically replace final files
+        import os
+
+        os.replace(tmp, chrfixed)
+        os.replace(tmp_tbi, chrfixed_tbi)
+    except subprocess.CalledProcessError as e:
+        print(f"  ERROR: dbSNP contig rename failed: {e}", file=sys.stderr)
+        if hasattr(e, "stderr") and e.stderr:
+            print(f"  {e.stderr.decode()[:500]}", file=sys.stderr)
+        tmp.unlink(missing_ok=True)
+        tmp_tbi.unlink(missing_ok=True)
+        return None
+    finally:
+        chr_map.unlink(missing_ok=True)
+
+    print(f"  dbSNP ready: {chrfixed}")
+    return chrfixed
+
+
+def _write_refseq_chr_map(path: Path) -> None:
+    """Write a RefSeq-to-chr contig rename map for bcftools --rename-chrs.
+
+    Maps NC_000001.11 → chr1, ..., NC_000022.11 → chr22,
+    NC_000023.11 → chrX, NC_000024.10 → chrY, NC_012920.1 → chrMT.
+    """
+    # RefSeq accessions for GRCh38 primary assembly
+    refseq_map = {
+        "NC_000001.11": "chr1",
+        "NC_000002.12": "chr2",
+        "NC_000003.12": "chr3",
+        "NC_000004.12": "chr4",
+        "NC_000005.10": "chr5",
+        "NC_000006.12": "chr6",
+        "NC_000007.14": "chr7",
+        "NC_000008.11": "chr8",
+        "NC_000009.12": "chr9",
+        "NC_000010.11": "chr10",
+        "NC_000011.10": "chr11",
+        "NC_000012.12": "chr12",
+        "NC_000013.11": "chr13",
+        "NC_000014.9": "chr14",
+        "NC_000015.10": "chr15",
+        "NC_000016.10": "chr16",
+        "NC_000017.11": "chr17",
+        "NC_000018.10": "chr18",
+        "NC_000019.10": "chr19",
+        "NC_000020.11": "chr20",
+        "NC_000021.9": "chr21",
+        "NC_000022.11": "chr22",
+        "NC_000023.11": "chrX",
+        "NC_000024.10": "chrY",
+        "NC_012920.1": "chrMT",
+    }
+    with open(path, "w") as f:
+        for refseq, chrom in refseq_map.items():
+            f.write(f"{refseq} {chrom}\n")
 
 
 def gnomad_installed() -> bool:
@@ -169,6 +308,12 @@ def gnomad_installed() -> bool:
         and (gdir / f"gnomad.exomes.v4.1.sites.chr{c}.vcf.bgz.tbi").exists()
         for c in GNOMAD_CHROMS
     )
+
+
+def dbsnp_installed() -> bool:
+    """Check if the chr-prefix renamed dbSNP VCF and index are installed."""
+    chrfixed = dbsnp_path()
+    return chrfixed.exists() and chrfixed.with_suffix(chrfixed.suffix + ".tbi").exists()
 
 
 def clinvar_installed() -> bool:
