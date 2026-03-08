@@ -66,11 +66,9 @@ src/genechat/           # Main package
     formatting.py       # Shared helpers (short_zygosity) — tools import from here
   parsers/              # SnpEff ANN, ClinVar, genotype field parsers
   data/lookup_tables.db # Built from seed data (gitignored)
-scripts/                # Setup and build scripts
+scripts/                # Seed data build scripts
   generate_test_vcf.py  # Creates synthetic VCF for testing (pysam)
   build_lookup_db.py    # Builds SQLite from seed TSVs
-  annotate.sh           # One-time VCF annotation pipeline
-  setup_references.sh   # Downloads reference databases
 data/seed/              # API-generated TSV files for lookup database
 tests/                  # pytest tests
   conftest.py           # Fixtures, auto-generates test VCF
@@ -125,7 +123,7 @@ with the architecture, tool specifications, and seed data schemas defined there.
 
 1. **Genomic data accuracy** — verify GRCh38 coordinates, chr prefix, correct rsID-to-position mappings in seed TSVs
 2. **pysam API usage** — INFO field access must handle KeyError (field missing), tuple returns (Number=./A), and None values
-3. **Security** — no `shell=True` in subprocess, no command injection, no network calls at runtime, regex-validated inputs to VCF queries. In shell scripts: use Bash arrays (not unquoted string expansion) for building file lists; sanitize external input (e.g. VCF contig IDs) with regex filtering before interpolation
+3. **Security** — no `shell=True` in subprocess, no command injection, no network calls at runtime, regex-validated inputs to VCF queries
 4. **Medical safety** — clinical tools must include disclaimer text, "no variants found" must not imply "gene not analyzed"
 5. **Max variant cap and truncation** — all query paths must honor `max_variants_per_response`. When `query_region`/`query_regions` hits the cap, the last variant has `_truncated=True`. Callers must check this flag and either surface a truncation notice or avoid claiming completeness (e.g. don't show "ref or not covered" for positions that may not have been queried)
 6. **Error handling** — tools should return helpful messages on failure, never raw stack traces; `VCFEngineError` for engine failures. When a batch operation fails and is caught, callers must not silently fall through to a misleading fallback (e.g. showing "ref/ref" when the lookup actually failed — show "query error" instead). Track success flags like `batch_query_ok` to distinguish "query succeeded, no results" from "query failed"
@@ -133,7 +131,7 @@ with the architecture, tool specifications, and seed data schemas defined there.
 8. **N+1 VCF queries** — when looking up genotypes for multiple positions (trait overlays, PGx variant tables), use `engine.query_regions()` (single VCF open) instead of calling `engine.query_region()` in a loop. Map results back by `chrom:pos` key
 9. **Code duplication** — shared helpers belong in `src/genechat/tools/formatting.py`. Flag any helper function duplicated across tool modules
 10. **Input validation consistency** — rsID validation must use the same `^rs\d+$` pattern as `VCFEngine`. Don't use `startswith("rs")` which allows malformed IDs like `rsABC`
-11. **Shell script portability** — scripts claim macOS support. Don't use GNU-only flags (e.g. `sort -V`). Use POSIX or provide fallbacks. Use `mapfile` + arrays instead of unquoted word-splitting on command substitutions
+11. **Patch database consistency** — `PatchDB` uses UPSERT with COALESCE to preserve existing columns when updating a single annotation layer. Verify that annotation functions correctly stream data into patch.db without overwriting unrelated columns
 
 ## What NOT to Flag
 

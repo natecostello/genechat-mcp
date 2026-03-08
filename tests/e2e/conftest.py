@@ -33,8 +33,9 @@ def pytest_collection_modifyitems(config, items):
 
     skip_marker = pytest.mark.skip(
         reason=f"{GIAB_VCF_ENV} not set or file not found. "
-        "Run: bash scripts/setup_giab.sh ./giab && "
-        f"export {GIAB_VCF_ENV}=./giab/HG001_annotated.vcf.gz"
+        "Run: uv run python scripts/setup_giab.py ./giab && "
+        "uv run genechat init ./giab/HG001_GRCh38_1_22_v4.2.1_benchmark.vcf.gz && "
+        f"export {GIAB_VCF_ENV}=./giab/HG001_GRCh38_1_22_v4.2.1_benchmark.vcf.gz"
     )
     for item in items:
         if "e2e" in str(item.fspath):

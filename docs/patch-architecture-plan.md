@@ -977,6 +977,7 @@ Users now have raw.vcf.gz + patch.db instead of one annotated.vcf.gz.
 ### Phase 3: Clean up
 - Remove shell scripts (annotate.sh, update_*.sh, setup_references.sh)
 - Update CLAUDE.md
+- Update README.md to reflect current state (new CLI subcommands, patch architecture, simplified setup flow)
 - Update GIAB e2e test setup (generate GIAB patch.db)
 
 ---
