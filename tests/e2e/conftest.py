@@ -2,7 +2,9 @@
 
 These tests are auto-skipped when GENECHAT_GIAB_VCF is not set.
 To run:
-    export GENECHAT_GIAB_VCF=./giab/HG001_annotated.vcf.gz
+    uv run python scripts/setup_giab.py ./giab
+    uv run genechat init ./giab/HG001_GRCh38_1_22_v4.2.1_benchmark.vcf.gz
+    export GENECHAT_GIAB_VCF=./giab/HG001_GRCh38_1_22_v4.2.1_benchmark.vcf.gz
     uv run pytest tests/e2e/ -v
 """
 
@@ -127,11 +129,17 @@ GROUND_TRUTH_ABSENT = {
 def giab_config():
     """AppConfig pointing to GIAB VCF and built-in lookup DB."""
     vcf_path = os.environ.get(GIAB_VCF_ENV, "")
+    # Derive patch_db path using same convention as CLI: <stem>.patch.db
+    vcf_p = Path(vcf_path) if vcf_path else Path()
+    patch_db = str(vcf_p.parent / f"{vcf_p.stem.replace('.vcf', '')}.patch.db")
+    genome_cfg = {
+        "vcf_path": vcf_path,
+        "genome_build": "GRCh38",
+    }
+    if vcf_path and Path(patch_db).exists():
+        genome_cfg["patch_db"] = patch_db
     return AppConfig(
-        genome={
-            "vcf_path": vcf_path,
-            "genome_build": "GRCh38",
-        },
+        genome=genome_cfg,
         databases={"lookup_db": str(DB_PATH)},
         server={"max_variants_per_response": 200},
     )
