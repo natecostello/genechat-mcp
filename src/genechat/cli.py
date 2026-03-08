@@ -84,17 +84,42 @@ def _run_init(vcf_path_str: str):
         )
         sys.exit(1)
 
-    # 4. Ensure lookup_tables.db exists (check before writing config)
+    # 4. Ensure lookup_tables.db exists; build automatically if in source checkout
     db_ref = resources.files("genechat") / "data" / "lookup_tables.db"
     with resources.as_file(db_ref) as db_path:
         if not db_path.exists():
-            print(
-                "Error: lookup_tables.db not found. The server cannot start without it.",
-                file=sys.stderr,
+            project_root = _find_project_root()
+            build_script = (
+                project_root / "scripts" / "build_lookup_db.py"
+                if project_root
+                else None
             )
-            print("Build it with:", file=sys.stderr)
-            print("  uv run python scripts/build_lookup_db.py", file=sys.stderr)
-            sys.exit(1)
+            seed_dir = project_root / "data" / "seed" if project_root else None
+
+            if (
+                build_script
+                and build_script.exists()
+                and seed_dir
+                and seed_dir.exists()
+            ):
+                print("Building lookup_tables.db from seed data...")
+                import importlib.util
+
+                spec = importlib.util.spec_from_file_location(
+                    "build_lookup_db", str(build_script)
+                )
+                mod = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(mod)
+                mod.build_db(seed_dir=seed_dir, db_path=db_path)
+                print(f"  Built: {db_path}")
+            else:
+                print(
+                    "Error: lookup_tables.db not found. The server cannot start without it.",
+                    file=sys.stderr,
+                )
+                print("Build it with:", file=sys.stderr)
+                print("  uv run python scripts/build_lookup_db.py", file=sys.stderr)
+                sys.exit(1)
 
     # 5. Write config.toml
     config_dir = Path(user_config_dir("genechat"))

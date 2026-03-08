@@ -135,6 +135,10 @@ with the architecture, tool specifications, and seed data schemas defined there.
 10. **Input validation consistency** — rsID validation must use the same `^rs\d+$` pattern as `VCFEngine`. Don't use `startswith("rs")` which allows malformed IDs like `rsABC`
 11. **Shell script portability** — scripts claim macOS support. Don't use GNU-only flags (e.g. `sort -V`). Use POSIX or provide fallbacks. Use `mapfile` + arrays instead of unquoted word-splitting on command substitutions
 
+## Plan compliance
+
+If the PR description references a plan or design document, verify that the implementation matches what was specified. Flag any described behavior that doesn't match the code.
+
 ## What NOT to Flag
 
 - Do not suggest adding docstrings to test functions

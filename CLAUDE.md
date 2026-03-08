@@ -7,6 +7,17 @@ When submitting a PR, always request a GitHub Copilot review using:
 gh pr edit <PR_NUMBER> --add-reviewer @copilot
 ```
 
+## Plan Compliance
+
+When a PR implements a plan, the PR description MUST include a compliance section:
+
+### Plan Compliance
+- [ ] Item 1: description — DONE / DEVIATED / DEFERRED
+- [ ] Item 2: description — DONE / DEVIATED / DEFERRED
+...
+
+Each DEVIATED or DEFERRED item must include a one-line rationale.
+
 ## Code Review
 
 GitHub Copilot is configured as a PR code reviewer. Its instructions are in

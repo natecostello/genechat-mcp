@@ -118,8 +118,8 @@ def test_init_invalid_vcf(tmp_path, capsys, monkeypatch):
     assert "Cannot read VCF" in captured.err
 
 
-def test_init_missing_lookup_db(tmp_path, capsys, monkeypatch):
-    """init exits with error when lookup_tables.db is missing."""
+def test_init_auto_builds_lookup_db(tmp_path, capsys, monkeypatch):
+    """init auto-builds lookup_tables.db when missing in a source checkout."""
     vcf = tmp_path / "test.vcf.gz"
     vcf.write_bytes(b"fake")
     tbi = tmp_path / "test.vcf.gz.tbi"
@@ -135,6 +135,56 @@ def test_init_missing_lookup_db(tmp_path, capsys, monkeypatch):
     mock_vf.__exit__ = lambda s, *a: None
     monkeypatch.setattr("pysam.VariantFile", lambda *a, **kw: mock_vf)
 
+    # Set up a fake source checkout with build_lookup_db.py and seed dir
+    fake_root = tmp_path / "repo"
+    (fake_root / "data" / "seed").mkdir(parents=True)
+    # Create a minimal seed TSV so seed_dir.exists() passes
+    (fake_root / "data" / "seed" / "genes_grch38.tsv").write_text("symbol\tname\n")
+    build_script = fake_root / "scripts" / "build_lookup_db.py"
+    build_script.parent.mkdir(parents=True)
+    build_script.write_text(
+        "def build_db(seed_dir=None, db_path=None):\n"
+        "    db_path.parent.mkdir(parents=True, exist_ok=True)\n"
+        "    db_path.write_bytes(b'built')\n"
+    )
+
+    monkeypatch.setattr("genechat.cli._find_project_root", lambda: fake_root)
+
+    # Point resources.files to a dir without lookup_tables.db
+    pkg_dir = tmp_path / "pkg"
+    (pkg_dir / "data").mkdir(parents=True)
+    monkeypatch.setattr("genechat.cli.resources.files", lambda _pkg: pkg_dir)
+
+    main(["init", str(vcf)])
+
+    captured = capsys.readouterr()
+    assert "Building lookup_tables.db" in captured.out
+    # DB was created by the fake build_db
+    assert (pkg_dir / "data" / "lookup_tables.db").exists()
+    # Config should have been written successfully
+    assert (config_dir / "config.toml").exists()
+
+
+def test_init_missing_lookup_db_no_source_checkout(tmp_path, capsys, monkeypatch):
+    """init exits with error when lookup_tables.db is missing and not in source checkout."""
+    vcf = tmp_path / "test.vcf.gz"
+    vcf.write_bytes(b"fake")
+    tbi = tmp_path / "test.vcf.gz.tbi"
+    tbi.write_bytes(b"fake")
+
+    config_dir = tmp_path / "config"
+    monkeypatch.setattr("genechat.cli.user_config_dir", lambda _app: str(config_dir))
+
+    import unittest.mock
+
+    mock_vf = unittest.mock.MagicMock()
+    mock_vf.__enter__ = lambda s: s
+    mock_vf.__exit__ = lambda s, *a: None
+    monkeypatch.setattr("pysam.VariantFile", lambda *a, **kw: mock_vf)
+
+    # Simulate installed package mode: no source checkout
+    monkeypatch.setattr("genechat.cli._find_project_root", lambda: None)
+
     # Point resources.files to a dir without lookup_tables.db
     monkeypatch.setattr("genechat.cli.resources.files", lambda _pkg: tmp_path / "pkg")
     (tmp_path / "pkg" / "data").mkdir(parents=True)
@@ -144,7 +194,7 @@ def test_init_missing_lookup_db(tmp_path, capsys, monkeypatch):
     assert exc_info.value.code == 1
     captured = capsys.readouterr()
     assert "lookup_tables.db not found" in captured.err
-    # Config should NOT have been written (DB check happens before config write)
+    # Config should NOT have been written
     assert not (config_dir / "config.toml").exists()
 
 
