@@ -97,12 +97,17 @@ def _run_init(vcf_path_str: str):
             )
             seed_dir = project_root / "data" / "seed" if project_root else None
 
-            if (
-                build_script
-                and build_script.exists()
-                and seed_dir
-                and seed_dir.exists()
-            ):
+            required_tsvs = [
+                "genes_grch38.tsv",
+                "pgx_drugs.tsv",
+                "pgx_variants.tsv",
+                "prs_weights.tsv",
+            ]
+            has_seed_files = seed_dir and all(
+                (seed_dir / f).exists() for f in required_tsvs
+            )
+
+            if build_script and build_script.exists() and has_seed_files:
                 print("Building lookup_tables.db from seed data...")
                 import importlib.util
 
@@ -127,6 +132,13 @@ def _run_init(vcf_path_str: str):
                         file=sys.stderr,
                     )
                     print(f"  Reason: {exc}", file=sys.stderr)
+                    sys.exit(1)
+
+                if not db_path.exists():
+                    print(
+                        "Error: build_db completed but lookup_tables.db was not created.",
+                        file=sys.stderr,
+                    )
                     sys.exit(1)
                 print(f"  Built: {db_path}")
             elif project_root:

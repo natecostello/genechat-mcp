@@ -137,9 +137,11 @@ def test_init_auto_builds_lookup_db(tmp_path, capsys, monkeypatch):
 
     # Set up a fake source checkout with build_lookup_db.py and seed dir
     fake_root = tmp_path / "repo"
-    (fake_root / "data" / "seed").mkdir(parents=True)
-    # Create a minimal seed TSV so seed_dir.exists() passes
-    (fake_root / "data" / "seed" / "genes_grch38.tsv").write_text("symbol\tname\n")
+    seed = fake_root / "data" / "seed"
+    seed.mkdir(parents=True)
+    # Create all required seed TSVs
+    for tsv in ["genes_grch38.tsv", "pgx_drugs.tsv", "pgx_variants.tsv", "prs_weights.tsv"]:
+        (seed / tsv).write_text("col1\tcol2\n")
     build_script = fake_root / "scripts" / "build_lookup_db.py"
     build_script.parent.mkdir(parents=True)
     build_script.write_text(
