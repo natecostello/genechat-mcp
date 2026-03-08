@@ -225,7 +225,7 @@ def _run_add(vcf_path_str: str, label: str | None = None):
 
     # Write config
     config_dir = Path(user_config_dir("genechat"))
-    config_path = write_config(vcf_path, config_dir)
+    config_path = write_config(vcf_path, config_dir, sample_name=label or "")
     print(f"VCF registered. Config: {config_path}")
     return config_path
 
@@ -320,6 +320,14 @@ def _run_annotate(args):
     if not shutil.which("bcftools"):
         print("Error: bcftools not found in PATH.", file=sys.stderr)
         print("  Install: brew install bcftools (macOS)", file=sys.stderr)
+        sys.exit(1)
+
+    if run_clinvar and not shutil.which("tabix"):
+        print(
+            "Error: tabix not found in PATH (needed for ClinVar contig rename).",
+            file=sys.stderr,
+        )
+        print("  Install: brew install htslib (macOS)", file=sys.stderr)
         sys.exit(1)
 
     if run_clinvar and not clinvar_installed():
@@ -469,8 +477,16 @@ def _annotate_snpeff(patch, vcf_path: Path, step: int, total: int, is_update: bo
 
         rows = patch.populate_from_snpeff_stream(iter(snpeff_proc.stdout))
         total_rows += rows
-        snpeff_proc.wait()
-        bcf_proc.wait()
+        snpeff_rc = snpeff_proc.wait()
+        bcf_rc = bcf_proc.wait()
+        if snpeff_rc != 0:
+            raise RuntimeError(
+                f"snpEff ann failed with exit code {snpeff_rc} on {chrom}"
+            )
+        if bcf_rc != 0:
+            raise RuntimeError(
+                f"bcftools view failed with exit code {bcf_rc} on {chrom}"
+            )
 
     patch.set_metadata("snpeff", db_name, status="complete")
     print(f"    {total_rows} variants processed")
@@ -490,8 +506,10 @@ def _annotate_clinvar(patch, vcf_path: Path, step: int, total: int, is_update: b
     version = _clinvar_version(clinvar_vcf)
     patch.set_metadata("clinvar", version or "unknown", status="pending")
 
-    # Handle contig rename if needed
-    work_dir = vcf_path.parent
+    # Handle contig rename if needed (use tempdir for work artifacts)
+    import tempfile
+
+    work_dir = Path(tempfile.mkdtemp(prefix="genechat_"))
     clinvar_use = _contig_rename_clinvar(clinvar_vcf, work_dir)
 
     try:
@@ -506,16 +524,21 @@ def _annotate_clinvar(patch, vcf_path: Path, step: int, total: int, is_update: b
                 str(vcf_path),
             ],
             stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
             text=True,
         )
         rows = patch.update_clinvar_from_stream(iter(proc.stdout))
-        proc.wait()
+        rc = proc.wait()
+        if rc != 0:
+            stderr = proc.stderr.read() if proc.stderr else ""
+            raise RuntimeError(
+                f"bcftools annotate (ClinVar) failed with exit code {rc}: {stderr}"
+            )
     finally:
-        # Clean up renamed ClinVar if we created one
-        if clinvar_use != clinvar_vcf:
-            clinvar_use.unlink(missing_ok=True)
-            clinvar_use.with_suffix(".gz.tbi").unlink(missing_ok=True)
+        # Clean up work directory
+        import shutil as _shutil
+
+        _shutil.rmtree(work_dir, ignore_errors=True)
 
     patch.set_metadata("clinvar", version or "unknown", status="complete")
     print(f"    {rows} variants updated")
@@ -573,12 +596,18 @@ def _annotate_gnomad(patch, vcf_path: Path, step: int, total: int, is_update: bo
                 str(vcf_path),
             ],
             stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
             text=True,
         )
         rows = patch.update_gnomad_from_stream(iter(proc.stdout))
         total_rows += rows
-        proc.wait()
+        rc = proc.wait()
+        if rc != 0:
+            stderr = proc.stderr.read() if proc.stderr else ""
+            raise RuntimeError(
+                f"bcftools annotate (gnomAD) failed with exit code {rc} "
+                f"on chr{chrom}: {stderr}"
+            )
 
     patch.set_metadata("gnomad", "v4.1", status="complete")
     print(f"    {total_rows} variants updated")
@@ -670,7 +699,7 @@ def _run_init(args):
     if not _validate_vcf(vcf_path):
         sys.exit(1)
     config_dir = Path(user_config_dir("genechat"))
-    config_path = write_config(vcf_path, config_dir)
+    config_path = write_config(vcf_path, config_dir, sample_name=args.label or "")
     print(f"  Config: {config_path}")
 
     # Step 2: Ensure lookup_tables.db
@@ -693,6 +722,10 @@ def _run_init(args):
     download_snpeff_db()
     if args.gnomad:
         download_gnomad()
+    if args.dbsnp:
+        from genechat.download import download_dbsnp
+
+        download_dbsnp()
 
     # Step 4: Annotate
     print("\nStep 4: Building annotation database...")
@@ -782,9 +815,9 @@ def _run_update(args):
         stale = []
         for source in ["clinvar"]:
             meta = installed.get(source, {})
-            inst_date = meta.get("updated_at", "")
+            inst_ver = meta.get("version", "")
             latest_ver = latest.get(source)
-            if latest_ver and (not inst_date or latest_ver > inst_date):
+            if latest_ver and (not inst_ver or latest_ver > inst_ver):
                 stale.append(source)
 
         if not stale:

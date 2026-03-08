@@ -76,17 +76,33 @@ def _find_config_file() -> Path | None:
     return None
 
 
-def write_config(vcf_path: Path, config_dir: Path) -> Path:
-    """Write a config.toml with the given VCF path. Returns the config file path."""
+def write_config(vcf_path: Path, config_dir: Path, sample_name: str = "") -> Path:
+    """Write or update config.toml with the given VCF path.
+
+    Preserves existing settings (server, display, patch_db) if the config
+    already exists. Returns the config file path.
+    """
     config_dir.mkdir(parents=True, exist_ok=True)
     config_path = config_dir / "config.toml"
 
-    # Use TOML literal string (single quotes) so backslashes aren't treated as escapes
-    vcf_literal = str(vcf_path).replace("'", "''")
-    content = f"[genome]\nvcf_path = '{vcf_literal}'\n"
+    # Read existing config to preserve all settings
+    data: dict = {}
+    if config_path.exists():
+        try:
+            with open(config_path, "rb") as f:
+                data = tomllib.load(f)
+        except Exception:
+            data = {}
+
+    # Update genome section, preserving other genome fields (e.g. patch_db)
+    genome = data.setdefault("genome", {})
+    genome["vcf_path"] = str(vcf_path)
+    if sample_name:
+        genome["sample_name"] = sample_name
+
+    content = _serialize_config(data)
 
     # Write via temp file with 0o600 permissions, then atomically replace.
-    # This ensures correct permissions even when overwriting an existing file.
     tmp_path = config_path.with_suffix(".tmp")
     fd = os.open(tmp_path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
     try:
@@ -98,6 +114,27 @@ def write_config(vcf_path: Path, config_dir: Path) -> Path:
     os.replace(tmp_path, config_path)
 
     return config_path
+
+
+def _serialize_config(data: dict) -> str:
+    """Serialize config dict to TOML. Handles str, int, float, bool values."""
+    lines = []
+    for section, values in data.items():
+        if not isinstance(values, dict):
+            continue
+        lines.append(f"[{section}]")
+        for key, val in values.items():
+            if isinstance(val, str) and not val:
+                continue  # Skip unset string fields
+            if isinstance(val, bool):
+                lines.append(f"{key} = {'true' if val else 'false'}")
+            elif isinstance(val, (int, float)):
+                lines.append(f"{key} = {val}")
+            else:
+                s = str(val).replace("\\", "\\\\").replace('"', '\\"')
+                lines.append(f'{key} = "{s}"')
+        lines.append("")
+    return "\n".join(lines)
 
 
 def load_config(path: str | None = None) -> AppConfig:
