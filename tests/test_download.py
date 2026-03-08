@@ -218,12 +218,16 @@ class TestDbsnpDownload:
 
         def mock_run(cmd, **kwargs):
             calls.append(cmd)
+            from pathlib import Path as P
+
             # For bcftools annotate, create the output file
             if "annotate" in cmd and "-o" in cmd:
                 out_idx = cmd.index("-o") + 1
-                from pathlib import Path as P
-
                 P(cmd[out_idx]).write_bytes(b"renamed")
+            # For tabix, create the .tbi index file
+            if "tabix" in cmd[0]:
+                vcf_arg = cmd[-1]
+                P(vcf_arg + ".tbi").write_bytes(b"fake-tbi")
             return subprocess.CompletedProcess(cmd, 0)
 
         monkeypatch.setattr("subprocess.run", mock_run)

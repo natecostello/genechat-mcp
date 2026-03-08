@@ -214,6 +214,7 @@ def download_dbsnp(force: bool = False) -> Path | None:
     _write_refseq_chr_map(chr_map)
 
     tmp = chrfixed.with_suffix(".tmp.vcf.gz")
+    tmp_tbi = tmp.with_suffix(tmp.suffix + ".tbi")
     try:
         subprocess.run(
             [
@@ -229,20 +230,22 @@ def download_dbsnp(force: bool = False) -> Path | None:
             check=True,
             capture_output=True,
         )
-        import os
-
-        os.replace(tmp, chrfixed)
         subprocess.run(
-            ["tabix", "-p", "vcf", str(chrfixed)],
+            ["tabix", "-p", "vcf", str(tmp)],
             check=True,
             capture_output=True,
         )
+        # Both VCF and index succeeded — atomically replace final files
+        import os
+
+        os.replace(tmp, chrfixed)
+        os.replace(tmp_tbi, chrfixed_tbi)
     except subprocess.CalledProcessError as e:
         print(f"  ERROR: dbSNP contig rename failed: {e}", file=sys.stderr)
         if hasattr(e, "stderr") and e.stderr:
             print(f"  {e.stderr.decode()[:500]}", file=sys.stderr)
-        chrfixed.unlink(missing_ok=True)
         tmp.unlink(missing_ok=True)
+        tmp_tbi.unlink(missing_ok=True)
         return None
     finally:
         chr_map.unlink(missing_ok=True)
@@ -254,7 +257,7 @@ def download_dbsnp(force: bool = False) -> Path | None:
 def _write_refseq_chr_map(path: Path) -> None:
     """Write a RefSeq-to-chr contig rename map for bcftools --rename-chrs.
 
-    Maps NC_000001.11 → chr1, ..., NC_000022.12 → chr22,
+    Maps NC_000001.11 → chr1, ..., NC_000022.11 → chr22,
     NC_000023.11 → chrX, NC_000024.10 → chrY, NC_012920.1 → chrMT.
     """
     # RefSeq accessions for GRCh38 primary assembly
