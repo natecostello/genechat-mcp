@@ -117,7 +117,8 @@ def _detect_snpeff_db() -> str:
             text=True,
             timeout=10,
         )
-        version_line = result.stderr.split("\n")[0] if result.stderr else ""
+        output = result.stderr or result.stdout or ""
+        version_line = output.split("\n")[0]
         if "4.3" in version_line:
             return "GRCh38.86"
     except (subprocess.SubprocessError, OSError):

@@ -97,3 +97,27 @@ class TestDetectSnpeffDb:
 
         monkeypatch.setattr("subprocess.run", fail_run)
         assert _detect_snpeff_db() == "GRCh38.p14"
+
+    def test_detects_4_3_from_stderr(self, monkeypatch):
+        import subprocess
+
+        def mock_run(*a, **kw):
+            r = subprocess.CompletedProcess(a, 0)
+            r.stdout = ""
+            r.stderr = "SnpEff\t4.3t\t2017-11-24\n"
+            return r
+
+        monkeypatch.setattr("subprocess.run", mock_run)
+        assert _detect_snpeff_db() == "GRCh38.86"
+
+    def test_detects_4_3_from_stdout(self, monkeypatch):
+        import subprocess
+
+        def mock_run(*a, **kw):
+            r = subprocess.CompletedProcess(a, 0)
+            r.stdout = "SnpEff\t4.3t\t2017-11-24\n"
+            r.stderr = ""
+            return r
+
+        monkeypatch.setattr("subprocess.run", mock_run)
+        assert _detect_snpeff_db() == "GRCh38.86"
