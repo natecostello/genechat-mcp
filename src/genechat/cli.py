@@ -655,6 +655,9 @@ def _annotate_dbsnp(patch, vcf_path: Path, step: int, total: int, is_update: boo
     patch.set_metadata("dbsnp", version or "unknown", status="pending")
 
     try:
+        import tempfile
+
+        stderr_file = tempfile.SpooledTemporaryFile(max_size=64 * 1024, mode="w+")
         proc = subprocess.Popen(
             [
                 "bcftools",
@@ -666,13 +669,19 @@ def _annotate_dbsnp(patch, vcf_path: Path, step: int, total: int, is_update: boo
                 str(vcf_path),
             ],
             stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,
+            stderr=stderr_file,
             text=True,
         )
         rows = patch.update_dbsnp_from_stream(iter(proc.stdout))
         rc = proc.wait()
         if rc != 0:
-            raise RuntimeError(f"bcftools annotate (dbSNP) failed with exit code {rc}")
+            stderr_file.seek(0)
+            stderr_tail = stderr_file.read()[-500:]
+            stderr_file.close()
+            raise RuntimeError(
+                f"bcftools annotate (dbSNP) failed with exit code {rc}: {stderr_tail}"
+            )
+        stderr_file.close()
     except Exception:
         patch.set_metadata("dbsnp", version or "unknown", status="failed")
         raise
