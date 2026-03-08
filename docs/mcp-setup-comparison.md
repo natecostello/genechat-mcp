@@ -44,7 +44,7 @@ Most complex servers require cloning. Only SCMCP, GDAL MCP, and Engram (binary) 
 | **GDAL MCP** | None (operates on user data) | — | — |
 | **Engram** | Ollama embedding model | ~270 MB | `ollama pull nomic-embed-text` |
 
-GeneChat and bio-mcp-blast are the heaviest here — bioinformatics reference databases are large. But GeneChat's is a one-time download with a single script, while BLAST databases must be individually selected and downloaded.
+GeneChat and bio-mcp-blast are the heaviest here — bioinformatics reference databases are large. But GeneChat's is a one-time download via a single CLI command, while BLAST databases must be individually selected and downloaded.
 
 ### 4. Process / Transform Data
 
