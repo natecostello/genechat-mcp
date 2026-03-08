@@ -171,8 +171,9 @@ def dbsnp_path() -> Path:
 def download_dbsnp(force: bool = False) -> Path | None:
     """Download dbSNP VCF + index, rename contigs to chr prefix.
 
-    Returns path to the chr-fixed VCF, or None on failure.
-    Requires bcftools and tabix for contig rename.
+    Returns path to the chr-fixed VCF on success.
+    Returns None only if required tools are missing or post-download
+    processing (rename/index) fails; download/network errors will raise.
     """
     ddir = dbsnp_dir()
     ddir.mkdir(parents=True, exist_ok=True)
