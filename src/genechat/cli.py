@@ -288,6 +288,7 @@ def _run_annotate(args):
 
     from genechat.download import (
         clinvar_installed,
+        dbsnp_installed,
         gnomad_installed,
         snpeff_installed,
     )
@@ -306,7 +307,7 @@ def _run_annotate(args):
     run_snpeff = first_run or args.snpeff or args.all
     run_clinvar = first_run or args.clinvar or args.all
     run_gnomad = (first_run or args.gnomad or args.all) and gnomad_installed()
-    run_dbsnp = args.dbsnp or args.all  # never auto-run dbSNP (too large)
+    run_dbsnp = (args.dbsnp or args.all) and dbsnp_installed()
 
     # Check prerequisites
     if run_snpeff and not snpeff_installed():
@@ -368,6 +369,9 @@ def _run_annotate(args):
         if run_dbsnp:
             step += 1
             _annotate_dbsnp(patch, vcf_path, step, total_steps, not first_run)
+        elif (args.dbsnp or args.all) and not dbsnp_installed():
+            print("  dbSNP: skipped (not installed)")
+            print("    Install: genechat download --dbsnp (~20 GB)")
 
         # Store VCF fingerprint
         patch.store_vcf_fingerprint(vcf_path)
@@ -634,11 +638,86 @@ def _annotate_gnomad(patch, vcf_path: Path, step: int, total: int, is_update: bo
 
 
 def _annotate_dbsnp(patch, vcf_path: Path, step: int, total: int, is_update: bool):
-    """Step 4: dbSNP rsID backfill."""
+    """Step 4: dbSNP rsID backfill.
+
+    Runs bcftools annotate with the chr-fixed dbSNP VCF to fill rsIDs
+    for variants that lack them (rsid IS NULL in patch.db).
+    """
+    from genechat.download import dbsnp_path
+
+    dbsnp_vcf = dbsnp_path()
     print(f"  [{step}/{total}] dbSNP rsID backfill...")
-    print("    NOTE: dbSNP annotation requires a local dbSNP VCF.")
-    print("    This feature is not yet fully automated.")
-    # TODO: implement when dbSNP download is automated
+
+    if is_update:
+        patch.clear_layer("dbsnp")
+
+    version = _dbsnp_version(dbsnp_vcf)
+    patch.set_metadata("dbsnp", version or "unknown", status="pending")
+
+    import tempfile
+
+    proc = None
+    try:
+        with tempfile.SpooledTemporaryFile(
+            max_size=64 * 1024, mode="w+"
+        ) as stderr_file:
+            proc = subprocess.Popen(
+                [
+                    "bcftools",
+                    "annotate",
+                    "-a",
+                    str(dbsnp_vcf),
+                    "-c",
+                    "ID",
+                    str(vcf_path),
+                ],
+                stdout=subprocess.PIPE,
+                stderr=stderr_file,
+                text=True,
+            )
+            try:
+                rows = patch.update_dbsnp_from_stream(iter(proc.stdout))
+                rc = proc.wait()
+                if rc != 0:
+                    stderr_file.seek(0)
+                    stderr_tail = stderr_file.read()[-500:]
+                    raise RuntimeError(
+                        f"bcftools annotate (dbSNP) failed with exit code {rc}:"
+                        f" {stderr_tail}"
+                    )
+            finally:
+                if proc.stdout is not None:
+                    proc.stdout.close()
+    except Exception:
+        if proc is not None and proc.poll() is None:
+            proc.terminate()
+            try:
+                proc.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+                proc.wait()
+        patch.set_metadata("dbsnp", version or "unknown", status="failed")
+        raise
+
+    patch.set_metadata("dbsnp", version or "unknown", status="complete")
+    print(f"    {rows} variants updated")
+
+
+def _dbsnp_version(dbsnp_vcf: Path) -> str | None:
+    """Extract dbSNP build version from the ##dbSNP_BUILD_ID= header."""
+    try:
+        result = subprocess.run(
+            ["bcftools", "view", "-h", str(dbsnp_vcf)],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        for line in result.stdout.split("\n"):
+            if line.startswith("##dbSNP_BUILD_ID="):
+                return "Build " + line.split("=", 1)[1].strip()
+    except (subprocess.CalledProcessError, OSError):
+        pass
+    return None
 
 
 def _print_annotation_status(patch_db_path: Path):
@@ -933,6 +1012,7 @@ def _run_status():
     # References status
     from genechat.download import (
         clinvar_installed,
+        dbsnp_installed,
         gnomad_installed,
         references_dir,
         snpeff_installed,
@@ -947,6 +1027,9 @@ def _run_status():
     )
     print(
         f"  gnomAD:   {'installed' if gnomad_installed() else 'not installed — genechat download --gnomad'}"
+    )
+    print(
+        f"  dbSNP:    {'installed' if dbsnp_installed() else 'not installed — genechat download --dbsnp'}"
     )
 
     print("\nRun `genechat update` to check for newer versions.")

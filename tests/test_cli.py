@@ -259,6 +259,13 @@ class TestDownload:
         main(["download", "--all"])
         assert set(calls) == {"clinvar", "snpeff", "gnomad", "dbsnp"}
 
+    def test_dbsnp_flag_only(self, monkeypatch, capsys):
+        """--dbsnp alone downloads only dbSNP (not ClinVar/SnpEff)."""
+        calls = _mock_downloads(monkeypatch)
+        main(["download", "--dbsnp"])
+        assert "dbsnp" in calls
+        assert "clinvar" not in calls
+
 
 # ---------------------------------------------------------------------------
 # genechat annotate
@@ -293,6 +300,134 @@ class TestAnnotate:
         assert "snpeff" in out
         assert "GRCh38.p14" in out
 
+    def test_annotate_dbsnp_calls_bcftools(self, tmp_path, monkeypatch, capsys):
+        """_annotate_dbsnp invokes bcftools with correct args and updates metadata."""
+        from genechat.cli import _annotate_dbsnp
+        from genechat.patch import PatchDB
+
+        patch_path = tmp_path / "test.patch.db"
+        patch = PatchDB.create(patch_path)
+
+        # Populate a variant without rsID
+        snpeff_lines = [
+            "chr12\t21178615\t.\tT\tC\t.\tPASS\t"
+            "ANN=C|missense_variant|MODERATE|SLCO1B1||\n"
+        ]
+        patch.populate_from_snpeff_stream(iter(snpeff_lines))
+
+        # Mock dbsnp_path and _dbsnp_version
+        fake_dbsnp = tmp_path / "dbsnp_chrfixed.vcf.gz"
+        fake_dbsnp.write_bytes(b"fake")
+        monkeypatch.setattr("genechat.download.dbsnp_path", lambda: fake_dbsnp)
+        monkeypatch.setattr("genechat.cli._dbsnp_version", lambda _path: "Build 156")
+
+        popen_calls = []
+        fake_vcf = tmp_path / "raw.vcf.gz"
+        fake_vcf.write_bytes(b"fake")
+
+        # Mock Popen to return dbSNP-annotated VCF lines
+        class MockStdout:
+            """Iterable stdout mock with close() support."""
+
+            def __init__(self, lines):
+                self._iter = iter(lines)
+
+            def __iter__(self):
+                return self._iter
+
+            def __next__(self):
+                return next(self._iter)
+
+            def close(self):
+                pass
+
+        class MockProc:
+            def __init__(self, cmd, **kw):
+                popen_calls.append(cmd)
+                self.stdout = MockStdout(
+                    ["chr12\t21178615\trs4149056\tT\tC\t.\tPASS\t.\tGT\t0/1\n"]
+                )
+                self.returncode = 0
+
+            def wait(self):
+                return 0
+
+            def poll(self):
+                return 0
+
+        monkeypatch.setattr("genechat.cli.subprocess.Popen", MockProc)
+
+        _annotate_dbsnp(patch, fake_vcf, step=1, total=1, is_update=False)
+
+        # Verify bcftools was called with -c ID
+        assert len(popen_calls) == 1
+        cmd = popen_calls[0]
+        assert "bcftools" in cmd[0]
+        assert "-c" in cmd
+        assert "ID" in cmd
+
+        # Verify rsID was written to patch.db
+        ann = patch.get_annotation("chr12", 21178615, "T", "C")
+        assert ann["rsid"] == "rs4149056"
+        assert ann["rsid_source"] == "dbsnp"
+
+        # Verify metadata was set
+        meta = patch.get_metadata()
+        assert meta["dbsnp"]["version"] == "Build 156"
+        assert meta["dbsnp"]["status"] == "complete"
+
+        patch.close()
+
+    def test_annotate_dbsnp_failure_sets_metadata(self, tmp_path, monkeypatch, capsys):
+        """_annotate_dbsnp sets metadata to 'failed' on bcftools failure."""
+        from genechat.cli import _annotate_dbsnp
+        from genechat.patch import PatchDB
+
+        patch_path = tmp_path / "test.patch.db"
+        patch = PatchDB.create(patch_path)
+
+        snpeff_lines = [
+            "chr12\t21178615\t.\tT\tC\t.\tPASS\t"
+            "ANN=C|missense_variant|MODERATE|SLCO1B1||\n"
+        ]
+        patch.populate_from_snpeff_stream(iter(snpeff_lines))
+
+        fake_dbsnp = tmp_path / "dbsnp_chrfixed.vcf.gz"
+        fake_dbsnp.write_bytes(b"fake")
+        monkeypatch.setattr("genechat.download.dbsnp_path", lambda: fake_dbsnp)
+        monkeypatch.setattr("genechat.cli._dbsnp_version", lambda _path: "Build 156")
+
+        fake_vcf = tmp_path / "raw.vcf.gz"
+        fake_vcf.write_bytes(b"fake")
+
+        class MockStdout:
+            def __iter__(self):
+                return iter([])
+
+            def close(self):
+                pass
+
+        class MockProc:
+            def __init__(self, cmd, **kw):
+                self.stdout = MockStdout()
+                self.returncode = 1
+
+            def wait(self):
+                return 1
+
+            def poll(self):
+                return 1
+
+        monkeypatch.setattr("genechat.cli.subprocess.Popen", MockProc)
+
+        with pytest.raises(RuntimeError, match="failed with exit code 1"):
+            _annotate_dbsnp(patch, fake_vcf, step=1, total=1, is_update=False)
+
+        meta = patch.get_metadata()
+        assert meta["dbsnp"]["status"] == "failed"
+
+        patch.close()
+
 
 # ---------------------------------------------------------------------------
 # genechat status
@@ -317,6 +452,7 @@ class TestStatus:
         monkeypatch.setattr("genechat.download.clinvar_installed", lambda: False)
         monkeypatch.setattr("genechat.download.snpeff_installed", lambda: False)
         monkeypatch.setattr("genechat.download.gnomad_installed", lambda: False)
+        monkeypatch.setattr("genechat.download.dbsnp_installed", lambda: False)
 
         main(["status"])
 
@@ -324,6 +460,7 @@ class TestStatus:
         assert "test" in out
         assert "exists" in out
         assert "Patch DB: not built" in out
+        assert "dbSNP" in out
 
 
 # ---------------------------------------------------------------------------
