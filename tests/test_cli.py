@@ -194,6 +194,7 @@ def test_init_missing_lookup_db_no_source_checkout(tmp_path, capsys, monkeypatch
     assert exc_info.value.code == 1
     captured = capsys.readouterr()
     assert "lookup_tables.db not found" in captured.err
+    assert "Reinstall genechat" in captured.err
     # Config should NOT have been written
     assert not (config_dir / "config.toml").exists()
 

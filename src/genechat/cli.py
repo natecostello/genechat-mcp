@@ -85,8 +85,9 @@ def _run_init(vcf_path_str: str):
         sys.exit(1)
 
     # 4. Ensure lookup_tables.db exists; build automatically if in source checkout
-    db_ref = resources.files("genechat") / "data" / "lookup_tables.db"
-    with resources.as_file(db_ref) as db_path:
+    data_dir_ref = resources.files("genechat") / "data"
+    with resources.as_file(data_dir_ref) as data_dir:
+        db_path = data_dir / "lookup_tables.db"
         if not db_path.exists():
             project_root = _find_project_root()
             build_script = (
@@ -106,7 +107,7 @@ def _run_init(vcf_path_str: str):
                 import importlib.util
 
                 spec = importlib.util.spec_from_file_location(
-                    "build_lookup_db", str(build_script)
+                    "genechat_build_lookup_db", str(build_script)
                 )
                 if spec is None or spec.loader is None:
                     print(
@@ -128,13 +129,23 @@ def _run_init(vcf_path_str: str):
                     print(f"  Reason: {exc}", file=sys.stderr)
                     sys.exit(1)
                 print(f"  Built: {db_path}")
+            elif project_root:
+                print(
+                    "Error: lookup_tables.db not found and seed data is missing.",
+                    file=sys.stderr,
+                )
+                print("Build it with:", file=sys.stderr)
+                print("  uv run python scripts/build_lookup_db.py", file=sys.stderr)
+                sys.exit(1)
             else:
                 print(
                     "Error: lookup_tables.db not found. The server cannot start without it.",
                     file=sys.stderr,
                 )
-                print("Build it with:", file=sys.stderr)
-                print("  uv run python scripts/build_lookup_db.py", file=sys.stderr)
+                print(
+                    "Reinstall genechat or run from a source checkout.",
+                    file=sys.stderr,
+                )
                 sys.exit(1)
 
     # 5. Write config.toml
