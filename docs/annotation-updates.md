@@ -31,8 +31,8 @@ Because the columns are independent, any single layer can be updated in isolatio
 ClinVar reclassifications are the most clinically impactful updates. Recommended: every 3-6 months.
 
 ```bash
-# Download latest ClinVar, then re-annotate the ClinVar layer only
-genechat download          # Downloads latest ClinVar VCF
+# Re-download references (ClinVar + SnpEff DB by default), then re-annotate ClinVar only
+genechat download --force
 genechat annotate --clinvar
 ```
 
