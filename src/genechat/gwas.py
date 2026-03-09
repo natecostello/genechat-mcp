@@ -8,6 +8,7 @@ and the build script (`scripts/build_gwas_db.py`).
 import csv
 import io
 import os
+import re
 import sqlite3
 import zipfile
 from pathlib import Path
@@ -85,12 +86,15 @@ def _safe_int(val: str) -> int | None:
         return None
 
 
+_RSID_RE = re.compile(r"^rs\d+$")
+
+
 def _parse_rsid(snps_field: str) -> str | None:
     if not snps_field:
         return None
     for part in snps_field.split(";"):
         part = part.strip().split("-")[0]
-        if part.startswith("rs"):
+        if _RSID_RE.match(part):
             return part
     return None
 

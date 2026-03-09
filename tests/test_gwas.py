@@ -35,6 +35,7 @@ class TestParsingHelpers:
         assert _parse_rsid("rs12345-A") == "rs12345"
         assert _parse_rsid("") is None
         assert _parse_rsid("chr1:100") is None
+        assert _parse_rsid("rsABC") is None  # non-numeric suffix rejected
 
     def test_parse_risk_allele(self):
         assert _parse_risk_allele("rs12345-A") == "A"
