@@ -1223,12 +1223,11 @@ def _run_status():
         try:
             import sqlite3 as _sql
 
-            _c = _sql.connect(str(gwas_path))
-            _r = _c.execute(
-                "SELECT name FROM sqlite_master WHERE type='table' AND name='gwas_associations'"
-            ).fetchone()
-            gwas_ok = _r is not None
-            _c.close()
+            with _sql.connect(str(gwas_path)) as _c:
+                _r = _c.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table' AND name='gwas_associations'"
+                ).fetchone()
+                gwas_ok = _r is not None
         except _sql.Error:
             pass
     print(
