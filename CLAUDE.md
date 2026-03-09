@@ -29,7 +29,7 @@ Each DEVIATED or DEFERRED item must include a one-line rationale.
 
 - [x] Make GeneChat installable via `uv tool install` / `pip install` — [plan](docs/pip-install-plan.md)
 - [ ] Verify README quickstart instructions work end-to-end with a fresh VCF
-- [ ] Documentation audit: create community files, decide on CLAUDE.md scope and planning docs — see memory/doc-audit.md
+- [ ] Documentation audit: create community files, decide on CLAUDE.md scope and planning docs
 - [ ] gnomAD incremental download+annotate+delete per chromosome (reduce peak disk from ~150 GB to ~17 GB)
 
 ## Project Overview

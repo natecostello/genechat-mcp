@@ -124,7 +124,7 @@ This will:
 **Optional extras** (combine any flags in a single init):
 
 ```bash
-# Include gnomAD population frequencies (~150 GB) and/or GWAS trait search (~300 MB)
+# Include gnomAD population frequencies (~150 GB) and/or GWAS trait search (~58 MB download)
 uv run genechat init /path/to/your/raw.vcf.gz --gnomad --gwas
 ```
 
