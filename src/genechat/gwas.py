@@ -154,72 +154,82 @@ def build_gwas_db(zip_path: Path | None = None, db_path: Path | None = None) -> 
         download_gwas_catalog(zip_path)
 
     db_path.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(str(db_path))
-    conn.execute("DROP TABLE IF EXISTS gwas_associations")
-    conn.execute(CREATE_TABLE)
+    tmp_db = db_path.with_suffix(".tmp.db")
+    conn = sqlite3.connect(str(tmp_db))
+    try:
+        conn.execute(CREATE_TABLE)
 
-    rows_inserted = 0
-    rows_skipped = 0
+        rows_inserted = 0
+        rows_skipped = 0
 
-    with zipfile.ZipFile(str(zip_path)) as z:
-        tsv_name = z.namelist()[0]
-        with z.open(tsv_name) as f:
-            reader = csv.reader(io.TextIOWrapper(f, encoding="utf-8"), delimiter="\t")
-            next(reader)  # skip header
-
-            batch = []
-            for row in reader:
-                if len(row) < 35:
-                    rows_skipped += 1
-                    continue
-
-                trait = row[COL_TRAIT].strip()
-                if not trait:
-                    rows_skipped += 1
-                    continue
-
-                batch.append(
-                    (
-                        _parse_rsid(row[COL_SNPS]),
-                        _normalize_chrom(row[COL_CHR]),
-                        _safe_int(row[COL_POS]),
-                        row[COL_MAPPED_GENE].strip() or None,
-                        trait,
-                        row[COL_MAPPED_TRAIT].strip() or None,
-                        _parse_risk_allele(row[COL_RISK_ALLELE]),
-                        _safe_float(row[COL_RAF]),
-                        _safe_float(row[COL_PVALUE]),
-                        _safe_float(row[COL_OR_BETA]),
-                        row[COL_CI].strip() or None,
-                        row[COL_PUBMEDID].strip() or None,
-                        row[COL_FIRST_AUTHOR].strip() or None,
-                        (
-                            row[COL_STUDY_ACC].strip()
-                            if len(row) > COL_STUDY_ACC
-                            else None
-                        ),
-                    )
+        with zipfile.ZipFile(str(zip_path)) as z:
+            tsv_name = z.namelist()[0]
+            with z.open(tsv_name) as f:
+                reader = csv.reader(
+                    io.TextIOWrapper(f, encoding="utf-8"), delimiter="\t"
                 )
-                rows_inserted += 1
+                next(reader)  # skip header
 
-                if len(batch) >= 10000:
+                batch = []
+                for row in reader:
+                    if len(row) < 35:
+                        rows_skipped += 1
+                        continue
+
+                    trait = row[COL_TRAIT].strip()
+                    if not trait:
+                        rows_skipped += 1
+                        continue
+
+                    batch.append(
+                        (
+                            _parse_rsid(row[COL_SNPS]),
+                            _normalize_chrom(row[COL_CHR]),
+                            _safe_int(row[COL_POS]),
+                            row[COL_MAPPED_GENE].strip() or None,
+                            trait,
+                            row[COL_MAPPED_TRAIT].strip() or None,
+                            _parse_risk_allele(row[COL_RISK_ALLELE]),
+                            _safe_float(row[COL_RAF]),
+                            _safe_float(row[COL_PVALUE]),
+                            _safe_float(row[COL_OR_BETA]),
+                            row[COL_CI].strip() or None,
+                            row[COL_PUBMEDID].strip() or None,
+                            row[COL_FIRST_AUTHOR].strip() or None,
+                            (
+                                row[COL_STUDY_ACC].strip()
+                                if len(row) > COL_STUDY_ACC
+                                else None
+                            ),
+                        )
+                    )
+                    rows_inserted += 1
+
+                    if len(batch) >= 10000:
+                        conn.executemany(
+                            "INSERT INTO gwas_associations VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                            batch,
+                        )
+                        batch.clear()
+
+                if batch:
                     conn.executemany(
                         "INSERT INTO gwas_associations VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                         batch,
                     )
-                    batch.clear()
 
-            if batch:
-                conn.executemany(
-                    "INSERT INTO gwas_associations VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-                    batch,
-                )
+        for idx_sql in CREATE_INDEXES:
+            conn.execute(idx_sql)
 
-    for idx_sql in CREATE_INDEXES:
-        conn.execute(idx_sql)
-
-    conn.commit()
+        conn.commit()
+    except Exception:
+        conn.close()
+        tmp_db.unlink(missing_ok=True)
+        raise
     conn.close()
+
+    # Atomic replace — only after successful build
+    os.replace(tmp_db, db_path)
 
     print(f"GWAS associations loaded: {rows_inserted:,}")
     if rows_skipped:
