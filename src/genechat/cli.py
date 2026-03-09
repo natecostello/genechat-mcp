@@ -59,7 +59,9 @@ def main(argv: list[str] | None = None):
         "--gwas", action="store_true", help="Install GWAS Catalog (~58 MB download)"
     )
     inst_p.add_argument(
-        "--force", action="store_true", help="Re-install even if already present"
+        "--force",
+        action="store_true",
+        help="Re-download source files even if already present (DB is always rebuilt)",
     )
 
     # genechat annotate
@@ -263,7 +265,12 @@ def _run_install(args):
     print(f"Data directory: {gwas_db_path().parent}\n")
 
     if args.gwas:
-        _download_and_build_gwas(force=args.force)
+        from genechat.gwas import gwas_installed
+
+        if gwas_installed() and not args.force:
+            print("GWAS Catalog already installed. Use --force to rebuild.")
+        else:
+            _download_and_build_gwas(force=args.force)
     else:
         print("Available databases:")
         print(
@@ -995,13 +1002,15 @@ def _run_init(args):
     print("  lookup_tables.db: OK")
 
     # Step 5: Install GWAS if requested
+    step = 5
     if args.gwas:
-        print("\nStep 5: Installing GWAS Catalog...")
+        print(f"\nStep {step}: Installing GWAS Catalog...")
         install_args = argparse.Namespace(gwas=True, force=False)
         _run_install(install_args)
+        step += 1
 
-    # Step 6: Annotate (auto-downloads ClinVar, SnpEff DB, dbSNP, gnomAD as needed)
-    print("\nStep 6: Building annotation database...")
+    # Next step: Annotate (auto-downloads ClinVar, SnpEff DB, dbSNP, gnomAD as needed)
+    print(f"\nStep {step}: Building annotation database...")
     ann_args = argparse.Namespace(
         clinvar=False,
         gnomad=args.gnomad,

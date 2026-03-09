@@ -296,7 +296,7 @@ class TestInstall:
     def test_no_flags_shows_available(self, monkeypatch, capsys):
         """install with no flags lists available databases."""
         monkeypatch.setattr(
-            "genechat.download.references_dir", lambda: Path("/tmp/refs")
+            "genechat.gwas.gwas_db_path", lambda: Path("/tmp/data/gwas.db")
         )
         main(["install"])
         out = capsys.readouterr().out
@@ -307,14 +307,25 @@ class TestInstall:
         """--gwas installs the GWAS Catalog."""
         calls = []
         monkeypatch.setattr(
-            "genechat.download.references_dir", lambda: Path("/tmp/refs")
+            "genechat.gwas.gwas_db_path", lambda: Path("/tmp/data/gwas.db")
         )
+        monkeypatch.setattr("genechat.gwas.gwas_installed", lambda: False)
         monkeypatch.setattr(
             "genechat.cli._download_and_build_gwas",
             lambda **kw: calls.append("gwas"),
         )
         main(["install", "--gwas"])
         assert "gwas" in calls
+
+    def test_gwas_skips_when_installed(self, monkeypatch, capsys):
+        """--gwas without --force skips when already installed."""
+        monkeypatch.setattr(
+            "genechat.gwas.gwas_db_path", lambda: Path("/tmp/data/gwas.db")
+        )
+        monkeypatch.setattr("genechat.gwas.gwas_installed", lambda: True)
+        main(["install", "--gwas"])
+        out = capsys.readouterr().out
+        assert "already installed" in out
 
 
 # ---------------------------------------------------------------------------
