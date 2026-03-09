@@ -280,7 +280,7 @@ def _run_download(args):
         download_dbsnp(force=args.force)
 
     if args.gwas or download_all:
-        _download_and_build_gwas()
+        _download_and_build_gwas(force=args.force)
 
     print("\nDownload complete.")
 
@@ -1217,10 +1217,10 @@ def _run_status():
         f"  dbSNP:    {'installed' if dbsnp_installed() else 'not installed — genechat download --dbsnp'}"
     )
 
-    from genechat.gwas import gwas_installed
-
+    gwas_path = Path(config.gwas_db_path)
+    gwas_ok = gwas_path.exists()
     print(
-        f"  GWAS:     {'installed' if gwas_installed() else 'not installed — genechat download --gwas'}"
+        f"  GWAS:     {'installed' if gwas_ok else 'not installed — genechat download --gwas'}"
     )
 
     print("\nRun `genechat update` to check for newer versions.")
@@ -1264,9 +1264,12 @@ def _run_update_seeds():
 # ---------------------------------------------------------------------------
 
 
-def _download_and_build_gwas():
+def _download_and_build_gwas(force: bool = False):
     """Download GWAS Catalog and build a standalone gwas.db."""
-    from genechat.gwas import build_gwas_db
+    from genechat.gwas import build_gwas_db, download_gwas_catalog
 
-    print("Downloading and building GWAS Catalog...")
+    if force:
+        download_gwas_catalog()
+
+    print("Building GWAS Catalog database...")
     build_gwas_db()
