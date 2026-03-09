@@ -237,7 +237,8 @@ Optional e2e tests against the [GIAB NA12878](https://www.nist.gov/programs-proj
 uv run python scripts/setup_giab.py ./giab
 
 # Annotate using the production pipeline (requires snpEff + bcftools):
-uv run genechat init ./giab/HG001_raw.vcf.gz
+# Include --dbsnp for rsID-based lookups in e2e tests
+uv run genechat init ./giab/HG001_raw.vcf.gz --dbsnp
 
 # Run e2e tests:
 export GENECHAT_GIAB_VCF=./giab/HG001_raw.vcf.gz

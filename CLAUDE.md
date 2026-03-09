@@ -86,7 +86,7 @@ Local Data (encrypted volume recommended)
 - tabix / htslib (required for ClinVar application; e.g. brew install htslib or conda install -c bioconda htslib)
 - SnpEff (annotation step only; brew install brewsci/bio/snpeff)
 - Python 3.11+
-- ~15 GB for reference databases, ~2 GB for annotated VCF
+- ~15 GB for reference databases, ~2 GB for raw VCF + patch.db
 
 ---
 

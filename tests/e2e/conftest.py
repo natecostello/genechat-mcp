@@ -3,7 +3,7 @@
 These tests are auto-skipped when GENECHAT_GIAB_VCF is not set.
 To run:
     uv run python scripts/setup_giab.py ./giab
-    uv run genechat init ./giab/HG001_raw.vcf.gz
+    uv run genechat init ./giab/HG001_raw.vcf.gz --dbsnp
     export GENECHAT_GIAB_VCF=./giab/HG001_raw.vcf.gz
     uv run pytest tests/e2e/ -v
 """
@@ -36,7 +36,7 @@ def pytest_collection_modifyitems(config, items):
     skip_marker = pytest.mark.skip(
         reason=f"{GIAB_VCF_ENV} not set or file not found. "
         "Run: uv run python scripts/setup_giab.py ./giab && "
-        "uv run genechat init ./giab/HG001_raw.vcf.gz && "
+        "uv run genechat init ./giab/HG001_raw.vcf.gz --dbsnp && "
         f"export {GIAB_VCF_ENV}=./giab/HG001_raw.vcf.gz"
     )
     for item in items:

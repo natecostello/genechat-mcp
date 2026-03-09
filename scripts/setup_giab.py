@@ -30,7 +30,6 @@ GIAB_BASE = (
     "/NA12878_HG001/NISTv4.2.1/GRCh38"
 )
 GIAB_VCF_URL = f"{GIAB_BASE}/HG001_GRCh38_1_22_v4.2.1_benchmark.vcf.gz"
-GIAB_TBI_URL = f"{GIAB_BASE}/HG001_GRCh38_1_22_v4.2.1_benchmark.vcf.gz.tbi"
 
 
 def fix_chrom(chrom: str) -> str:
