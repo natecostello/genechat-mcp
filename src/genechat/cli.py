@@ -1217,8 +1217,20 @@ def _run_status():
         f"  dbSNP:    {'installed' if dbsnp_installed() else 'not installed — genechat download --dbsnp'}"
     )
 
+    gwas_ok = False
     gwas_path = Path(config.gwas_db_path)
-    gwas_ok = gwas_path.exists()
+    if gwas_path.exists():
+        try:
+            import sqlite3 as _sql
+
+            _c = _sql.connect(str(gwas_path))
+            _r = _c.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='gwas_associations'"
+            ).fetchone()
+            gwas_ok = _r is not None
+            _c.close()
+        except _sql.Error:
+            pass
     print(
         f"  GWAS:     {'installed' if gwas_ok else 'not installed — genechat download --gwas'}"
     )
