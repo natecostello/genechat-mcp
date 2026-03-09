@@ -342,6 +342,9 @@ def _run_annotate(args):
     from genechat.download import (
         clinvar_installed,
         dbsnp_installed,
+        download_clinvar,
+        download_dbsnp,
+        download_snpeff_db,
         gnomad_installed,
         snpeff_installed,
     )
@@ -359,12 +362,12 @@ def _run_annotate(args):
     # On first run or --all, run everything available
     run_snpeff = first_run or args.snpeff or args.all
     run_clinvar = first_run or args.clinvar or args.all
-    # gnomAD: run when explicitly requested, or on first run if files already exist
+    # gnomAD/dbSNP: run when explicitly requested, or on first run if already available
     run_gnomad = args.gnomad or args.all or (first_run and gnomad_installed())
     gnomad_incremental = run_gnomad and not gnomad_installed()
-    run_dbsnp = (args.dbsnp or args.all) and dbsnp_installed()
+    run_dbsnp = args.dbsnp or args.all or (first_run and dbsnp_installed())
 
-    # Check prerequisites
+    # Check tool prerequisites (can't auto-install system packages)
     if run_snpeff and not snpeff_installed():
         print(
             "Error: snpEff not found in PATH. Required for functional annotation.",
@@ -378,21 +381,28 @@ def _run_annotate(args):
         print("  Install: brew install bcftools (macOS)", file=sys.stderr)
         sys.exit(1)
 
-    if run_clinvar and not shutil.which("tabix"):
+    if (run_clinvar or run_dbsnp) and not shutil.which("tabix"):
         print(
-            "Error: tabix not found in PATH (needed for ClinVar contig rename).",
+            "Error: tabix not found in PATH (needed for contig rename).",
             file=sys.stderr,
         )
         print("  Install: brew install htslib (macOS)", file=sys.stderr)
         sys.exit(1)
 
+    # Auto-download references if not present
     if run_clinvar and not clinvar_installed():
-        print(
-            "Error: ClinVar reference not found.",
-            file=sys.stderr,
-        )
-        print("Run: genechat download", file=sys.stderr)
-        sys.exit(1)
+        print("  Downloading ClinVar reference...")
+        download_clinvar()
+
+    if run_snpeff:
+        download_snpeff_db()
+
+    if run_dbsnp and not dbsnp_installed():
+        print("  Downloading dbSNP reference...")
+        result = download_dbsnp()
+        if result is None:
+            print("Error: dbSNP download/processing failed.", file=sys.stderr)
+            sys.exit(1)
 
     # Create or open patch.db
     if first_run:
@@ -428,9 +438,6 @@ def _run_annotate(args):
         if run_dbsnp:
             step += 1
             _annotate_dbsnp(patch, vcf_path, step, total_steps, not first_run)
-        elif (args.dbsnp or args.all) and not dbsnp_installed():
-            print("  dbSNP: skipped (not installed)")
-            print("    Install: genechat download --dbsnp (~20 GB)")
 
         # Store VCF fingerprint
         patch.store_vcf_fingerprint(vcf_path)
@@ -989,48 +996,22 @@ def _run_init(args):
         sys.exit(1)
     print("  lookup_tables.db: OK")
 
-    # Step 5: Download references
-    print("\nStep 5: Downloading reference databases...")
-    from genechat.download import (
-        clinvar_installed,
-        download_clinvar,
-        download_snpeff_db,
-        snpeff_installed,
-    )
-
-    download_clinvar()
-    download_snpeff_db()
-    if args.dbsnp:
-        from genechat.download import download_dbsnp
-
-        download_dbsnp()
+    # Step 5: Download GWAS if requested (not handled by annotate)
     if args.gwas:
+        print("\nStep 5: Downloading GWAS Catalog...")
         _download_and_build_gwas()
 
-    # Step 6: Annotate
+    # Step 6: Annotate (auto-downloads ClinVar, SnpEff DB, dbSNP, gnomAD as needed)
     print("\nStep 6: Building annotation database...")
-    if not snpeff_installed():
-        print(
-            "WARNING: snpEff not installed. Skipping annotation.\n"
-            "Install snpEff, then run: genechat annotate",
-            file=sys.stderr,
-        )
-    elif not clinvar_installed():
-        print(
-            "WARNING: ClinVar download failed. Skipping annotation.\n"
-            "Run: genechat download && genechat annotate",
-            file=sys.stderr,
-        )
-    else:
-        ann_args = argparse.Namespace(
-            clinvar=False,
-            gnomad=args.gnomad,
-            snpeff=False,
-            dbsnp=False,
-            all=False,
-            genome=label,
-        )
-        _run_annotate(ann_args)
+    ann_args = argparse.Namespace(
+        clinvar=False,
+        gnomad=args.gnomad,
+        snpeff=False,
+        dbsnp=args.dbsnp,
+        all=False,
+        genome=label,
+    )
+    _run_annotate(ann_args)
 
     # Step 7: Print MCP config
     print("\n--- MCP Configuration ---\n")
