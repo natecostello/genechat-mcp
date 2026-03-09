@@ -258,9 +258,9 @@ def _run_add(vcf_path_str: str, label: str | None = None):
 
 def _run_install(args):
     """Install genome-independent reference databases."""
-    from genechat.download import references_dir
+    from genechat.gwas import gwas_db_path
 
-    print(f"References directory: {references_dir()}\n")
+    print(f"Data directory: {gwas_db_path().parent}\n")
 
     if args.gwas:
         _download_and_build_gwas(force=args.force)
