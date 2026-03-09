@@ -245,9 +245,7 @@ def register(mcp, engines, db, config):
             ]
             if smart_filter:
                 variants2 = [
-                    v
-                    for v in variants2
-                    if not _should_suppress(v, protected_rsids)
+                    v for v in variants2 if not _should_suppress(v, protected_rsids)
                 ]
             variants2 = variants2[:max_results]
 
