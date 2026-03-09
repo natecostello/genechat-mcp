@@ -4,7 +4,7 @@
 
 The patch-architecture-plan.md (v4) explicitly specified dbSNP as Step 4 of the annotation pipeline, with detailed implementation specifications across download, annotation, version detection, and incremental update. When PR #21 was reported as complete and merged, the dbSNP implementation was absent — `download.py` contained a placeholder stub and `cli.py` contained a TODO stub. Meanwhile, `patch.py` had the actual stream parser ready to use.
 
-This was discovered during PR #25 (documentation cleanup) when the user asked why `genechat download --dbsnp` said "manual download required" despite the plan specifying automated download.
+This was discovered during PR #25 (documentation cleanup) when the user asked why `genechat install --dbsnp` said "manual download required" despite the plan specifying automated download.
 
 ## What Was Specified vs What Was Built
 

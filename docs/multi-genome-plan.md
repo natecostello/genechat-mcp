@@ -196,7 +196,7 @@ All user/developer actions should be accessible via CLI. Remaining scripts that 
 | Script | Proposed CLI | Who needs it |
 |--------|-------------|-------------|
 | `build_seed_data.py` | `genechat update --seeds` | Developer updating vendored data from upstream APIs |
-| `build_gwas_db.py` | `genechat download --gwas` (download) + auto-build in `genechat init` | User wanting GWAS trait search |
+| `build_gwas_db.py` | `genechat install --gwas` (download) + auto-build in `genechat init` | User wanting GWAS trait search |
 | `setup_giab.py` | **Remove** — replaced by standard `genechat init` with contig auto-fix | Nobody |
 | `setup_giab.sh` | **Remove** — dead code | Nobody |
 
@@ -210,7 +210,7 @@ Scripts that remain as internal implementation (called by other scripts, never d
 
 Fetches latest data from HGNC, CPIC, and PGS Catalog APIs, regenerates seed TSVs, and rebuilds lookup_tables.db. This is the CLI equivalent of `uv run python scripts/build_seed_data.py`. Requires network access (build-time only).
 
-### `genechat download --gwas`
+### `genechat install --gwas`
 
 Downloads the GWAS Catalog and builds the gwas_associations table in lookup_tables.db. Currently a standalone script (`build_gwas_db.py`). Should integrate into the download subcommand alongside `--gnomad` and `--dbsnp`.
 
@@ -276,7 +276,7 @@ E2e tests are automatically skipped when `GENECHAT_GIAB_VCF` is not set.
 - `genechat init <vcf> --label giab` creates `[genomes.giab]` section
 - `genechat status` lists all registered genomes
 - `genechat update --seeds` fetches from APIs and rebuilds lookup_tables.db
-- `genechat download --gwas` downloads GWAS Catalog and builds the table
+- `genechat install --gwas` downloads GWAS Catalog and builds the table
 - `setup_giab.py` is deleted; e2e tests use standard `genechat init` workflow
 - Tool descriptions (visible to LLM) clearly explain the `genome` and `genome2` parameters
 - README has a "Don't have your genome sequenced?" section with GIAB download + init instructions

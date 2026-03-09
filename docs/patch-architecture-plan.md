@@ -64,7 +64,7 @@ raw.vcf.gz
 ```
 genechat init my.vcf.gz
     -> genechat add      (validate VCF, create index, write config — instant)
-    -> genechat download  (ClinVar + SnpEff DB to shared cache — ~5-10 min)
+    -> genechat install  (ClinVar + SnpEff DB to shared cache — ~5-10 min)
     -> genechat annotate  (pipe bcftools/SnpEff output -> SQLite — ~20-30 min)
     -> write MCP config snippet
 
@@ -88,7 +88,7 @@ Seven commands: 4 plumbing primitives + 2 porcelain compositions + 1 server.
 |---------|------|-------------|---------|----------|
 | `genechat init <vcf>` | Porcelain | Full first-time setup | 25-35 min | Yes |
 | `genechat add <vcf> [--label NAME]` | Plumbing | Register a VCF: validate, index, write config | ~1 sec | No |
-| `genechat download [--clinvar\|--gnomad\|...]` | Plumbing | Download reference databases | 5-90 min | Yes |
+| `genechat install [--clinvar\|--gnomad\|...]` | Plumbing | Download reference databases | 5-90 min | Yes |
 | `genechat annotate [--label NAME] [--clinvar\|...]` | Plumbing | Build/update patch.db for a registered VCF | 2-45 min | No |
 | `genechat update [--apply]` | Plumbing | Check for newer refs; `--apply` downloads + re-annotates | 5 sec / 5-45 min | Yes |
 | `genechat status` | Plumbing | Show genome info, annotation state, reference versions | ~1 sec | No |
@@ -149,7 +149,7 @@ This is the multi-VCF verb: `genechat add partner.vcf.gz --label partner` regist
 
 ---
 
-### Plumbing: `genechat download [options]`
+### Plumbing: `genechat install [options]`
 
 Download reference databases to shared cache: `~/.local/share/genechat/references/` (via platformdirs).
 
@@ -161,7 +161,7 @@ Download reference databases to shared cache: `~/.local/share/genechat/reference
 | `--all` | Everything (recommended + gnomAD + dbSNP) | ~30 GB | ~60-90 min |
 | `--force` | Re-download even if files exist | — | — |
 
-**No flags = recommended set (~1.8 GB), NOT everything.** The large optional databases (gnomAD 8 GB, dbSNP 20 GB) require explicit opt-in. This prevents a user running `genechat download` and accidentally starting a 30 GB download.
+**No flags = recommended set (~1.8 GB), NOT everything.** The large optional databases (gnomAD 8 GB, dbSNP 20 GB) require explicit opt-in. This prevents a user running `genechat install` and accidentally starting a 30 GB download.
 
 **Idempotent:** Skips files that already exist. `--force` overrides.
 
@@ -190,7 +190,7 @@ Build or update the patch.db for a registered VCF. Compute-heavy, no network (re
 ```
 $ genechat annotate
 Error: ClinVar reference not found.
-Run `genechat download` to install recommended references (~1.8 GB).
+Run `genechat install` to install recommended references (~1.8 GB).
 ```
 
 **When optional references are not installed, annotates what it can:**
@@ -200,9 +200,9 @@ Building patch.db for genome "default" (/data/my.vcf.gz)...
   [1/4] SnpEff functional annotation... done (18 min)
   [2/4] ClinVar clinical significance... done (3 min)
   [3/4] gnomAD population frequencies... skipped (not installed)
-        → Population frequency data will be unavailable. Install: genechat download --gnomad (~8 GB)
+        → Population frequency data will be unavailable. Install: genechat install --gnomad (~8 GB)
   [4/4] dbSNP rsID backfill... skipped (not installed)
-        → Some variants will lack rsID identifiers. Install: genechat download --dbsnp (~20 GB)
+        → Some variants will lack rsID identifiers. Install: genechat install --dbsnp (~20 GB)
 Patch database: /data/my.patch.db (487 MB, 4,892,341 variants)
 ```
 
@@ -439,8 +439,8 @@ Annotations:
 References: ~/.local/share/genechat/references/
   ClinVar VCF:  installed (2026-01-15)
   SnpEff DB:    installed (GRCh38.p14)
-  gnomAD:       not installed — genechat download --gnomad
-  dbSNP:        not installed — genechat download --dbsnp
+  gnomAD:       not installed — genechat install --gnomad
+  dbSNP:        not installed — genechat install --dbsnp
   GWAS Catalog: installed (2026-02-20)
 
 Run `genechat update` to check for newer versions.
@@ -857,7 +857,7 @@ For a future optimization, we could add a normalized `clinvar_terms` table for e
 | `scripts/update_snpeff.sh` | `genechat annotate --snpeff` |
 | `scripts/update_dbsnp.sh` | `genechat annotate --dbsnp` |
 | `scripts/update_annotations.sh` | `genechat annotate --all` |
-| `scripts/setup_references.sh` | `genechat download` |
+| `scripts/setup_references.sh` | `genechat install` |
 
 ### New files:
 | File | ~Lines | What |
@@ -1044,7 +1044,7 @@ See the CLI Commands section above for full details. Implementation:
 |---------|------|---------|-------------|
 | `genechat init <vcf>` | Porcelain | `terraform init` | Full first-time setup: add + download + annotate + configure |
 | `genechat add <vcf> [--label]` | Plumbing | `dvc add`, `helm repo add` | Register a VCF (validate, index, write config) |
-| `genechat download [--source]` | Plumbing | `cargo fetch`, `vep INSTALL.pl` | Download reference databases to shared cache |
+| `genechat install [--source]` | Plumbing | `cargo fetch`, `vep INSTALL.pl` | Download reference databases to shared cache |
 | `genechat annotate [--source]` | Plumbing | `snpEff ann`, `cargo build` | Build/update patch.db for a registered VCF |
 | `genechat update [--apply]` | Plumbing | `brew update` + `brew upgrade` | Check for newer refs; `--apply` downloads + re-annotates |
 | `genechat status` | Plumbing | `dvc status`, `git status` | Show genome info, annotation state, reference versions |

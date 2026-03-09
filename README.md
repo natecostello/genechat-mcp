@@ -47,15 +47,15 @@ Your genome data stays on your machine. GeneChat only reads from local files. No
 
 | Command | Purpose |
 |---------|---------|
-| `genechat init <vcf> [--label] [--gnomad] [--dbsnp] [--gwas]` | Full first-time setup: download refs, annotate, write config |
+| `genechat init <vcf> [--label] [--gnomad] [--dbsnp] [--gwas]` | Full first-time setup: annotate, write config |
 | `genechat add <vcf> [--label]` | Register a VCF file without annotation |
-| `genechat download [--gnomad] [--dbsnp] [--gwas] [--all] [--force]` | Download reference databases |
-| `genechat annotate [--clinvar] [--gnomad] [--snpeff] [--dbsnp] [--all] [--genome]` | Build or update patch.db annotation layers |
+| `genechat annotate [--clinvar] [--gnomad] [--snpeff] [--dbsnp] [--all] [--genome]` | Build or update patch.db (auto-downloads references) |
+| `genechat install [--gwas] [--force]` | Install genome-independent reference databases |
 | `genechat update [--apply] [--genome] [--seeds]` | Check for newer reference versions |
 | `genechat status` | Show all registered genomes and annotation state |
 | `genechat serve` / `genechat` | Start the MCP server |
 
-> **Note:** `bcftools` and `tabix` are required for annotation (ClinVar contig rename, gnomAD, and dbSNP). gnomAD (`--gnomad`) downloads ~150 GB of per-chromosome exome VCFs. dbSNP (`--dbsnp`) downloads ~20 GB from NCBI. Neither is included in the default `genechat init` — pass the flags explicitly to enable them.
+> **Note:** `bcftools` and `tabix` are required for annotation (ClinVar contig rename, gnomAD, and dbSNP). References are auto-downloaded when needed. gnomAD (`--gnomad`) downloads ~150 GB of per-chromosome exome VCFs. dbSNP (`--dbsnp`) downloads ~20 GB from NCBI. Neither is included in the default `genechat init` — pass the flags explicitly to enable them.
 
 ## Prerequisites
 
@@ -128,9 +128,9 @@ This will:
 uv run genechat init /path/to/your/raw.vcf.gz --gnomad --gwas
 ```
 
-gnomAD is optional; without it, `query_gene` falls back to ClinVar-only filtering. GWAS enables `query_gwas` for trait association lookups. Both can also be added after init via `genechat annotate --gnomad` / `genechat download --gwas`.
+gnomAD is optional; without it, `query_gene` falls back to ClinVar-only filtering. GWAS enables `query_gwas` for trait association lookups. Both can be added after init via `genechat annotate --gnomad` / `genechat install --gwas`.
 
-> **Disk usage:** `--gnomad` downloads each gnomAD chromosome, annotates from it, then deletes the file — peak disk usage is ~17 GB (one chromosome) rather than ~150 GB for all files at once. `genechat download --gnomad` downloads all files upfront and keeps them for reuse across multiple genomes.
+> **Disk usage:** `--gnomad` downloads each gnomAD chromosome, annotates from it, then deletes the file — peak disk usage is ~17 GB (one chromosome) rather than ~150 GB for all files at once.
 
 > **Time estimate:** Default init takes ~10–15 minutes (SnpEff annotation + ClinVar). With `--gnomad`, allow additional time for the per-chromosome downloads (~150 GB total). Total annotation time depends on VCF size and machine specs.
 
@@ -220,7 +220,7 @@ For incremental updates of individual annotation layers (e.g., updating ClinVar 
 | [dbSNP](https://www.ncbi.nlm.nih.gov/snp/) | rsID identifiers for each genomic position | ~20 GB | `--dbsnp` |
 | [GWAS Catalog](https://www.ebi.ac.uk/gwas/) | 1M+ genome-wide association study findings | ~58 MB download, ~300 MB on disk | `--gwas` |
 
-Default `genechat init` downloads ClinVar + SnpEff (~2 GB). Optional databases are enabled with flags or `genechat download`. Reference files persist after annotation for reuse across multiple genomes.
+Default `genechat init` downloads ClinVar + SnpEff (~2 GB). Optional annotation layers are enabled with flags (e.g. `genechat annotate --gnomad`). Genome-independent databases like GWAS are installed separately (`genechat install --gwas`).
 
 ### Seed Data Pipeline
 

@@ -34,7 +34,7 @@ The GWAS table (1M+ rows) dominates DB size. Including 306 MB in a wheel is unac
 
 **New state**: Two separate databases:
 - `lookup_tables.db` — seed tables only (genes, pgx_drugs, pgx_variants, prs_weights). ~1.7 MB. Shipped in the wheel.
-- `gwas.db` — GWAS associations table only. ~306 MB. Built at runtime by `genechat download --gwas`. Stored in `~/.local/share/genechat/gwas.db`.
+- `gwas.db` — GWAS associations table only. ~306 MB. Built at runtime by `genechat install --gwas`. Stored in `~/.local/share/genechat/gwas.db`.
 
 GWAS data is conceptually a reference database (like ClinVar/gnomAD), not seed data.
 
@@ -125,7 +125,7 @@ Extract the GWAS build logic from `scripts/build_gwas_db.py` into a proper packa
 
 ---
 
-### Item 6: Add `genechat download --gwas` to CLI
+### Item 6: Add `genechat install --gwas` to CLI
 
 **File**: `src/genechat/cli.py`
 
@@ -138,7 +138,7 @@ Extract the GWAS build logic from `scripts/build_gwas_db.py` into a proper packa
    ```
 3. Implement `_download_and_build_gwas()` using the `genechat.gwas` module. Target path: `~/.local/share/genechat/gwas.db`.
 
-**Verification**: `genechat download --gwas` downloads the GWAS catalog and builds `~/.local/share/genechat/gwas.db`. `genechat download --all` includes GWAS.
+**Verification**: `genechat install --gwas` downloads the GWAS catalog and builds `~/.local/share/genechat/gwas.db`. `genechat install --all` includes GWAS.
 
 ---
 
@@ -233,7 +233,7 @@ Keep a comment or note about the development-mode config with `--directory`.
 After init completes, print:
 ```
 Optional: Enable GWAS trait search:
-  genechat download --gwas
+  genechat install --gwas
 ```
 
 **Verification**: `genechat init` output includes GWAS download hint.
