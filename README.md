@@ -121,17 +121,14 @@ This will:
 4. Write a `config.toml` to your OS config directory (`~/Library/Application Support/genechat/` on macOS, `~/.config/genechat/` on Linux)
 5. Print the MCP JSON to paste into Claude Desktop or Claude Code
 
-**Optional extras:**
+**Optional extras** (combine any flags in a single init):
 
 ```bash
-# Include gnomAD population frequencies (~8 GB download)
-uv run genechat init /path/to/your/raw.vcf.gz --gnomad
-
-# Enable GWAS trait search (~58 MB download)
-uv run genechat init /path/to/your/raw.vcf.gz --gwas
+# Include gnomAD population frequencies (~8 GB) and/or GWAS trait search (~58 MB)
+uv run genechat init /path/to/your/raw.vcf.gz --gnomad --gwas
 ```
 
-gnomAD is optional; without it, `query_gene` falls back to ClinVar-only filtering.
+gnomAD is optional; without it, `query_gene` falls back to ClinVar-only filtering. GWAS enables `query_gwas` for trait association lookups. Both can also be added after init via `genechat download --gnomad` / `genechat download --gwas`.
 
 ### Don't have your genome sequenced?
 
