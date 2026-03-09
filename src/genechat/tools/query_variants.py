@@ -46,7 +46,9 @@ def register(mcp, engines, db, config):
 
         show_label = len(engines) > 1
 
-        output = _format_batch_results(results, raw_ids, label if show_label else None)
+        output = _format_batch_results(
+            results, raw_ids, config, label if show_label else None
+        )
 
         # Paired genome
         if genome2:
@@ -63,13 +65,13 @@ def register(mcp, engines, db, config):
                 return "\n".join(output) + DISCLAIMER
 
             output.append("\n---\n")
-            output.extend(_format_batch_results(results2, raw_ids, label2))
+            output.extend(_format_batch_results(results2, raw_ids, config, label2))
 
         return "\n".join(output) + DISCLAIMER
 
 
 def _format_batch_results(
-    results: dict, raw_ids: list[str], label: str | None
+    results: dict, raw_ids: list[str], config, label: str | None
 ) -> list[str]:
     """Format batch variant results into markdown lines."""
     truncated = "_truncated" in results
@@ -118,6 +120,15 @@ def _format_batch_results(
                 if clin.get("condition"):
                     clin_parts.append(clin["condition"])
                 lines.append(f"**ClinVar:** {' — '.join(clin_parts)}")
+            freq = v.get("population_freq", {})
+            if freq and config.display.include_population_freq:
+                freq_parts = []
+                if "global" in freq:
+                    freq_parts.append(f"Global: {freq['global'] * 100:.1f}%")
+                if "popmax" in freq:
+                    freq_parts.append(f"Popmax: {freq['popmax'] * 100:.1f}%")
+                if freq_parts:
+                    lines.append(f"**Frequency:** {' | '.join(freq_parts)}")
 
     if missing:
         lines.append(f"\n### Not Found ({len(missing)})")
