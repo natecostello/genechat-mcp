@@ -42,13 +42,26 @@ Your genome data stays on your machine. GeneChat only reads from local files. No
 | `query_gwas` | Search the GWAS Catalog by trait, gene, or variant |
 | `calculate_prs` | Polygenic risk scores (PGS Catalog data) |
 | `genome_summary` | High-level overview of your genome |
-| `rebuild_database` | Rebuild SQLite from existing seed TSVs |
+
+## CLI Commands
+
+| Command | Purpose |
+|---------|---------|
+| `genechat init <vcf> [--gnomad] [--dbsnp]` | Full first-time setup: download refs, annotate, write config |
+| `genechat add <vcf>` | Register a VCF file without annotation |
+| `genechat download [--gnomad] [--dbsnp] [--all] [--force]` | Download reference databases |
+| `genechat annotate [--clinvar] [--gnomad] [--snpeff] [--dbsnp] [--all]` | Build or update patch.db annotation layers |
+| `genechat update [--apply]` | Check for newer reference versions |
+| `genechat status` | Show genome info and annotation state |
+| `genechat serve` / `genechat` | Start the MCP server |
+
+> **Note:** `bcftools` and `tabix` are required for annotation (ClinVar contig rename, gnomAD, and dbSNP). dbSNP rsID backfill (`--dbsnp`) downloads ~20 GB from NCBI and is not included in the default `genechat init` — pass `--dbsnp` explicitly to enable it.
 
 ## Prerequisites
 
 - Python 3.11+
 - A consumer WGS VCF file (from Nucleus Genomics, Nebula, Sequencing.com, etc.)
-- ~15 GB disk for reference databases, ~2 GB for your annotated VCF
+- ~15 GB disk for reference databases, ~2 GB for your raw VCF + patch.db
 
 **For annotation** (one-time setup):
 
@@ -82,26 +95,31 @@ brew install bcftools brewsci/bio/snpeff
 conda install -c bioconda bcftools snpeff
 ```
 
-### 3. Download references, annotate, and initialize
+### 3. Initialize GeneChat
+
+`genechat init` handles the entire setup in one command — downloads references, annotates your VCF, builds lookup tables, writes config, and prints the MCP JSON snippet:
 
 ```bash
-# Download ClinVar + SnpEff database + gnomAD exome frequencies (~8 GB, optional)
-bash scripts/setup_references.sh
+uv run genechat init /path/to/your/raw.vcf.gz
+```
 
-# Annotate your VCF (~20-30 minutes, auto-detects references)
-bash scripts/annotate.sh /path/to/your/raw.vcf.gz ./data
+This will:
+1. Download ClinVar and SnpEff databases
+2. Build a patch database with functional annotations and clinical significance
+3. Write a `config.toml` to your OS config directory (`~/Library/Application Support/genechat/` on macOS, `~/.config/genechat/` on Linux)
+4. Print the MCP JSON to paste into Claude Desktop or Claude Code
 
-# Build lookup tables (gene coords, PGx drugs, PRS weights)
-uv run python scripts/build_lookup_db.py
+**Optional extras:**
 
-# Initialize GeneChat (validates VCF, writes config, prints MCP JSON)
-uv run genechat init ./data/annotated.vcf.gz
+```bash
+# Include gnomAD population frequencies (~8 GB download)
+uv run genechat init /path/to/your/raw.vcf.gz --gnomad
 
-# (Optional) Enable GWAS trait search (~58 MB download)
+# Enable GWAS trait search (~58 MB download)
 uv run python scripts/build_gwas_db.py
 ```
 
-`setup_references.sh` downloads to `./references/`. `annotate.sh` auto-detects ClinVar and gnomAD from there — no env vars needed. gnomAD is optional; without it, `query_gene` falls back to ClinVar-only filtering.
+gnomAD is optional; without it, `query_gene` falls back to ClinVar-only filtering.
 
 ### 4. Start asking questions
 
@@ -109,33 +127,45 @@ Open Claude and ask about your genetics. GeneChat's tools will appear automatica
 
 ## Architecture
 
-```
-┌─── YOUR MACHINE (Local Only) ─────────────────────────────────┐
-│                                                                │
-│  Raw VCF from Sequencing Provider                              │
-│      ↓                                                         │
-│  ANNOTATION (one-time)                                         │
-│      SnpEff → functional impact    (ANN field)                 │
-│      ClinVar → clinical significance (CLNSIG, CLNDN)          │
-│      dbSNP → rsID identifiers      (ID column)                │
-│      gnomAD → population frequency  (AF, AF_popmax/AF_grpmax)  │
-│      ↓                                                         │
-│  annotated.vcf.gz                                              │
-│      ↓                                                         │
-│  RUNTIME (no network)                                          │
-│      pysam reads VCF  ←→  SQLite lookup tables                 │
-│      ↓                                                         │
-│  MCP Server ←──── Claude asks questions via MCP protocol       │
-│                                                                │
-└────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph remote["DOWNLOADED ONCE"]
+        clinvar_dl["ClinVar VCF"]
+        snpeff_dl["SnpEff DB"]
+        gnomad_dl["gnomAD exomes"]
+        dbsnp_dl["dbSNP VCF"]
+    end
+
+    subgraph local["YOUR MACHINE -- Local Only"]
+        vcf["Raw VCF from\nSequencing Provider"]
+        init["genechat init\n(one-time setup)"]
+        patch[("patch.db\nSQLite")]
+        subgraph runtime["RUNTIME -- no network"]
+            engine["pysam reads raw VCF +\npatch.db + lookup_tables.db"]
+        end
+        server["MCP Server"]
+    end
+
+    claude["Claude / LLM Client"]
+
+    clinvar_dl --> init
+    snpeff_dl --> init
+    gnomad_dl -.-> init
+    dbsnp_dl -.-> init
+    vcf --> init
+    init --> patch
+    patch --> engine --> server
+    claude -- "MCP protocol" --> server
 ```
 
-### Annotation Pipeline (one-time setup)
+Your raw VCF is never modified. Annotations are stored in a separate SQLite patch database (`patch.db`), making updates fast and non-destructive.
 
-| Tool | What it adds to your VCF | Install |
-|------|--------------------------|---------|
+### Annotation Pipeline (one-time, handled by `genechat init`)
+
+| Tool | What it adds | Install |
+|------|-------------|---------|
 | [SnpEff](https://pcingola.github.io/SnpEff/) | Functional annotation — gene name, effect type, impact level, protein change | `brew install brewsci/bio/snpeff` |
-| [bcftools](https://samtools.github.io/bcftools/) | Database annotation + VCF manipulation — transfers ClinVar/gnomAD/dbSNP fields | `brew install bcftools` |
+| [bcftools](https://samtools.github.io/bcftools/) | Database annotation — transfers ClinVar/gnomAD/dbSNP fields into patch.db | `brew install bcftools` |
 
 For incremental updates of individual annotation layers (e.g., updating ClinVar without re-running the full pipeline), see [docs/annotation-updates.md](docs/annotation-updates.md).
 
@@ -151,13 +181,17 @@ For incremental updates of individual annotation layers (e.g., updating ClinVar 
 
 ### Seed Data Pipeline
 
-SQLite lookup tables are built from external APIs at build time (`uv run python scripts/build_seed_data.py`):
+Gene coordinates, PGx guidelines, and PRS weights are pre-built from external APIs and committed as TSVs in `data/seed/`. `genechat init` automatically builds the SQLite lookup database from these — no manual steps needed.
+
+For developers updating seed data from upstream APIs:
 
 | Source | What it provides | Script |
 |--------|-----------------|--------|
 | [HGNC](https://www.genenames.org/) + [Ensembl](https://rest.ensembl.org/) | All ~19,000 protein-coding gene coordinates | `fetch_gene_coords.py` |
 | [CPIC](https://cpicpgx.org/) via [ClinPGx API](https://api.cpicpgx.org/v1/) | PGx drug-gene guidelines, star-allele definitions | `fetch_cpic_data.py` |
 | [PGS Catalog](https://www.pgscatalog.org/) | Polygenic risk score weights (GRCh38) | `fetch_prs_data.py` |
+
+Rebuild everything: `uv run python scripts/build_seed_data.py`
 
 ### Runtime Dependencies
 
@@ -199,14 +233,15 @@ The test VCF (`tests/data/test_sample.vcf.gz`) is auto-generated by a pytest fix
 Optional e2e tests against the [GIAB NA12878](https://www.nist.gov/programs-projects/genome-bottle) benchmark genome (~3.7M variants):
 
 ```bash
-# Python-only setup (no external tools needed):
+# Download GIAB VCF (Python-only, no external tools):
 uv run python scripts/setup_giab.py ./giab
 
-# Or full setup (adds SnpEff functional annotation):
-bash scripts/setup_giab.sh ./giab
+# Annotate using the production pipeline (requires snpEff + bcftools):
+# Include --dbsnp for rsID-based lookups in e2e tests
+uv run genechat init ./giab/HG001_raw.vcf.gz --dbsnp
 
 # Run e2e tests:
-export GENECHAT_GIAB_VCF=./giab/HG001_annotated.vcf.gz
+export GENECHAT_GIAB_VCF=./giab/HG001_raw.vcf.gz
 uv run pytest tests/e2e/ -v
 
 # Fast only (skip full-VCF scans):
@@ -221,7 +256,7 @@ E2e tests are automatically skipped when `GENECHAT_GIAB_VCF` is not set.
 
 **Wrong genome build:** GeneChat expects GRCh38 with `chr` prefixed chromosomes. GRCh37/hg19 VCFs need liftover first.
 
-**Missing lookup_tables.db:** `uv run python scripts/build_lookup_db.py`
+**Missing lookup_tables.db:** `genechat init` builds it automatically; or run `uv run python scripts/build_lookup_db.py` manually
 
 **pysam installation issues on macOS:** `xcode-select --install`
 

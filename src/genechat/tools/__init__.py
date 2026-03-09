@@ -10,7 +10,6 @@ from genechat.tools import (
     query_pgx,
     query_variant,
     query_variants,
-    rebuild_database,
 )
 
 ALL_TOOLS = [
@@ -23,7 +22,6 @@ ALL_TOOLS = [
     query_pgx,
     calculate_prs,
     genome_summary,
-    rebuild_database,
 ]
 
 
