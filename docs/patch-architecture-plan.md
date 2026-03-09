@@ -64,8 +64,7 @@ raw.vcf.gz
 ```
 genechat init my.vcf.gz
     -> genechat add      (validate VCF, create index, write config — instant)
-    -> genechat annotate (ClinVar + SnpEff DB to shared cache — ~5-10 min)
-    -> genechat annotate  (pipe bcftools/SnpEff output -> SQLite — ~20-30 min)
+    -> genechat annotate (auto-download refs + pipe bcftools/SnpEff -> SQLite — ~20-30 min)
     -> write MCP config snippet
 
 Result:

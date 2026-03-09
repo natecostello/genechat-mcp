@@ -327,6 +327,21 @@ class TestInstall:
         out = capsys.readouterr().out
         assert "already installed" in out
 
+    def test_gwas_force_rebuilds(self, monkeypatch, capsys):
+        """--gwas --force rebuilds even when already installed."""
+        calls = []
+        monkeypatch.setattr(
+            "genechat.gwas.gwas_db_path", lambda: Path("/tmp/data/gwas.db")
+        )
+        monkeypatch.setattr("genechat.gwas.gwas_installed", lambda: True)
+        monkeypatch.setattr(
+            "genechat.cli._download_and_build_gwas",
+            lambda **kw: calls.append(kw),
+        )
+        main(["install", "--gwas", "--force"])
+        assert len(calls) == 1
+        assert calls[0].get("force") is True
+
 
 # ---------------------------------------------------------------------------
 # genechat annotate
