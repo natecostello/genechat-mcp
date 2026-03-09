@@ -1220,9 +1220,9 @@ def _run_status():
     gwas_ok = False
     gwas_path = Path(config.gwas_db_path)
     if gwas_path.exists():
-        try:
-            import sqlite3 as _sql
+        import sqlite3 as _sql
 
+        try:
             with _sql.connect(str(gwas_path)) as _c:
                 _r = _c.execute(
                     "SELECT name FROM sqlite_master WHERE type='table' AND name='gwas_associations'"
