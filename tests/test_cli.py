@@ -576,6 +576,68 @@ class TestEnsureLookupDb:
         assert _ensure_lookup_db() is False
         assert "lookup_tables.db not found" in capsys.readouterr().err
 
+    def test_auto_builds_from_source_checkout(self, tmp_path, monkeypatch, capsys):
+        """When in source checkout with seed data, auto-builds lookup_tables.db."""
+        pkg_data = tmp_path / "pkg" / "data"
+        pkg_data.mkdir(parents=True)
+        # No lookup_tables.db yet
+
+        # Set up fake project root with seed dir and build script
+        project_root = tmp_path / "project"
+        seed_dir = project_root / "data" / "seed"
+        seed_dir.mkdir(parents=True)
+        scripts_dir = project_root / "scripts"
+        scripts_dir.mkdir()
+        build_script = scripts_dir / "build_lookup_db.py"
+        build_script.write_text(
+            "def build_db(seed_dir, db_path):\n"
+            "    db_path.write_bytes(b'built')\n"
+        )
+        (project_root / "pyproject.toml").write_text("[project]\nname = 'test'\n")
+
+        monkeypatch.setattr(_real_resources, "files", lambda _pkg: tmp_path / "pkg")
+        monkeypatch.setattr("genechat.cli._find_project_root", lambda: project_root)
+
+        assert _ensure_lookup_db() is True
+        assert "Building lookup_tables.db" in capsys.readouterr().out
+
+    def test_auto_build_failure_returns_false(self, tmp_path, monkeypatch, capsys):
+        """When auto-build raises an exception, returns False."""
+        pkg_data = tmp_path / "pkg" / "data"
+        pkg_data.mkdir(parents=True)
+
+        project_root = tmp_path / "project"
+        seed_dir = project_root / "data" / "seed"
+        seed_dir.mkdir(parents=True)
+        scripts_dir = project_root / "scripts"
+        scripts_dir.mkdir()
+        build_script = scripts_dir / "build_lookup_db.py"
+        build_script.write_text(
+            "def build_db(seed_dir, db_path):\n"
+            "    raise RuntimeError('build failed')\n"
+        )
+        (project_root / "pyproject.toml").write_text("[project]\nname = 'test'\n")
+
+        monkeypatch.setattr(_real_resources, "files", lambda _pkg: tmp_path / "pkg")
+        monkeypatch.setattr("genechat.cli._find_project_root", lambda: project_root)
+
+        assert _ensure_lookup_db() is False
+        assert "Error building" in capsys.readouterr().err
+
+    def test_installed_mode_error_suggests_reinstall(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        """When no source checkout and no DB, suggests reinstalling the package."""
+        pkg_data = tmp_path / "pkg" / "data"
+        pkg_data.mkdir(parents=True)
+
+        monkeypatch.setattr(_real_resources, "files", lambda _pkg: tmp_path / "pkg")
+        monkeypatch.setattr("genechat.cli._find_project_root", lambda: None)
+
+        assert _ensure_lookup_db() is False
+        err = capsys.readouterr().err
+        assert "uv tool install" in err
+
 
 # ---------------------------------------------------------------------------
 # Contig auto-fix
