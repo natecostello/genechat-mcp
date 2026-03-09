@@ -243,6 +243,12 @@ def register(mcp, engines, db, config):
                 or v.get("clinvar", {})
                 or v.get("rsid")
             ]
+            if smart_filter:
+                variants2 = [
+                    v
+                    for v in variants2
+                    if not _should_suppress(v, protected_rsids)
+                ]
             variants2 = variants2[:max_results]
 
             lines.append(
