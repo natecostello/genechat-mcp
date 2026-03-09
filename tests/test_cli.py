@@ -211,7 +211,10 @@ class TestInit:
         monkeypatch.setattr(
             "genechat.download.download_snpeff_db", lambda: "GRCh38.p14"
         )
-        monkeypatch.setattr("genechat.cli._run_annotate", lambda args: None)
+        annotate_calls = []
+        monkeypatch.setattr(
+            "genechat.cli._run_annotate", lambda args: annotate_calls.append(args)
+        )
 
         main(["init", str(vcf)])
 
@@ -219,6 +222,7 @@ class TestInit:
         assert "GeneChat Setup" in out
         assert "mcpServers" in out
         assert (config_dir / "config.toml").exists()
+        assert len(annotate_calls) == 1, "init must delegate to _run_annotate"
 
     def test_init_gwas_flag(self, tmp_path, capsys, monkeypatch):
         """--gwas calls _download_and_build_gwas and suppresses the hint."""

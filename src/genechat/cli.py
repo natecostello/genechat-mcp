@@ -395,7 +395,9 @@ def _run_annotate(args):
         download_clinvar()
 
     if run_snpeff:
-        download_snpeff_db()
+        if download_snpeff_db() is None:
+            print("Error: SnpEff database download failed.", file=sys.stderr)
+            sys.exit(1)
 
     if run_dbsnp and not dbsnp_installed():
         print("  Downloading dbSNP reference...")
@@ -1165,6 +1167,7 @@ def _run_status():
 
     print("=== Registered Genomes ===\n")
 
+    any_gnomad_annotated = False
     for label, genome_cfg in config.genomes.items():
         is_default = label == config.default_genome
         suffix = " (primary)" if is_default else ""
@@ -1193,6 +1196,9 @@ def _run_status():
             finally:
                 patch.close()
 
+            if meta.get("gnomad", {}).get("status") == "complete":
+                any_gnomad_annotated = True
+
             print("  Annotations:")
             for source in ["snpeff", "clinvar", "gnomad", "dbsnp"]:
                 info = meta.get(source, {})
@@ -1217,23 +1223,6 @@ def _run_status():
                 + (f" --genome {label}" if not is_default else "")
             )
         print()
-
-    # Check if any genome has gnomAD annotation in its patch.db
-    # (files may have been cleaned up after incremental annotation)
-    any_gnomad_annotated = False
-    for _lbl, _gcfg in config.genomes.items():
-        _pdb_str = _gcfg.patch_db
-        if _pdb_str and Path(_pdb_str).exists():
-            from genechat.patch import PatchDB as _PDB
-
-            _p = _PDB(Path(_pdb_str), readonly=True)
-            try:
-                _m = _p.get_metadata()
-                if _m.get("gnomad", {}).get("status") == "complete":
-                    any_gnomad_annotated = True
-                    break
-            finally:
-                _p.close()
 
     # References status
     from genechat.download import (
