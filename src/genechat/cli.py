@@ -698,7 +698,9 @@ def _annotate_gnomad(
                 continue
 
             try:
-                print(f"    chr{chrom} ({i}/{len(GNOMAD_CHROMS)})...", end="", flush=True)
+                print(
+                    f"    chr{chrom} ({i}/{len(GNOMAD_CHROMS)})...", end="", flush=True
+                )
                 proc = subprocess.Popen(
                     [
                         "bcftools",

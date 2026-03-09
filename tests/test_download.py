@@ -325,7 +325,6 @@ class TestDownloadGnomadChr:
         assert len(downloaded) == 0
         assert "Already exists" in capsys.readouterr().out
 
-
     def test_redownloads_when_tbi_missing(self, monkeypatch, tmp_path):
         """VCF+TBI are an atomic pair; missing TBI triggers re-download of both."""
         refs = tmp_path / "refs"
