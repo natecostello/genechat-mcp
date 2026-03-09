@@ -18,6 +18,7 @@ class GenomeConfig(BaseModel):
 
 class DatabasesConfig(BaseModel):
     lookup_db: str = ""
+    gwas_db: str = ""
 
 
 class ServerConfig(BaseModel):
@@ -63,6 +64,15 @@ class AppConfig(BaseModel):
         if self.databases.lookup_db:
             return self.databases.lookup_db
         return str(_default_db_path())
+
+    @property
+    def gwas_db_path(self) -> str:
+        """Return the GWAS DB path, defaulting to platform data dir."""
+        if self.databases.gwas_db:
+            return self.databases.gwas_db
+        from genechat.gwas import gwas_db_path
+
+        return str(gwas_db_path())
 
 
 def _default_db_path() -> Path:

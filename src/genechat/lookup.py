@@ -7,18 +7,45 @@ from genechat.config import AppConfig
 
 
 class LookupDB:
-    """Read-only access to the GeneChat lookup database."""
+    """Read-only access to the GeneChat lookup database.
+
+    Supports a separate GWAS DB via ATTACH DATABASE for backward compatibility
+    with both the old layout (GWAS in lookup_tables.db) and the new layout
+    (GWAS in a standalone gwas.db).
+    """
 
     def __init__(self, config: AppConfig):
         db_path = config.lookup_db_path
         if not Path(db_path).exists():
-            raise FileNotFoundError(
-                f"Lookup database not found: {db_path}. "
-                "Run: python scripts/build_lookup_db.py"
-            )
+            if config.databases.lookup_db:
+                hint = f"Check [databases].lookup_db in your config: {db_path}"
+            else:
+                hint = "Try reinstalling the package or run: genechat init <vcf>"
+            raise FileNotFoundError(f"Lookup database not found: {db_path}. {hint}")
         self._conn = sqlite3.connect(db_path)
         self._conn.row_factory = sqlite3.Row
         self._conn.execute("PRAGMA query_only = ON")
+
+        # Determine GWAS table prefix: check main DB first (legacy layout),
+        # then try attaching separate gwas.db (new layout)
+        self._gwas_prefix = ""
+        if self._has_table_in_main("gwas_associations"):
+            self._gwas_prefix = ""  # GWAS is in the main DB
+        else:
+            gwas_path = Path(config.gwas_db_path)
+            if gwas_path.exists():
+                try:
+                    self._conn.execute("ATTACH DATABASE ? AS gwas", (str(gwas_path),))
+                    self._gwas_prefix = "gwas."
+                except sqlite3.Error:
+                    pass  # Corrupt/incompatible GWAS DB — skip silently
+
+    def _has_table_in_main(self, table_name: str) -> bool:
+        row = self._conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
+            (table_name,),
+        ).fetchone()
+        return row is not None
 
     def close(self):
         self._conn.close()
@@ -84,11 +111,14 @@ class LookupDB:
         return [dict(r) for r in rows]
 
     def has_gwas_table(self) -> bool:
-        """Check if GWAS associations table exists."""
-        row = self._conn.execute(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name='gwas_associations'"
-        ).fetchone()
-        return row is not None
+        """Check if GWAS associations table is available (main or attached)."""
+        if self._gwas_prefix:
+            # Attached DB — check its schema
+            row = self._conn.execute(
+                "SELECT name FROM gwas.sqlite_master WHERE type='table' AND name='gwas_associations'"
+            ).fetchone()
+            return row is not None
+        return self._has_table_in_main("gwas_associations")
 
     def search_gwas(
         self,
@@ -97,13 +127,11 @@ class LookupDB:
         rsid: str | None = None,
         max_results: int = 50,
     ) -> list[dict]:
-        """Search GWAS Catalog associations by trait, gene, or rsID.
-
-        Returns results ordered by p-value (most significant first).
-        """
+        """Search GWAS Catalog associations by trait, gene, or rsID."""
         if not self.has_gwas_table():
             return []
-        query = "SELECT * FROM gwas_associations WHERE 1=1"
+        table = f"{self._gwas_prefix}gwas_associations"
+        query = f"SELECT * FROM {table} WHERE 1=1"
         params: list[str] = []
         if trait:
             query += " AND (UPPER(trait) LIKE '%' || UPPER(?) || '%' OR UPPER(mapped_trait) LIKE '%' || UPPER(?) || '%')"
@@ -120,13 +148,14 @@ class LookupDB:
         return [dict(r) for r in rows]
 
     def gwas_traits_for_gene(self, gene: str, max_results: int = 20) -> list[dict]:
-        """Get distinct GWAS traits associated with a gene, ordered by significance."""
+        """Get distinct GWAS traits associated with a gene."""
         if not self.has_gwas_table():
             return []
+        table = f"{self._gwas_prefix}gwas_associations"
         rows = self._conn.execute(
-            """SELECT trait, mapped_trait, MIN(p_value) as best_pvalue,
+            f"""SELECT trait, mapped_trait, MIN(p_value) as best_pvalue,
                       COUNT(*) as n_associations
-               FROM gwas_associations
+               FROM {table}
                WHERE UPPER(mapped_gene) LIKE '%' || UPPER(?) || '%'
                GROUP BY UPPER(trait)
                ORDER BY best_pvalue IS NULL, best_pvalue ASC

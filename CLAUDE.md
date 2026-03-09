@@ -27,7 +27,7 @@ Each DEVIATED or DEFERRED item must include a one-line rationale.
 
 ## TODO
 
-- [ ] Make GeneChat installable via `uv tool install` / `pip install` — [plan](docs/pip-install-plan.md)
+- [x] Make GeneChat installable via `uv tool install` / `pip install` — [plan](docs/pip-install-plan.md)
 - [ ] Verify README quickstart instructions work end-to-end with a fresh VCF
 
 ## Project Overview
