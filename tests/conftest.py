@@ -42,6 +42,23 @@ def test_db(test_config):
     """LookupDB using the built package database."""
     if not DB_PATH.exists():
         pytest.skip("Lookup database not built. Run: python scripts/build_lookup_db.py")
+    # Verify DB has actual tables (not just an empty file)
+    import sqlite3
+
+    try:
+        conn = sqlite3.connect(str(DB_PATH))
+        tables = conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table'"
+        ).fetchall()
+        conn.close()
+        if not tables:
+            pytest.skip(
+                "Lookup database is empty. Rebuild: python scripts/build_lookup_db.py"
+            )
+    except sqlite3.DatabaseError:
+        pytest.skip(
+            "Lookup database is corrupt. Rebuild: python scripts/build_lookup_db.py"
+        )
     db = LookupDB(test_config)
     yield db
     db.close()

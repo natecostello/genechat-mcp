@@ -265,6 +265,11 @@ def _mock_downloads(monkeypatch):
         lambda **kw: calls.append("dbsnp"),
     )
     monkeypatch.setattr("genechat.download.references_dir", lambda: Path("/tmp/refs"))
+    # Mock GWAS download to prevent network calls and side effects on lookup_tables.db
+    monkeypatch.setattr(
+        "genechat.cli._download_and_build_gwas",
+        lambda: calls.append("gwas"),
+    )
     return calls
 
 
@@ -287,13 +292,20 @@ class TestDownload:
     def test_all_flag(self, monkeypatch, capsys):
         calls = _mock_downloads(monkeypatch)
         main(["download", "--all"])
-        assert set(calls) == {"clinvar", "snpeff", "gnomad", "dbsnp"}
+        assert set(calls) == {"clinvar", "snpeff", "gnomad", "dbsnp", "gwas"}
 
     def test_dbsnp_flag_only(self, monkeypatch, capsys):
         """--dbsnp alone downloads only dbSNP (not ClinVar/SnpEff)."""
         calls = _mock_downloads(monkeypatch)
         main(["download", "--dbsnp"])
         assert "dbsnp" in calls
+        assert "clinvar" not in calls
+
+    def test_gwas_flag_only(self, monkeypatch, capsys):
+        """--gwas alone downloads only GWAS Catalog (not ClinVar/SnpEff)."""
+        calls = _mock_downloads(monkeypatch)
+        main(["download", "--gwas"])
+        assert "gwas" in calls
         assert "clinvar" not in calls
 
 
