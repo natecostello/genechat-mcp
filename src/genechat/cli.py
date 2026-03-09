@@ -35,7 +35,9 @@ def main(argv: list[str] | None = None):
     init_p.add_argument("vcf_path", help="Path to your raw VCF (.vcf.gz)")
     init_p.add_argument("--label", help="Name for this genome (default: from filename)")
     init_p.add_argument(
-        "--gnomad", action="store_true", help="Also download gnomAD (~150 GB)"
+        "--gnomad",
+        action="store_true",
+        help="Also annotate gnomAD population frequencies (~17 GB peak disk)",
     )
     init_p.add_argument(
         "--dbsnp", action="store_true", help="Also download dbSNP (~20 GB)"
@@ -70,7 +72,11 @@ def main(argv: list[str] | None = None):
     ann_p.add_argument(
         "--clinvar", action="store_true", help="Re-annotate ClinVar layer"
     )
-    ann_p.add_argument("--gnomad", action="store_true", help="Re-annotate gnomAD layer")
+    ann_p.add_argument(
+        "--gnomad",
+        action="store_true",
+        help="Re-annotate gnomAD layer (downloads incrementally if not present)",
+    )
     ann_p.add_argument("--snpeff", action="store_true", help="Re-annotate SnpEff layer")
     ann_p.add_argument("--dbsnp", action="store_true", help="Re-annotate dbSNP layer")
     ann_p.add_argument("--all", action="store_true", help="Re-annotate all layers")
@@ -336,6 +342,9 @@ def _run_annotate(args):
     from genechat.download import (
         clinvar_installed,
         dbsnp_installed,
+        download_clinvar,
+        download_dbsnp,
+        download_snpeff_db,
         gnomad_installed,
         snpeff_installed,
     )
@@ -353,10 +362,12 @@ def _run_annotate(args):
     # On first run or --all, run everything available
     run_snpeff = first_run or args.snpeff or args.all
     run_clinvar = first_run or args.clinvar or args.all
-    run_gnomad = (first_run or args.gnomad or args.all) and gnomad_installed()
-    run_dbsnp = (args.dbsnp or args.all) and dbsnp_installed()
+    # gnomAD/dbSNP: run when explicitly requested, or on first run if already available
+    run_gnomad = args.gnomad or args.all or (first_run and gnomad_installed())
+    gnomad_incremental = run_gnomad and not gnomad_installed()
+    run_dbsnp = args.dbsnp or args.all or (first_run and dbsnp_installed())
 
-    # Check prerequisites
+    # Check tool prerequisites (can't auto-install system packages)
     if run_snpeff and not snpeff_installed():
         print(
             "Error: snpEff not found in PATH. Required for functional annotation.",
@@ -370,21 +381,31 @@ def _run_annotate(args):
         print("  Install: brew install bcftools (macOS)", file=sys.stderr)
         sys.exit(1)
 
-    if run_clinvar and not shutil.which("tabix"):
+    needs_tabix = run_clinvar or (run_dbsnp and not dbsnp_installed())
+    if needs_tabix and not shutil.which("tabix"):
         print(
-            "Error: tabix not found in PATH (needed for ClinVar contig rename).",
+            "Error: tabix not found in PATH (needed for contig rename).",
             file=sys.stderr,
         )
         print("  Install: brew install htslib (macOS)", file=sys.stderr)
         sys.exit(1)
 
+    # Auto-download references if not present
     if run_clinvar and not clinvar_installed():
-        print(
-            "Error: ClinVar reference not found.",
-            file=sys.stderr,
-        )
-        print("Run: genechat download", file=sys.stderr)
-        sys.exit(1)
+        print("  Downloading ClinVar reference...")
+        download_clinvar()
+
+    if run_snpeff:
+        if download_snpeff_db() is None:
+            print("Error: SnpEff database download failed.", file=sys.stderr)
+            sys.exit(1)
+
+    if run_dbsnp and not dbsnp_installed():
+        print("  Downloading dbSNP reference...")
+        result = download_dbsnp()
+        if result is None:
+            print("Error: dbSNP download/processing failed.", file=sys.stderr)
+            sys.exit(1)
 
     # Create or open patch.db
     if first_run:
@@ -408,17 +429,18 @@ def _run_annotate(args):
 
         if run_gnomad:
             step += 1
-            _annotate_gnomad(patch, vcf_path, step, total_steps, not first_run)
-        elif (first_run or args.gnomad) and not gnomad_installed():
-            print("  gnomAD: skipped (not installed)")
-            print("    Install: genechat download --gnomad (~150 GB)")
+            _annotate_gnomad(
+                patch,
+                vcf_path,
+                step,
+                total_steps,
+                not first_run,
+                incremental=gnomad_incremental,
+            )
 
         if run_dbsnp:
             step += 1
             _annotate_dbsnp(patch, vcf_path, step, total_steps, not first_run)
-        elif (args.dbsnp or args.all) and not dbsnp_installed():
-            print("  dbSNP: skipped (not installed)")
-            print("    Install: genechat download --dbsnp (~20 GB)")
 
         # Store VCF fingerprint
         patch.store_vcf_fingerprint(vcf_path)
@@ -630,11 +652,27 @@ def _clinvar_version(clinvar_vcf: Path) -> str | None:
     return None
 
 
-def _annotate_gnomad(patch, vcf_path: Path, step: int, total: int, is_update: bool):
-    """Step 3: gnomAD population frequencies (per-chromosome)."""
+def _annotate_gnomad(
+    patch,
+    vcf_path: Path,
+    step: int,
+    total: int,
+    is_update: bool,
+    incremental: bool = False,
+):
+    """Step 3: gnomAD population frequencies (per-chromosome).
+
+    When incremental=True, downloads each chromosome before annotating it
+    and deletes the file afterward to minimize peak disk usage (~17 GB
+    instead of ~150 GB).
+    """
     from genechat.download import GNOMAD_CHROMS, gnomad_chr_path
 
-    print(f"  [{step}/{total}] gnomAD population frequencies...")
+    if incremental:
+        from genechat.download import delete_gnomad_chr, download_gnomad_chr
+
+    mode = " (incremental)" if incremental else ""
+    print(f"  [{step}/{total}] gnomAD population frequencies{mode}...")
 
     if is_update:
         patch.clear_layer("gnomad")
@@ -652,6 +690,12 @@ def _annotate_gnomad(patch, vcf_path: Path, step: int, total: int, is_update: bo
             chr_name = f"chr{chrom}"
             if chr_name not in vcf_chroms:
                 continue
+
+            pre_existed = gnomad_chr_path(chrom).exists()
+
+            if incremental:
+                download_gnomad_chr(chrom)
+
             gnomad_file = gnomad_chr_path(chrom)
             if not gnomad_file.exists():
                 continue
@@ -673,16 +717,31 @@ def _annotate_gnomad(patch, vcf_path: Path, step: int, total: int, is_update: bo
                 stderr=subprocess.PIPE,
                 text=True,
             )
-            rows = patch.update_gnomad_from_stream(iter(proc.stdout))
-            total_rows += rows
-            rc = proc.wait()
-            print(f" {rows:,} variants")
-            if rc != 0:
-                stderr = proc.stderr.read() if proc.stderr else ""
-                raise RuntimeError(
-                    f"bcftools annotate (gnomAD) failed with exit code {rc} "
-                    f"on chr{chrom}: {stderr}"
-                )
+            try:
+                rows = patch.update_gnomad_from_stream(iter(proc.stdout))
+                total_rows += rows
+                rc = proc.wait()
+                print(f" {rows:,} variants")
+                if rc != 0:
+                    stderr = proc.stderr.read() if proc.stderr else ""
+                    raise RuntimeError(
+                        f"bcftools annotate (gnomAD) failed with exit code {rc} "
+                        f"on chr{chrom}: {stderr}"
+                    )
+            except Exception:
+                if proc.poll() is None:
+                    proc.terminate()
+                    try:
+                        proc.wait(timeout=5)
+                    except subprocess.TimeoutExpired:
+                        proc.kill()
+                        proc.wait()
+                raise
+            finally:
+                if proc.stdout is not None:
+                    proc.stdout.close()
+                if incremental and not pre_existed:
+                    delete_gnomad_chr(chrom)
     except Exception:
         patch.set_metadata("gnomad", "v4.1", status="failed")
         raise
@@ -954,51 +1013,22 @@ def _run_init(args):
         sys.exit(1)
     print("  lookup_tables.db: OK")
 
-    # Step 5: Download references
-    print("\nStep 5: Downloading reference databases...")
-    from genechat.download import (
-        clinvar_installed,
-        download_clinvar,
-        download_gnomad,
-        download_snpeff_db,
-        snpeff_installed,
-    )
-
-    download_clinvar()
-    download_snpeff_db()
-    if args.gnomad:
-        download_gnomad()
-    if args.dbsnp:
-        from genechat.download import download_dbsnp
-
-        download_dbsnp()
+    # Step 5: Download GWAS if requested (not handled by annotate)
     if args.gwas:
+        print("\nStep 5: Downloading GWAS Catalog...")
         _download_and_build_gwas()
 
-    # Step 6: Annotate
+    # Step 6: Annotate (auto-downloads ClinVar, SnpEff DB, dbSNP, gnomAD as needed)
     print("\nStep 6: Building annotation database...")
-    if not snpeff_installed():
-        print(
-            "WARNING: snpEff not installed. Skipping annotation.\n"
-            "Install snpEff, then run: genechat annotate",
-            file=sys.stderr,
-        )
-    elif not clinvar_installed():
-        print(
-            "WARNING: ClinVar download failed. Skipping annotation.\n"
-            "Run: genechat download && genechat annotate",
-            file=sys.stderr,
-        )
-    else:
-        ann_args = argparse.Namespace(
-            clinvar=False,
-            gnomad=False,
-            snpeff=False,
-            dbsnp=False,
-            all=False,
-            genome=label,
-        )
-        _run_annotate(ann_args)
+    ann_args = argparse.Namespace(
+        clinvar=False,
+        gnomad=args.gnomad,
+        snpeff=False,
+        dbsnp=args.dbsnp,
+        all=False,
+        genome=label,
+    )
+    _run_annotate(ann_args)
 
     # Step 7: Print MCP config
     print("\n--- MCP Configuration ---\n")
@@ -1147,6 +1177,7 @@ def _run_status():
 
     print("=== Registered Genomes ===\n")
 
+    any_gnomad_annotated = False
     for label, genome_cfg in config.genomes.items():
         is_default = label == config.default_genome
         suffix = " (primary)" if is_default else ""
@@ -1174,6 +1205,9 @@ def _run_status():
                 meta = patch.get_metadata()
             finally:
                 patch.close()
+
+            if meta.get("gnomad", {}).get("status") == "complete":
+                any_gnomad_annotated = True
 
             print("  Annotations:")
             for source in ["snpeff", "clinvar", "gnomad", "dbsnp"]:
@@ -1216,11 +1250,16 @@ def _run_status():
     print(
         f"  SnpEff:   {'available' if snpeff_installed() else 'not installed — brew install brewsci/bio/snpeff'}"
     )
+    gnomad_files = gnomad_installed()
+    if gnomad_files:
+        gnomad_status = "installed"
+    elif any_gnomad_annotated:
+        gnomad_status = "annotated (reference files cleaned up)"
+    else:
+        gnomad_status = "not installed — genechat annotate --gnomad"
+    print(f"  gnomAD:   {gnomad_status}")
     print(
-        f"  gnomAD:   {'installed' if gnomad_installed() else 'not installed — genechat download --gnomad'}"
-    )
-    print(
-        f"  dbSNP:    {'installed' if dbsnp_installed() else 'not installed — genechat download --dbsnp'}"
+        f"  dbSNP:    {'installed' if dbsnp_installed() else 'not installed — genechat annotate --dbsnp'}"
     )
 
     gwas_ok = False

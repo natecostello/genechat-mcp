@@ -10,8 +10,10 @@ from genechat.download import (
     dbsnp_installed,
     dbsnp_path,
     dbsnp_raw_path,
+    delete_gnomad_chr,
     download_clinvar,
     download_dbsnp,
+    download_gnomad_chr,
     gnomad_installed,
     references_dir,
     snpeff_installed,
@@ -284,6 +286,90 @@ class TestDbsnpDownload:
         # Verify no tmp file left behind
         tmp_files = list(ddir.glob("*.tmp*"))
         assert len(tmp_files) == 0
+
+
+class TestDownloadGnomadChr:
+    def test_downloads_vcf_and_tbi(self, monkeypatch, tmp_path, capsys):
+        refs = tmp_path / "refs"
+        monkeypatch.setattr("genechat.download.REFERENCES_DIR", refs)
+
+        downloaded = []
+
+        def mock_download(url, dest, label=""):
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest.write_bytes(b"fake")
+            downloaded.append(dest.name)
+
+        monkeypatch.setattr("genechat.download._download_file", mock_download)
+
+        result = download_gnomad_chr("1")
+        assert result.exists()
+        assert "gnomad.exomes.v4.1.sites.chr1.vcf.bgz" in downloaded
+        assert "gnomad.exomes.v4.1.sites.chr1.vcf.bgz.tbi" in downloaded
+
+    def test_skips_existing(self, monkeypatch, tmp_path, capsys):
+        refs = tmp_path / "refs"
+        gdir = refs / "gnomad_exomes_v4"
+        gdir.mkdir(parents=True)
+        (gdir / "gnomad.exomes.v4.1.sites.chr1.vcf.bgz").write_bytes(b"x")
+        (gdir / "gnomad.exomes.v4.1.sites.chr1.vcf.bgz.tbi").write_bytes(b"x")
+        monkeypatch.setattr("genechat.download.REFERENCES_DIR", refs)
+
+        downloaded = []
+        monkeypatch.setattr(
+            "genechat.download._download_file",
+            lambda url, dest, label="": downloaded.append(dest.name),
+        )
+
+        download_gnomad_chr("1")
+        assert len(downloaded) == 0
+        assert "Already exists" in capsys.readouterr().out
+
+    def test_redownloads_when_tbi_missing(self, monkeypatch, tmp_path):
+        """VCF+TBI are an atomic pair; missing TBI triggers re-download of both."""
+        refs = tmp_path / "refs"
+        gdir = refs / "gnomad_exomes_v4"
+        gdir.mkdir(parents=True)
+        (gdir / "gnomad.exomes.v4.1.sites.chr1.vcf.bgz").write_bytes(b"x")
+        # No .tbi file
+        monkeypatch.setattr("genechat.download.REFERENCES_DIR", refs)
+
+        downloaded = []
+
+        def mock_download(url, dest, label=""):
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest.write_bytes(b"fake")
+            downloaded.append(dest.name)
+
+        monkeypatch.setattr("genechat.download._download_file", mock_download)
+
+        download_gnomad_chr("1")
+        assert "gnomad.exomes.v4.1.sites.chr1.vcf.bgz" in downloaded
+        assert "gnomad.exomes.v4.1.sites.chr1.vcf.bgz.tbi" in downloaded
+
+
+class TestDeleteGnomadChr:
+    def test_deletes_vcf_and_tbi(self, monkeypatch, tmp_path):
+        refs = tmp_path / "refs"
+        gdir = refs / "gnomad_exomes_v4"
+        gdir.mkdir(parents=True)
+        vcf = gdir / "gnomad.exomes.v4.1.sites.chr1.vcf.bgz"
+        tbi = gdir / "gnomad.exomes.v4.1.sites.chr1.vcf.bgz.tbi"
+        vcf.write_bytes(b"x")
+        tbi.write_bytes(b"x")
+        monkeypatch.setattr("genechat.download.REFERENCES_DIR", refs)
+
+        delete_gnomad_chr("1")
+        assert not vcf.exists()
+        assert not tbi.exists()
+
+    def test_no_error_when_missing(self, monkeypatch, tmp_path):
+        refs = tmp_path / "refs"
+        refs.mkdir(parents=True)
+        monkeypatch.setattr("genechat.download.REFERENCES_DIR", refs)
+
+        # Should not raise
+        delete_gnomad_chr("1")
 
 
 class TestRefseqChrMap:
