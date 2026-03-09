@@ -77,7 +77,7 @@ VCF reading at runtime is handled by [pysam](https://pysam.readthedocs.io/), ins
 
 ## Quickstart
 
-### 1. Clone and install
+### Option A: Install from source (recommended for development)
 
 ```bash
 git clone https://github.com/natecostello/genechat-mcp.git
@@ -85,7 +85,14 @@ cd genechat-mcp
 uv sync
 ```
 
-### 2. Install annotation tools
+### Option B: Install as a tool
+
+```bash
+uv tool install genechat-mcp
+# or: pip install genechat-mcp
+```
+
+### Install annotation tools
 
 ```bash
 # macOS
@@ -95,12 +102,16 @@ brew install bcftools brewsci/bio/snpeff
 conda install -c bioconda bcftools snpeff
 ```
 
-### 3. Initialize GeneChat
+### Initialize GeneChat
 
 `genechat init` handles the entire setup in one command — validates your VCF, auto-fixes contig names if needed, downloads references, annotates, builds lookup tables, writes config, and prints the MCP JSON snippet:
 
 ```bash
+# If installed from source:
 uv run genechat init /path/to/your/raw.vcf.gz --label personal
+
+# If installed as a tool:
+genechat init /path/to/your/raw.vcf.gz --label personal
 ```
 
 This will:
@@ -282,7 +293,7 @@ E2e tests are automatically skipped when `GENECHAT_GIAB_VCF` is not set.
 
 **Wrong genome build:** GeneChat expects GRCh38 with `chr` prefixed chromosomes. GRCh37/hg19 VCFs need liftover first.
 
-**Missing lookup_tables.db:** `genechat init` builds it automatically; or run `uv run python scripts/build_lookup_db.py` manually
+**Missing lookup_tables.db:** The lookup database ships with the package and is built automatically by `genechat init` in source checkouts. If somehow missing, rebuild with `uv run python scripts/build_lookup_db.py` (source) or reinstall the package.
 
 **pysam installation issues on macOS:** `xcode-select --install`
 

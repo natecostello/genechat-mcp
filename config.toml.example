@@ -19,6 +19,7 @@ genome_build = "GRCh38"
 # --- Databases ---
 [databases]
 lookup_db = ""  # Leave empty to use built-in package data
+gwas_db = ""    # Leave empty to use ~/.local/share/genechat/gwas.db
 
 # --- Server ---
 [server]
