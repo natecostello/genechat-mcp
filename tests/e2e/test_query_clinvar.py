@@ -5,9 +5,9 @@ from mcp.server.fastmcp import FastMCP
 from genechat.tools.query_clinvar import register
 
 
-def _get_tool(giab_enginess, giab_db, giab_config):
+def _get_tool(giab_engines, giab_db, giab_config):
     mcp = FastMCP("test")
-    register(mcp, giab_enginess, giab_db, giab_config)
+    register(mcp, giab_engines, giab_db, giab_config)
     tools = mcp._tool_manager._tools
     return tools["query_clinvar"].fn
 
