@@ -1,25 +1,9 @@
 {
-  "_comment": "Use ONE of the two configurations below, not both.",
-
-  "_option_a": "From source (development)",
   "mcpServers": {
-    "genechat": {
-      "command": "uv",
-      "args": ["run", "--directory", "/path/to/genechat-mcp", "genechat"],
-      "env": {
-        "GENECHAT_CONFIG": "/path/to/config.toml",
-        "GENECHAT_GENOME": ""
-      }
-    }
-  },
-
-  "_option_b": "Installed via uv tool install / pip install",
-  "mcpServers_installed": {
     "genechat": {
       "command": "genechat",
       "env": {
-        "GENECHAT_CONFIG": "/path/to/config.toml",
-        "GENECHAT_GENOME": ""
+        "GENECHAT_CONFIG": "/path/to/config.toml"
       }
     }
   }
