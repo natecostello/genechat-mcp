@@ -119,7 +119,7 @@ cli.py
 | `src/genechat/tools/calculate_prs.py` | Add `genome`, `genome2` params |
 | `src/genechat/tools/genome_summary.py` | Add `genome`, `genome2` params |
 | `src/genechat/tools/query_gwas.py` | Add `genome` param only (no pairing) |
-| `src/genechat/cli.py` | `init`/`add` write to `[genomes.<label>]`, `status` lists all, contig auto-fix, `update --seeds`, `download --gwas` |
+| `src/genechat/cli.py` | `init`/`add` write to `[genomes.<label>]`, `status` lists all, contig auto-fix, `update --seeds`, `install --gwas` |
 | `config.toml.example` | Update to show `[genomes.personal]` format |
 
 ### Helper: genome resolution
@@ -196,7 +196,7 @@ All user/developer actions should be accessible via CLI. Remaining scripts that 
 | Script | Proposed CLI | Who needs it |
 |--------|-------------|-------------|
 | `build_seed_data.py` | `genechat update --seeds` | Developer updating vendored data from upstream APIs |
-| `build_gwas_db.py` | `genechat download --gwas` (download) + auto-build in `genechat init` | User wanting GWAS trait search |
+| `build_gwas_db.py` | `genechat install --gwas` (download) + auto-build in `genechat init` | User wanting GWAS trait search |
 | `setup_giab.py` | **Remove** — replaced by standard `genechat init` with contig auto-fix | Nobody |
 | `setup_giab.sh` | **Remove** — dead code | Nobody |
 
@@ -210,9 +210,9 @@ Scripts that remain as internal implementation (called by other scripts, never d
 
 Fetches latest data from HGNC, CPIC, and PGS Catalog APIs, regenerates seed TSVs, and rebuilds lookup_tables.db. This is the CLI equivalent of `uv run python scripts/build_seed_data.py`. Requires network access (build-time only).
 
-### `genechat download --gwas`
+### `genechat install --gwas`
 
-Downloads the GWAS Catalog and builds the gwas_associations table in lookup_tables.db. Currently a standalone script (`build_gwas_db.py`). Should integrate into the download subcommand alongside `--gnomad` and `--dbsnp`.
+Downloads the GWAS Catalog and builds a standalone `gwas.db` (separate from `lookup_tables.db`). Currently a standalone script (`build_gwas_db.py`). Integrated into the `install` subcommand as `genechat install --gwas`.
 
 ## GIAB / Demo Genome Documentation
 
@@ -259,7 +259,7 @@ E2e tests are automatically skipped when `GENECHAT_GIAB_VCF` is not set.
 4. **Tool interface change** — `register_all(mcp, engines, db, config)`, add `resolve_engine()` helper
 5. **Single-genome tools** — add optional `genome` param to all tools (no paired logic yet)
 6. **Paired queries** — add `genome2` param to supported tools, side-by-side formatting
-7. **CLI consolidation** — `--label` for init/add, `update --seeds`, `download --gwas`, multi-genome status
+7. **CLI consolidation** — `--label` for init/add, `update --seeds`, `install --gwas`, multi-genome status
 8. **Remove setup_giab.py** — delete script and tests, update e2e conftest
 9. **Annotate/update** — decide whether to operate on all genomes or require `--genome` flag
 10. **Tests** — multi-genome fixtures, config parsing, contig auto-fix, paired tool output
@@ -276,7 +276,7 @@ E2e tests are automatically skipped when `GENECHAT_GIAB_VCF` is not set.
 - `genechat init <vcf> --label giab` creates `[genomes.giab]` section
 - `genechat status` lists all registered genomes
 - `genechat update --seeds` fetches from APIs and rebuilds lookup_tables.db
-- `genechat download --gwas` downloads GWAS Catalog and builds the table
+- `genechat install --gwas` downloads GWAS Catalog and builds standalone `gwas.db`
 - `setup_giab.py` is deleted; e2e tests use standard `genechat init` workflow
 - Tool descriptions (visible to LLM) clearly explain the `genome` and `genome2` parameters
 - README has a "Don't have your genome sequenced?" section with GIAB download + init instructions

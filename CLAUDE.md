@@ -66,7 +66,7 @@ LLM Client (Claude Desktop / Claude Code)
     │ MCP Protocol (stdio or SSE)
     ▼
 GeneChat MCP Server (Python)
-    ├── CLI: init, add, download, annotate, update, status, serve
+    ├── CLI: init, add, annotate, install, update, status, serve
     ├── Tools: query_variant, query_variants, query_gene, query_genes,
     │         query_clinvar, query_gwas, query_pgx, calculate_prs,
     │         genome_summary
@@ -137,7 +137,7 @@ genechat-mcp/
   src/
     genechat/
       __init__.py
-      cli.py                       # CLI dispatcher: init, add, download, annotate, update, status, serve
+      cli.py                       # CLI dispatcher: init, add, annotate, install, update, status, serve
       server.py                    # MCP server entry point
       config.py                    # TOML config loader + write_config
       vcf_engine.py                # pysam VCF query engine
@@ -535,9 +535,9 @@ Create synthetic VCF for testing. Include:
 
 Annotation is now handled entirely by Python CLI subcommands:
 
-- `genechat init <vcf>` — Full first-time setup: downloads references, runs SnpEff + ClinVar annotation into patch.db, writes config
-- `genechat download [--gnomad] [--all]` — Downloads reference databases (ClinVar, SnpEff DB, optionally gnomAD)
-- `genechat annotate [--clinvar] [--gnomad] [--snpeff] [--all]` — Rebuild or update individual annotation layers in patch.db
+- `genechat init <vcf>` — Full first-time setup: annotate, write config (auto-downloads references)
+- `genechat annotate [--clinvar] [--gnomad] [--snpeff] [--dbsnp] [--all]` — Build or update annotation layers in patch.db (auto-downloads references)
+- `genechat install [--gwas]` — Install genome-independent reference databases (GWAS Catalog, future: CADD, AlphaMissense)
 - `genechat update [--apply]` — Check for newer reference versions and optionally re-annotate
 
 The raw VCF is never modified. Annotations are stored in a SQLite patch database (`patch.db`).

@@ -1,10 +1,10 @@
 """CLI entry point for GeneChat — dispatches subcommands.
 
 Commands:
-  genechat init <vcf>           Full first-time setup (add + download + annotate)
+  genechat init <vcf>           Full first-time setup (add + annotate)
   genechat add <vcf>            Register a VCF file
-  genechat download [options]   Download reference databases
-  genechat annotate [options]   Build/update patch.db
+  genechat annotate [options]   Build/update patch.db (auto-downloads references)
+  genechat install [options]    Install genome-independent reference databases
   genechat update [--apply]     Check for newer references
   genechat status               Show genome + annotation state
   genechat serve / genechat     Start the MCP server
@@ -51,20 +51,17 @@ def main(argv: list[str] | None = None):
     add_p.add_argument("vcf_path", help="Path to your VCF (.vcf.gz)")
     add_p.add_argument("--label", help="Name for this genome")
 
-    # genechat download
-    dl_p = sub.add_parser("download", help="Download reference databases")
-    dl_p.add_argument(
-        "--gnomad", action="store_true", help="Download gnomAD exomes (~150 GB)"
+    # genechat install
+    inst_p = sub.add_parser(
+        "install", help="Install genome-independent reference databases"
     )
-    dl_p.add_argument("--dbsnp", action="store_true", help="Download dbSNP (~20 GB)")
-    dl_p.add_argument("--all", action="store_true", help="Download everything")
-    dl_p.add_argument(
-        "--force", action="store_true", help="Re-download even if files exist"
+    inst_p.add_argument(
+        "--gwas", action="store_true", help="Install GWAS Catalog (~58 MB download)"
     )
-
-    # genechat download --gwas
-    dl_p.add_argument(
-        "--gwas", action="store_true", help="Download GWAS Catalog (~58 MB)"
+    inst_p.add_argument(
+        "--force",
+        action="store_true",
+        help="Re-download source files even if already present (DB is always rebuilt)",
     )
 
     # genechat annotate
@@ -106,8 +103,8 @@ def main(argv: list[str] | None = None):
         _run_init(args)
     elif args.command == "add":
         _run_add(args.vcf_path, args.label)
-    elif args.command == "download":
-        _run_download(args)
+    elif args.command == "install":
+        _run_install(args)
     elif args.command == "annotate":
         _run_annotate(args)
     elif args.command == "update":
@@ -257,41 +254,32 @@ def _run_add(vcf_path_str: str, label: str | None = None):
 
 
 # ---------------------------------------------------------------------------
-# genechat download [options]
+# genechat install [options]
 # ---------------------------------------------------------------------------
 
 
-def _run_download(args):
-    """Download reference databases to shared cache."""
-    from genechat.download import (
-        download_clinvar,
-        download_dbsnp,
-        download_gnomad,
-        download_snpeff_db,
-        references_dir,
-    )
+def _run_install(args):
+    """Install genome-independent reference databases."""
+    from genechat.gwas import gwas_db_path
 
-    print(f"References directory: {references_dir()}\n")
+    print(f"Data directory: {gwas_db_path().parent}\n")
 
-    # Default (no flags): recommended set (ClinVar + SnpEff DB)
-    download_all = args.all
-    explicit = args.gnomad or args.dbsnp or args.gwas
+    if args.gwas:
+        from genechat.gwas import gwas_installed
 
-    # Always download ClinVar + SnpEff (unless only explicit optional flags)
-    if not explicit or download_all:
-        download_clinvar(force=args.force)
-        download_snpeff_db()
+        if gwas_installed() and not args.force:
+            print("GWAS Catalog already installed. Use --force to rebuild.")
+        else:
+            _download_and_build_gwas(force=args.force)
+    else:
+        print("Available databases:")
+        print(
+            "  --gwas    GWAS Catalog associations (~58 MB download, ~300 MB on disk)"
+        )
+        print("\nRun: genechat install --gwas")
+        return
 
-    if args.gnomad or download_all:
-        download_gnomad(force=args.force)
-
-    if args.dbsnp or download_all:
-        download_dbsnp(force=args.force)
-
-    if args.gwas or download_all:
-        _download_and_build_gwas(force=args.force)
-
-    print("\nDownload complete.")
+    print("\nInstall complete.")
 
 
 # ---------------------------------------------------------------------------
@@ -1013,13 +1001,16 @@ def _run_init(args):
         sys.exit(1)
     print("  lookup_tables.db: OK")
 
-    # Step 5: Download GWAS if requested (not handled by annotate)
+    # Step 5: Install GWAS if requested
+    step = 5
     if args.gwas:
-        print("\nStep 5: Downloading GWAS Catalog...")
-        _download_and_build_gwas()
+        print(f"\nStep {step}: Installing GWAS Catalog...")
+        install_args = argparse.Namespace(gwas=True, force=False)
+        _run_install(install_args)
+        step += 1
 
-    # Step 6: Annotate (auto-downloads ClinVar, SnpEff DB, dbSNP, gnomAD as needed)
-    print("\nStep 6: Building annotation database...")
+    # Next step: Annotate (auto-downloads ClinVar, SnpEff DB, dbSNP, gnomAD as needed)
+    print(f"\nStep {step}: Building annotation database...")
     ann_args = argparse.Namespace(
         clinvar=False,
         gnomad=args.gnomad,
@@ -1062,7 +1053,7 @@ def _run_init(args):
     print(json.dumps(mcp_config, indent=2))
     if not args.gwas:
         print("\nOptional: Enable GWAS trait search:")
-        print("  genechat download --gwas")
+        print("  genechat install --gwas")
     print("\n=== Setup complete ===")
 
 
@@ -1245,7 +1236,7 @@ def _run_status():
 
     print(f"References: {references_dir()}")
     print(
-        f"  ClinVar:  {'installed' if clinvar_installed() else 'not installed — genechat download'}"
+        f"  ClinVar:  {'installed' if clinvar_installed() else 'not installed — genechat annotate'}"
     )
     print(
         f"  SnpEff:   {'available' if snpeff_installed() else 'not installed — brew install brewsci/bio/snpeff'}"
@@ -1276,7 +1267,7 @@ def _run_status():
         except _sql.Error:
             pass
     print(
-        f"  GWAS:     {'installed' if gwas_ok else 'not installed — genechat download --gwas'}"
+        f"  GWAS:     {'installed' if gwas_ok else 'not installed — genechat install --gwas'}"
     )
 
     print("\nRun `genechat update` to check for newer versions.")
@@ -1316,7 +1307,7 @@ def _run_update_seeds():
 
 
 # ---------------------------------------------------------------------------
-# genechat download --gwas
+# genechat install --gwas
 # ---------------------------------------------------------------------------
 
 

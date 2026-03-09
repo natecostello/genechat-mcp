@@ -205,12 +205,6 @@ class TestInit:
         _mock_pysam_ok(monkeypatch)
 
         monkeypatch.setattr("genechat.cli._ensure_lookup_db", lambda: True)
-        monkeypatch.setattr(
-            "genechat.download.download_clinvar", lambda **kw: Path("x")
-        )
-        monkeypatch.setattr(
-            "genechat.download.download_snpeff_db", lambda: "GRCh38.p14"
-        )
         annotate_calls = []
         monkeypatch.setattr(
             "genechat.cli._run_annotate", lambda args: annotate_calls.append(args)
@@ -225,7 +219,7 @@ class TestInit:
         assert len(annotate_calls) == 1, "init must delegate to _run_annotate"
 
     def test_init_gwas_flag(self, tmp_path, capsys, monkeypatch):
-        """--gwas calls _download_and_build_gwas and suppresses the hint."""
+        """--gwas calls _run_install and suppresses the hint."""
         vcf = tmp_path / "test.vcf.gz"
         vcf.write_bytes(b"fake")
         (tmp_path / "test.vcf.gz.tbi").write_bytes(b"fake")
@@ -238,16 +232,17 @@ class TestInit:
         monkeypatch.setattr("genechat.cli._ensure_lookup_db", lambda: True)
         monkeypatch.setattr("genechat.cli._run_annotate", lambda args: None)
 
-        gwas_calls = []
+        install_calls = []
         monkeypatch.setattr(
-            "genechat.cli._download_and_build_gwas",
-            lambda **kw: gwas_calls.append(True),
+            "genechat.cli._run_install",
+            lambda args: install_calls.append(args),
         )
 
         main(["init", str(vcf), "--gwas"])
 
         out = capsys.readouterr().out
-        assert gwas_calls, "_download_and_build_gwas was not called"
+        assert install_calls, "_run_install was not called"
+        assert install_calls[0].gwas is True
         assert "Optional: Enable GWAS" not in out
 
     def test_init_gnomad_passes_flag_to_annotate(self, tmp_path, capsys, monkeypatch):
@@ -293,72 +288,59 @@ class TestInit:
 
 
 # ---------------------------------------------------------------------------
-# genechat download
+# genechat install
 # ---------------------------------------------------------------------------
 
 
-def _mock_downloads(monkeypatch):
-    """Mock all download functions, return list of call names."""
-    calls = []
-    monkeypatch.setattr(
-        "genechat.download.download_clinvar",
-        lambda **kw: calls.append("clinvar") or Path("x"),
-    )
-    monkeypatch.setattr(
-        "genechat.download.download_snpeff_db",
-        lambda: calls.append("snpeff") or "GRCh38.p14",
-    )
-    monkeypatch.setattr(
-        "genechat.download.download_gnomad",
-        lambda **kw: calls.append("gnomad") or Path("x"),
-    )
-    monkeypatch.setattr(
-        "genechat.download.download_dbsnp",
-        lambda **kw: calls.append("dbsnp"),
-    )
-    monkeypatch.setattr("genechat.download.references_dir", lambda: Path("/tmp/refs"))
-    # Mock GWAS download to prevent network calls and building gwas.db
-    monkeypatch.setattr(
-        "genechat.cli._download_and_build_gwas",
-        lambda **kw: calls.append("gwas"),
-    )
-    return calls
+class TestInstall:
+    def test_no_flags_shows_available(self, monkeypatch, capsys):
+        """install with no flags lists available databases."""
+        monkeypatch.setattr(
+            "genechat.gwas.gwas_db_path", lambda: Path("/tmp/data/gwas.db")
+        )
+        main(["install"])
+        out = capsys.readouterr().out
+        assert "--gwas" in out
+        assert "Available databases" in out
 
-
-class TestDownload:
-    def test_default_downloads_clinvar_snpeff(self, monkeypatch, capsys):
-        calls = _mock_downloads(monkeypatch)
-        main(["download"])
-        assert "clinvar" in calls
-        assert "snpeff" in calls
-        assert "gnomad" not in calls
-        assert "dbsnp" not in calls
-
-    def test_gnomad_flag_only(self, monkeypatch, capsys):
-        """--gnomad alone downloads only gnomAD (not ClinVar/SnpEff)."""
-        calls = _mock_downloads(monkeypatch)
-        main(["download", "--gnomad"])
-        assert "gnomad" in calls
-        assert "clinvar" not in calls
-
-    def test_all_flag(self, monkeypatch, capsys):
-        calls = _mock_downloads(monkeypatch)
-        main(["download", "--all"])
-        assert set(calls) == {"clinvar", "snpeff", "gnomad", "dbsnp", "gwas"}
-
-    def test_dbsnp_flag_only(self, monkeypatch, capsys):
-        """--dbsnp alone downloads only dbSNP (not ClinVar/SnpEff)."""
-        calls = _mock_downloads(monkeypatch)
-        main(["download", "--dbsnp"])
-        assert "dbsnp" in calls
-        assert "clinvar" not in calls
-
-    def test_gwas_flag_only(self, monkeypatch, capsys):
-        """--gwas alone downloads only GWAS Catalog (not ClinVar/SnpEff)."""
-        calls = _mock_downloads(monkeypatch)
-        main(["download", "--gwas"])
+    def test_gwas_flag(self, monkeypatch, capsys):
+        """--gwas installs the GWAS Catalog."""
+        calls = []
+        monkeypatch.setattr(
+            "genechat.gwas.gwas_db_path", lambda: Path("/tmp/data/gwas.db")
+        )
+        monkeypatch.setattr("genechat.gwas.gwas_installed", lambda: False)
+        monkeypatch.setattr(
+            "genechat.cli._download_and_build_gwas",
+            lambda **kw: calls.append("gwas"),
+        )
+        main(["install", "--gwas"])
         assert "gwas" in calls
-        assert "clinvar" not in calls
+
+    def test_gwas_skips_when_installed(self, monkeypatch, capsys):
+        """--gwas without --force skips when already installed."""
+        monkeypatch.setattr(
+            "genechat.gwas.gwas_db_path", lambda: Path("/tmp/data/gwas.db")
+        )
+        monkeypatch.setattr("genechat.gwas.gwas_installed", lambda: True)
+        main(["install", "--gwas"])
+        out = capsys.readouterr().out
+        assert "already installed" in out
+
+    def test_gwas_force_rebuilds(self, monkeypatch, capsys):
+        """--gwas --force rebuilds even when already installed."""
+        calls = []
+        monkeypatch.setattr(
+            "genechat.gwas.gwas_db_path", lambda: Path("/tmp/data/gwas.db")
+        )
+        monkeypatch.setattr("genechat.gwas.gwas_installed", lambda: True)
+        monkeypatch.setattr(
+            "genechat.cli._download_and_build_gwas",
+            lambda **kw: calls.append(kw),
+        )
+        main(["install", "--gwas", "--force"])
+        assert len(calls) == 1
+        assert calls[0].get("force") is True
 
 
 # ---------------------------------------------------------------------------

@@ -14,7 +14,7 @@ Annotations are stored in a SQLite patch database (`patch.db`), separate from th
 | gnomAD | Population allele frequencies | Major releases every 1-2 years | `genechat annotate --gnomad` |
 | SnpEff | Gene models, transcript definitions | Tied to Ensembl (~2/year) | `genechat annotate --snpeff` |
 | dbSNP | rsID identifiers for variants | Major releases | `genechat annotate --dbsnp` |
-| GWAS Catalog | New association study results | Weekly | `genechat download --gwas` |
+| GWAS Catalog | New association study results | Weekly | `genechat install --gwas` |
 | Seed data | PGx (CPIC) + PRS (PGS Catalog) | When APIs update | `genechat update --seeds` |
 
 ## How It Works
@@ -37,8 +37,6 @@ Because the columns are independent, any single layer can be updated in isolatio
 ClinVar reclassifications are the most clinically impactful updates. Recommended: every 3-6 months.
 
 ```bash
-# Re-download references (ClinVar + SnpEff DB by default), then re-annotate ClinVar only
-genechat download --force
 genechat annotate --clinvar
 ```
 
@@ -47,7 +45,6 @@ genechat annotate --clinvar
 Only needed on major gnomAD releases (v4→v5). Recommended: when a new major version ships.
 
 ```bash
-genechat download --gnomad
 genechat annotate --gnomad
 ```
 
@@ -88,7 +85,7 @@ genechat status           # Shows VCF info, patch.db layers, reference versions
 |------|-----------|---------|------|
 | ClinVar | Every 3-6 months | `genechat annotate --clinvar` | ~3 min |
 | Seed data | When CPIC/PGS sources update | `genechat update --seeds` | ~5 min |
-| GWAS Catalog | Every 6-12 months | `genechat download --gwas` | ~2 min |
+| GWAS Catalog | Every 6-12 months | `genechat install --gwas` | ~2 min |
 | gnomAD | On major releases only | `genechat annotate --gnomad` | ~15 min |
 | SnpEff | Annually | `genechat annotate --snpeff` | ~20 min |
 | Full rebuild | Only if starting from a new raw VCF | `genechat init <vcf>` | ~30 min |

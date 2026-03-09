@@ -36,7 +36,7 @@ Most complex servers require cloning. Only SCMCP, GDAL MCP, and Engram (binary) 
 
 | Server | Data | Size | Command |
 |--------|------|------|---------|
-| **GeneChat** | ClinVar + SnpEff DB + gnomAD (optional) | ~10 GB | `uv run genechat download [--gnomad]` |
+| **GeneChat** | ClinVar + SnpEff DB + gnomAD (optional) | ~10 GB | `uv run genechat annotate [--gnomad]` |
 | **bio-mcp-blast** | BLAST databases (nt, nr, swissprot) | 100+ GB | `update_blastdb.pl --decompress nt` |
 | **SCMCP** | None (operates on user data) | — | — |
 | **Graphiti** | Neo4j (Docker container) | ~500 MB | `docker compose up` |
