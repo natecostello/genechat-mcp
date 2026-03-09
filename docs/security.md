@@ -4,7 +4,7 @@ Genomic data is uniquely sensitive -- it is immutable, identifies you and your r
 
 ## Store your VCF on an encrypted volume
 
-Your annotated VCF and `config.toml` (which contains the path to your VCF) should live on an encrypted volume.
+Your VCF files (one per registered genome), patch databases, and `config.toml` (which contains VCF paths) should all live on an encrypted volume. If you have multiple genomes registered, the same encryption recommendations apply to all of them.
 
 ### macOS (APFS encrypted disk image)
 

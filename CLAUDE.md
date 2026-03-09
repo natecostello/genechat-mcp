@@ -14,10 +14,20 @@ GitHub Copilot is configured as a PR code reviewer. Its instructions are in
 deliver inline comments with suggestion blocks. Use `/resolve-pr-comments` to process
 review feedback.
 
+## Plan Compliance
+
+When a PR implements a plan, the PR description MUST include a compliance section:
+
+### Plan Compliance
+- [ ] Item 1: description — DONE / DEVIATED / DEFERRED
+- [ ] Item 2: description — DONE / DEVIATED / DEFERRED
+...
+
+Each DEVIATED or DEFERRED item must include a one-line rationale.
+
 ## TODO
 
 - [ ] Make GeneChat installable via `uv tool install` / `pip install` — [plan](docs/pip-install-plan.md)
-- [ ] Multi-genome support: named genomes, paired queries — [plan](docs/multi-genome-plan.md)
 - [ ] Verify README quickstart instructions work end-to-end with a fresh VCF
 
 ## Project Overview
@@ -58,15 +68,15 @@ GeneChat MCP Server (Python)
     ├── Tools: query_variant, query_variants, query_gene, query_genes,
     │         query_clinvar, query_gwas, query_pgx, calculate_prs,
     │         genome_summary
-    ├── VCF Query Engine (pysam) — dual-mode: raw VCF + patch.db or annotated VCF
-    ├── Patch Database (SQLite) — annotations stored separately from raw VCF
+    ├── engines: dict[str, VCFEngine] — one per registered genome
+    ├── Patch Database (SQLite) — per-genome annotation overlay
     ├── Lookup Tables (SQLite)
-    └── Config Manager (TOML)
+    └── Config Manager (TOML) — [genomes.<label>] sections
     │ filesystem reads only
     ▼
 Local Data (encrypted volume recommended)
-    ├── raw.vcf.gz + .tbi (never modified)
-    ├── patch.db (annotation overlay)
+    ├── raw.vcf.gz + .tbi per genome (never modified)
+    ├── patch.db per genome (annotation overlay)
     ├── reference databases (~/.local/share/genechat/references/)
     └── lookup_tables.db
 ```
@@ -132,6 +142,7 @@ genechat-mcp/
       lookup.py                    # SQLite query layer
       tools/
         __init__.py
+        common.py                  # resolve_engine() helper
         query_variant.py
         query_variants.py
         query_gene.py
@@ -194,20 +205,22 @@ packages = ["src/genechat"]
 ### config.toml.example
 
 ```toml
-[genome]
-vcf_path = "/path/to/your/annotated.vcf.gz"
+[genomes.personal]
+vcf_path = "/path/to/your/raw.vcf.gz"
 genome_build = "GRCh38"
-sample_name = ""
+# patch_db = ""  # Auto-derived from VCF path
+
+# [genomes.partner]  # Uncomment for paired analysis
+# vcf_path = "/path/to/partner.vcf.gz"
 
 [databases]
-lookup_db = "./data/lookup_tables.db"
+lookup_db = ""  # Leave empty to use built-in package data
 
 [server]
 transport = "stdio"
 host = "localhost"
 port = 3001
 max_variants_per_response = 100
-bcftools_timeout = 30
 
 [display]
 include_population_freq = true
@@ -372,7 +385,7 @@ Pydantic models for tool input validation. One model per tool's parameters. Not 
 
 ## Phase 3: MCP Tools
 
-Each tool is a module in src/genechat/tools/. Each exports `register(app, engine, db, config)` that uses `@app.tool()` to register the tool.
+Each tool is a module in src/genechat/tools/. Each exports `register(mcp, engines, db, config)` where `engines` is a `dict[str, VCFEngine]`. Tools use `resolve_engine()` from `tools/common.py` to map the optional `genome` parameter to a specific engine.
 
 Every tool:
 1. Validates input

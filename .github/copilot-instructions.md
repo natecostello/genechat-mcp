@@ -38,15 +38,20 @@ LLM Client (Claude Desktop / Claude Code)
     | MCP Protocol (stdio or SSE)
     v
 FastMCP Server (server.py)
-    |-- 10 Tools (src/genechat/tools/*.py)
-    |-- VCFEngine (vcf_engine.py) -- pysam VariantFile for VCF reads
+    |-- 9 Tools (src/genechat/tools/*.py)
+    |-- engines: dict[str, VCFEngine]  (one per registered genome)
     |-- LookupDB (lookup.py) -- SQLite for gene coords, PGx, PRS
     |-- Parsers (parsers/) -- SnpEff ANN, ClinVar, genotype parsing
     v
 Local Data (read-only)
-    |-- annotated.vcf.gz + .tbi (user's genome)
+    |-- raw.vcf.gz + patch.db per genome
     |-- lookup_tables.db (built from seed TSVs)
 ```
+
+Multi-genome: config uses `[genomes.<label>]` sections. Each tool has an optional
+`genome` parameter (default: first registered). Tools supporting paired queries have
+`genome2` for side-by-side comparison. `resolve_engine()` in `tools/common.py` maps
+labels to engines.
 
 High-risk areas:
 - `src/genechat/vcf_engine.py` — all VCF queries flow through this; bugs here break every tool
@@ -86,9 +91,10 @@ Configuration files:
 
 - **`VCFEngine`** (`vcf_engine.py`) — pysam-based read-only VCF query engine with region, rsID, ClinVar, and stats methods
 - **`LookupDB`** (`lookup.py`) — SQLite wrapper for gene coords, PGx drugs/variants, PRS weights, GWAS associations
-- **`AppConfig`** (`config.py`) — Pydantic model for TOML config with genome, databases, server, and display sections
+- **`AppConfig`** (`config.py`) — Pydantic model for TOML config with genomes dict, databases, server, and display sections
 - **`FastMCP`** (`server.py`) — Anthropic's MCP server framework; tools registered via `@mcp.tool()` decorator
-- **Tool modules** (`tools/*.py`) — each exports `register(mcp, engine, db, config)` to register one MCP tool
+- **Tool modules** (`tools/*.py`) — each exports `register(mcp, engines, db, config)` to register one MCP tool; `engines` is a `dict[str, VCFEngine]`
+- **`resolve_engine`** (`tools/common.py`) — maps genome label to VCFEngine; all tools call this
 - **Parsers** (`parsers/`) — `parse_ann_field`, `parse_clinvar_fields`, `parse_genotype` for VCF INFO/FORMAT fields
 
 ## Dependencies and Non-Obvious Relationships
@@ -132,6 +138,7 @@ with the architecture, tool specifications, and seed data schemas defined there.
 9. **Code duplication** — shared helpers belong in `src/genechat/tools/formatting.py`. Flag any helper function duplicated across tool modules
 10. **Input validation consistency** — rsID validation must use the same `^rs\d+$` pattern as `VCFEngine`. Don't use `startswith("rs")` which allows malformed IDs like `rsABC`
 11. **Patch database consistency** — `PatchDB` uses UPSERT with COALESCE to preserve existing columns when updating a single annotation layer. Verify that annotation functions correctly stream data into patch.db without overwriting unrelated columns
+12. **Plan compliance** — if the PR description references a plan or design document, verify that the implementation matches what was specified. Flag any described behavior that doesn't match the code
 
 ## What NOT to Flag
 
