@@ -193,7 +193,7 @@ class TestInit:
         assert "not found" in capsys.readouterr().err
 
     def test_init_full_pipeline(self, tmp_path, capsys, monkeypatch):
-        """init runs: validate -> config -> lookup_db -> download -> print MCP config."""
+        """init runs: validate -> config -> lookup_db -> annotate -> print MCP config."""
         vcf = tmp_path / "test.vcf.gz"
         vcf.write_bytes(b"fake")
         (tmp_path / "test.vcf.gz.tbi").write_bytes(b"fake")
@@ -211,9 +211,7 @@ class TestInit:
         monkeypatch.setattr(
             "genechat.download.download_snpeff_db", lambda: "GRCh38.p14"
         )
-        # Skip annotation by making snpeff_installed return False
-        monkeypatch.setattr("genechat.download.snpeff_installed", lambda: False)
-        monkeypatch.setattr("genechat.download.clinvar_installed", lambda: True)
+        monkeypatch.setattr("genechat.cli._run_annotate", lambda args: None)
 
         main(["init", str(vcf)])
 
@@ -234,14 +232,7 @@ class TestInit:
         )
         _mock_pysam_ok(monkeypatch)
         monkeypatch.setattr("genechat.cli._ensure_lookup_db", lambda: True)
-        monkeypatch.setattr(
-            "genechat.download.download_clinvar", lambda **kw: Path("x")
-        )
-        monkeypatch.setattr(
-            "genechat.download.download_snpeff_db", lambda: "GRCh38.p14"
-        )
-        monkeypatch.setattr("genechat.download.snpeff_installed", lambda: False)
-        monkeypatch.setattr("genechat.download.clinvar_installed", lambda: True)
+        monkeypatch.setattr("genechat.cli._run_annotate", lambda args: None)
 
         gwas_calls = []
         monkeypatch.setattr(
@@ -267,14 +258,6 @@ class TestInit:
         )
         _mock_pysam_ok(monkeypatch)
         monkeypatch.setattr("genechat.cli._ensure_lookup_db", lambda: True)
-        monkeypatch.setattr(
-            "genechat.download.download_clinvar", lambda **kw: Path("x")
-        )
-        monkeypatch.setattr(
-            "genechat.download.download_snpeff_db", lambda: "GRCh38.p14"
-        )
-        monkeypatch.setattr("genechat.download.snpeff_installed", lambda: True)
-        monkeypatch.setattr("genechat.download.clinvar_installed", lambda: True)
 
         annotate_args = []
         monkeypatch.setattr(
