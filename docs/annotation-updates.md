@@ -3,6 +3,8 @@
 Annotations are stored in a SQLite patch database (`patch.db`), separate from the raw VCF. Each annotation layer can be updated independently using `genechat annotate`.
 
 > **Invocation:** Commands below assume `genechat` is on your PATH. In a clone-based setup, prefix with `uv run` (e.g., `uv run genechat annotate --clinvar`). All `genechat annotate` commands assume a VCF has been registered via `genechat init <vcf>` (recommended) or `genechat add <vcf>`.
+>
+> **Multiple genomes:** If you have multiple genomes registered, `genechat annotate` operates on the primary (default) genome. Use `--genome <label>` to target a specific genome (e.g., `genechat annotate --clinvar --genome partner`).
 
 ## Background
 
@@ -12,8 +14,8 @@ Annotations are stored in a SQLite patch database (`patch.db`), separate from th
 | gnomAD | Population allele frequencies | Major releases every 1-2 years | `genechat annotate --gnomad` |
 | SnpEff | Gene models, transcript definitions | Tied to Ensembl (~2/year) | `genechat annotate --snpeff` |
 | dbSNP | rsID identifiers for variants | Major releases | `genechat annotate --dbsnp` |
-| GWAS Catalog | New association study results | Weekly | `uv run python scripts/build_gwas_db.py` |
-| Seed data | PGx (CPIC) + PRS (PGS Catalog) | When APIs update | `uv run python scripts/build_seed_data.py` |
+| GWAS Catalog | New association study results | Weekly | `genechat download --gwas` |
+| Seed data | PGx (CPIC) + PRS (PGS Catalog) | When APIs update | `genechat update --seeds` |
 
 ## How It Works
 
@@ -85,8 +87,8 @@ genechat status           # Shows VCF info, patch.db layers, reference versions
 | What | How often | Command | Time |
 |------|-----------|---------|------|
 | ClinVar | Every 3-6 months | `genechat annotate --clinvar` | ~3 min |
-| Seed data | When CPIC/PGS sources update | `uv run python scripts/build_seed_data.py` | ~5 min |
-| GWAS Catalog | Every 6-12 months | `uv run python scripts/build_gwas_db.py` | ~2 min |
+| Seed data | When CPIC/PGS sources update | `genechat update --seeds` | ~5 min |
+| GWAS Catalog | Every 6-12 months | `genechat download --gwas` | ~2 min |
 | gnomAD | On major releases only | `genechat annotate --gnomad` | ~15 min |
 | SnpEff | Annually | `genechat annotate --snpeff` | ~20 min |
 | Full rebuild | Only if starting from a new raw VCF | `genechat init <vcf>` | ~30 min |

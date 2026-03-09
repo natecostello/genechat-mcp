@@ -57,6 +57,11 @@ def main(argv: list[str] | None = None):
         "--force", action="store_true", help="Re-download even if files exist"
     )
 
+    # genechat download --gwas
+    dl_p.add_argument(
+        "--gwas", action="store_true", help="Download GWAS Catalog (~58 MB)"
+    )
+
     # genechat annotate
     ann_p = sub.add_parser("annotate", help="Build or update patch.db")
     ann_p.add_argument(
@@ -66,11 +71,18 @@ def main(argv: list[str] | None = None):
     ann_p.add_argument("--snpeff", action="store_true", help="Re-annotate SnpEff layer")
     ann_p.add_argument("--dbsnp", action="store_true", help="Re-annotate dbSNP layer")
     ann_p.add_argument("--all", action="store_true", help="Re-annotate all layers")
+    ann_p.add_argument("--genome", help="Which genome to annotate (default: primary)")
 
     # genechat update
     upd_p = sub.add_parser("update", help="Check for newer reference versions")
     upd_p.add_argument(
         "--apply", action="store_true", help="Download + re-annotate stale sources"
+    )
+    upd_p.add_argument("--genome", help="Which genome to update (default: primary)")
+    upd_p.add_argument(
+        "--seeds",
+        action="store_true",
+        help="Fetch latest seed data from APIs and rebuild lookup_tables.db",
     )
 
     # genechat status
@@ -225,8 +237,9 @@ def _run_add(vcf_path_str: str, label: str | None = None):
 
     # Write config
     config_dir = Path(user_config_dir("genechat"))
-    config_path = write_config(vcf_path, config_dir, sample_name=label or "")
-    print(f"VCF registered. Config: {config_path}")
+    config_path = write_config(vcf_path, config_dir, label=label or "")
+    genome_label = label or "default"
+    print(f"VCF registered as '{genome_label}'. Config: {config_path}")
     return config_path
 
 
@@ -249,7 +262,7 @@ def _run_download(args):
 
     # Default (no flags): recommended set (ClinVar + SnpEff DB)
     download_all = args.all
-    explicit = args.gnomad or args.dbsnp
+    explicit = args.gnomad or args.dbsnp or args.gwas
 
     # Always download ClinVar + SnpEff (unless only explicit optional flags)
     if not explicit or download_all:
@@ -262,6 +275,9 @@ def _run_download(args):
     if args.dbsnp or download_all:
         download_dbsnp(force=args.force)
 
+    if args.gwas or download_all:
+        _download_and_build_gwas()
+
     print("\nDownload complete.")
 
 
@@ -270,12 +286,36 @@ def _run_download(args):
 # ---------------------------------------------------------------------------
 
 
+def _resolve_genome_label(config, genome_arg: str | None) -> tuple[str, object]:
+    """Resolve a --genome arg to (label, GenomeConfig). Exits on error."""
+    if not config.genomes:
+        print("Error: No VCF registered. Run: genechat add <vcf>", file=sys.stderr)
+        sys.exit(1)
+
+    label = genome_arg or config.default_genome
+    if label not in config.genomes:
+        available = ", ".join(config.genomes.keys())
+        print(
+            f"Error: Unknown genome '{label}'. Available: {available}",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    return label, config.genomes[label]
+
+
 def _run_annotate(args):
     """Build or update patch.db for the registered VCF."""
     config = load_config()
-    vcf_path_str = config.genome.vcf_path
+    genome_arg = getattr(args, "genome", None)
+    label, genome_cfg = _resolve_genome_label(config, genome_arg)
+
+    vcf_path_str = genome_cfg.vcf_path
     if not vcf_path_str:
-        print("Error: No VCF registered. Run: genechat add <vcf>", file=sys.stderr)
+        print(
+            f"Error: Genome '{label}' has no vcf_path. Run: genechat add <vcf>",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     vcf_path = Path(vcf_path_str)
@@ -284,7 +324,7 @@ def _run_annotate(args):
         sys.exit(1)
 
     # Determine patch.db path
-    patch_db_path = _patch_db_path_for(vcf_path, config)
+    patch_db_path = _patch_db_path_for(vcf_path, genome_cfg)
 
     from genechat.download import (
         clinvar_installed,
@@ -377,7 +417,7 @@ def _run_annotate(args):
         patch.store_vcf_fingerprint(vcf_path)
 
         # Update config with patch_db path
-        _update_config_patch_db(patch_db_path)
+        _update_config_patch_db(patch_db_path, label)
 
     finally:
         patch.close()
@@ -386,10 +426,17 @@ def _run_annotate(args):
     print(f"\nPatch database: {patch_db_path} ({size_mb:.0f} MB)")
 
 
-def _patch_db_path_for(vcf_path: Path, config) -> Path:
-    """Determine the patch.db path for a VCF."""
-    if config.genome.patch_db:
-        return Path(config.genome.patch_db)
+def _patch_db_path_for(vcf_path: Path, genome_cfg) -> Path:
+    """Determine the patch.db path for a VCF.
+
+    Accepts either a GenomeConfig or an AppConfig (for backward compat).
+    """
+    from genechat.config import AppConfig, GenomeConfig
+
+    if isinstance(genome_cfg, AppConfig):
+        genome_cfg = genome_cfg.genome
+    if isinstance(genome_cfg, GenomeConfig) and genome_cfg.patch_db:
+        return Path(genome_cfg.patch_db)
     # Convention: same directory as VCF, <stem>.patch.db
     return vcf_path.parent / f"{vcf_path.stem.replace('.vcf', '')}.patch.db"
 
@@ -745,7 +792,7 @@ def _print_annotation_status(patch_db_path: Path):
     print("\nUse --clinvar, --snpeff, --gnomad, --dbsnp, or --all to update.")
 
 
-def _update_config_patch_db(patch_db_path: Path):
+def _update_config_patch_db(patch_db_path: Path, label: str = "default"):
     """Update config.toml with the patch_db path if not already set."""
     import os
     import tomllib
@@ -753,7 +800,8 @@ def _update_config_patch_db(patch_db_path: Path):
     from genechat.config import _serialize_config
 
     config = load_config()
-    if config.genome.patch_db:
+    genome_cfg = config.genomes.get(label)
+    if genome_cfg and genome_cfg.patch_db:
         return  # Already set
 
     config_dir = Path(user_config_dir("genechat"))
@@ -764,7 +812,13 @@ def _update_config_patch_db(patch_db_path: Path):
     with open(config_path, "rb") as f:
         data = tomllib.load(f)
 
-    data.setdefault("genome", {})["patch_db"] = str(patch_db_path)
+    # Migrate legacy [genome] if present
+    if "genome" in data and "genomes" not in data:
+        data["genomes"] = {"default": data.pop("genome")}
+
+    data.setdefault("genomes", {}).setdefault(label, {})["patch_db"] = str(
+        patch_db_path
+    )
     content = _serialize_config(data)
 
     # Atomic write with correct permissions
@@ -780,6 +834,74 @@ def _update_config_patch_db(patch_db_path: Path):
 
 
 # ---------------------------------------------------------------------------
+# Contig auto-fix
+# ---------------------------------------------------------------------------
+
+
+def _detect_bare_contigs(vcf_path: Path) -> bool:
+    """Check if a VCF uses bare contig names (1, 2, ...) instead of chr prefix."""
+    import pysam
+
+    bare_names = {str(i) for i in range(1, 23)} | {"X", "Y", "MT"}
+    with pysam.VariantFile(str(vcf_path)) as vf:
+        for contig in vf.header.contigs:
+            if contig in bare_names:
+                return True
+            if contig.startswith("chr"):
+                return False
+    return False
+
+
+def _fix_user_contigs(vcf_path: Path) -> Path:
+    """Rewrite a VCF with bare contig names to use chr prefix.
+
+    Returns path to the fixed VCF (in same directory as original).
+    """
+    import tempfile
+
+    stem = vcf_path.name
+    if stem.endswith(".vcf.gz"):
+        fixed_name = stem[:-7] + "_chrfixed.vcf.gz"
+    else:
+        fixed_name = stem + "_chrfixed.vcf.gz"
+    fixed = vcf_path.parent / fixed_name
+
+    # Write chr rename map
+    chr_map = None
+    try:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
+            chr_map = Path(f.name)
+            for i in range(1, 23):
+                f.write(f"{i} chr{i}\n")
+            f.write("X chrX\nY chrY\nMT chrMT\n")
+
+        subprocess.run(
+            [
+                "bcftools",
+                "annotate",
+                "--rename-chrs",
+                str(chr_map),
+                str(vcf_path),
+                "-Oz",
+                "-o",
+                str(fixed),
+            ],
+            check=True,
+            capture_output=True,
+        )
+
+        # Index the fixed VCF
+        import pysam
+
+        pysam.tabix_index(str(fixed), preset="vcf", force=True)
+    finally:
+        if chr_map:
+            chr_map.unlink(missing_ok=True)
+
+    return fixed
+
+
+# ---------------------------------------------------------------------------
 # genechat init <vcf>
 # ---------------------------------------------------------------------------
 
@@ -787,25 +909,46 @@ def _update_config_patch_db(patch_db_path: Path):
 def _run_init(args):
     """Full first-time setup: add + download + annotate + configure."""
     vcf_path = Path(args.vcf_path).expanduser().resolve()
+    label = args.label or "default"
 
     print("=== GeneChat Setup ===\n")
 
-    # Step 1: Add (validate + register)
-    print("Step 1: Validating and registering VCF...")
+    # Step 1: Validate VCF
+    print("Step 1: Validating VCF...")
     if not _validate_vcf(vcf_path):
         sys.exit(1)
+
+    # Step 2: Detect and fix bare contig names
+    print("\nStep 2: Checking contig names...")
+    if _detect_bare_contigs(vcf_path):
+        if not shutil.which("bcftools"):
+            print(
+                "Error: VCF uses bare contig names (1, 2, ...) but bcftools "
+                "is needed to fix them.",
+                file=sys.stderr,
+            )
+            print("  Install: brew install bcftools (macOS)", file=sys.stderr)
+            sys.exit(1)
+        print("  Bare contig names detected. Adding chr prefix...")
+        vcf_path = _fix_user_contigs(vcf_path)
+        print(f"  Fixed VCF: {vcf_path}")
+    else:
+        print("  Contig names: OK (chr prefix)")
+
+    # Step 3: Register VCF
+    print(f"\nStep 3: Registering VCF as '{label}'...")
     config_dir = Path(user_config_dir("genechat"))
-    config_path = write_config(vcf_path, config_dir, sample_name=args.label or "")
+    config_path = write_config(vcf_path, config_dir, label=label)
     print(f"  Config: {config_path}")
 
-    # Step 2: Ensure lookup_tables.db
-    print("\nStep 2: Checking lookup database...")
+    # Step 4: Ensure lookup_tables.db
+    print("\nStep 4: Checking lookup database...")
     if not _ensure_lookup_db():
         sys.exit(1)
     print("  lookup_tables.db: OK")
 
-    # Step 3: Download references
-    print("\nStep 3: Downloading reference databases...")
+    # Step 5: Download references
+    print("\nStep 5: Downloading reference databases...")
     from genechat.download import (
         clinvar_installed,
         download_clinvar,
@@ -823,8 +966,8 @@ def _run_init(args):
 
         download_dbsnp()
 
-    # Step 4: Annotate
-    print("\nStep 4: Building annotation database...")
+    # Step 6: Annotate
+    print("\nStep 6: Building annotation database...")
     if not snpeff_installed():
         print(
             "WARNING: snpEff not installed. Skipping annotation.\n"
@@ -844,10 +987,11 @@ def _run_init(args):
             snpeff=False,
             dbsnp=False,
             all=False,
+            genome=label,
         )
         _run_annotate(ann_args)
 
-    # Step 5: Print MCP config
+    # Step 7: Print MCP config
     print("\n--- MCP Configuration ---\n")
     project_dir = _find_project_root()
     if project_dir:
@@ -902,10 +1046,23 @@ def _is_version_stale(installed: str, latest: str) -> bool:
 
 def _run_update(args):
     """Check for newer reference versions, optionally apply updates."""
+    # Handle --seeds: rebuild seed data from APIs
+    if args.seeds:
+        _run_update_seeds()
+        return
+
     from genechat.update import check_all_versions, format_status_table
 
     config = load_config()
-    patch_db_str = config.genome.patch_db
+    genome_arg = getattr(args, "genome", None)
+
+    # update can work without a genome registered (just shows latest versions)
+    label = None
+    genome_cfg = None
+    if config.genomes:
+        label, genome_cfg = _resolve_genome_label(config, genome_arg)
+
+    patch_db_str = genome_cfg.patch_db if genome_cfg else ""
     installed: dict[str, dict] = {}
 
     if patch_db_str and Path(patch_db_str).exists():
@@ -922,6 +1079,13 @@ def _run_update(args):
     print(format_status_table(installed, latest))
 
     if args.apply:
+        if not label:
+            print(
+                "Error: No genome registered. Run: genechat add <vcf>",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+
         # Determine which sources need updating
         stale = []
         for source in ["clinvar"]:
@@ -949,6 +1113,7 @@ def _run_update(args):
             snpeff=False,
             dbsnp=False,
             all=False,
+            genome=label,
         )
         _run_annotate(ann_args)
     else:
@@ -964,50 +1129,64 @@ def _run_status():
     """Show genome info, annotation state, reference versions."""
     config = load_config()
 
-    vcf_path_str = config.genome.vcf_path
-    if not vcf_path_str:
+    if not config.genomes:
         print("No genome registered. Run: genechat init <vcf>")
         return
 
-    vcf_path = Path(vcf_path_str)
-    print(f'Genome: "{vcf_path.stem}" ({vcf_path})')
-    print(f"  VCF: {'exists' if vcf_path.exists() else 'NOT FOUND'}")
+    print("=== Registered Genomes ===\n")
 
-    # Patch DB status
-    patch_db_str = config.genome.patch_db
-    if patch_db_str and Path(patch_db_str).exists():
-        patch_db_path = Path(patch_db_str)
-        size_mb = patch_db_path.stat().st_size / 1024 / 1024
-        print(f"  Patch DB: {patch_db_path} ({size_mb:.0f} MB)")
+    for label, genome_cfg in config.genomes.items():
+        is_default = label == config.default_genome
+        suffix = " (primary)" if is_default else ""
+        print(f"[{label}]{suffix}")
 
-        from genechat.patch import PatchDB
+        vcf_path_str = genome_cfg.vcf_path
+        if not vcf_path_str:
+            print("  VCF: not configured\n")
+            continue
 
-        patch = PatchDB(patch_db_path, readonly=True)
-        try:
-            meta = patch.get_metadata()
-        finally:
-            patch.close()
+        vcf_path = Path(vcf_path_str)
+        print(f"  VCF: {vcf_path} ({'exists' if vcf_path.exists() else 'NOT FOUND'})")
 
-        print("\nAnnotations:")
-        for source in ["snpeff", "clinvar", "gnomad", "dbsnp"]:
-            info = meta.get(source, {})
-            if info:
-                status = info.get("status", "unknown")
-                version = info.get("version", "?")
-                date = info.get("updated_at", "?")
-                if status == "complete":
-                    print(f"  {source:<10} {version:<20} (applied {date})")
-                elif status == "pending":
-                    print(f"  {source:<10} {version:<20} (in progress)")
-                elif status == "failed":
-                    print(f"  {source:<10} {version:<20} (FAILED)")
+        # Patch DB status
+        patch_db_str = genome_cfg.patch_db
+        if patch_db_str and Path(patch_db_str).exists():
+            patch_db_path = Path(patch_db_str)
+            size_mb = patch_db_path.stat().st_size / 1024 / 1024
+            print(f"  Patch DB: {patch_db_path} ({size_mb:.0f} MB)")
+
+            from genechat.patch import PatchDB
+
+            patch = PatchDB(patch_db_path, readonly=True)
+            try:
+                meta = patch.get_metadata()
+            finally:
+                patch.close()
+
+            print("  Annotations:")
+            for source in ["snpeff", "clinvar", "gnomad", "dbsnp"]:
+                info = meta.get(source, {})
+                if info:
+                    status = info.get("status", "unknown")
+                    version = info.get("version", "?")
+                    date = info.get("updated_at", "?")
+                    if status == "complete":
+                        print(f"    {source:<10} {version:<20} (applied {date})")
+                    elif status == "pending":
+                        print(f"    {source:<10} {version:<20} (in progress)")
+                    elif status == "failed":
+                        print(f"    {source:<10} {version:<20} (FAILED)")
+                    else:
+                        print(f"    {source:<10} {version:<20} ({status})")
                 else:
-                    print(f"  {source:<10} {version:<20} ({status})")
-            else:
-                print(f"  {source:<10} not applied")
-    else:
-        print("  Patch DB: not built")
-        print("  Run: genechat annotate")
+                    print(f"    {source:<10} not applied")
+        else:
+            print("  Patch DB: not built")
+            print(
+                "  Run: genechat annotate"
+                + (f" --genome {label}" if not is_default else "")
+            )
+        print()
 
     # References status
     from genechat.download import (
@@ -1018,7 +1197,7 @@ def _run_status():
         snpeff_installed,
     )
 
-    print(f"\nReferences: {references_dir()}")
+    print(f"References: {references_dir()}")
     print(
         f"  ClinVar:  {'installed' if clinvar_installed() else 'not installed — genechat download'}"
     )
@@ -1033,3 +1212,78 @@ def _run_status():
     )
 
     print("\nRun `genechat update` to check for newer versions.")
+
+
+# ---------------------------------------------------------------------------
+# genechat update --seeds
+# ---------------------------------------------------------------------------
+
+
+def _run_update_seeds():
+    """Fetch latest seed data from APIs and rebuild lookup_tables.db."""
+    project_root = _find_project_root()
+    if not project_root:
+        print(
+            "Error: --seeds requires a source checkout (pyproject.toml not found).",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    build_script = project_root / "scripts" / "build_seed_data.py"
+    if not build_script.exists():
+        print(
+            f"Error: build_seed_data.py not found at {build_script}",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    print("Updating seed data from upstream APIs...")
+    result = subprocess.run(
+        [sys.executable, str(build_script)],
+        cwd=str(project_root),
+    )
+    if result.returncode != 0:
+        print("Error: Seed data update failed.", file=sys.stderr)
+        sys.exit(1)
+
+
+# ---------------------------------------------------------------------------
+# genechat download --gwas
+# ---------------------------------------------------------------------------
+
+
+def _download_and_build_gwas():
+    """Download GWAS Catalog and build the gwas_associations table."""
+    project_root = _find_project_root()
+    if not project_root:
+        print(
+            "Error: --gwas requires a source checkout (pyproject.toml not found).",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    build_script = project_root / "scripts" / "build_gwas_db.py"
+    if not build_script.exists():
+        print(
+            f"Error: build_gwas_db.py not found at {build_script}",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "genechat_build_gwas_db", str(build_script)
+    )
+    if spec is None or spec.loader is None:
+        print("Error: Cannot load build_gwas_db.py", file=sys.stderr)
+        sys.exit(1)
+
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+
+    zip_path = project_root / "data" / "gwas_catalog" / "gwas-catalog-associations.zip"
+    db_path = project_root / "src" / "genechat" / "data" / "lookup_tables.db"
+
+    print("Downloading and building GWAS Catalog...")
+    mod.build_gwas_db(zip_path, db_path)

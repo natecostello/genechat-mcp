@@ -47,12 +47,12 @@ Your genome data stays on your machine. GeneChat only reads from local files. No
 
 | Command | Purpose |
 |---------|---------|
-| `genechat init <vcf> [--gnomad] [--dbsnp]` | Full first-time setup: download refs, annotate, write config |
-| `genechat add <vcf>` | Register a VCF file without annotation |
-| `genechat download [--gnomad] [--dbsnp] [--all] [--force]` | Download reference databases |
-| `genechat annotate [--clinvar] [--gnomad] [--snpeff] [--dbsnp] [--all]` | Build or update patch.db annotation layers |
-| `genechat update [--apply]` | Check for newer reference versions |
-| `genechat status` | Show genome info and annotation state |
+| `genechat init <vcf> [--label] [--gnomad] [--dbsnp]` | Full first-time setup: download refs, annotate, write config |
+| `genechat add <vcf> [--label]` | Register a VCF file without annotation |
+| `genechat download [--gnomad] [--dbsnp] [--gwas] [--all] [--force]` | Download reference databases |
+| `genechat annotate [--clinvar] [--gnomad] [--snpeff] [--dbsnp] [--all] [--genome]` | Build or update patch.db annotation layers |
+| `genechat update [--apply] [--genome] [--seeds]` | Check for newer reference versions |
+| `genechat status` | Show all registered genomes and annotation state |
 | `genechat serve` / `genechat` | Start the MCP server |
 
 > **Note:** `bcftools` and `tabix` are required for annotation (ClinVar contig rename, gnomAD, and dbSNP). dbSNP rsID backfill (`--dbsnp`) downloads ~20 GB from NCBI and is not included in the default `genechat init` — pass `--dbsnp` explicitly to enable it.
@@ -97,17 +97,18 @@ conda install -c bioconda bcftools snpeff
 
 ### 3. Initialize GeneChat
 
-`genechat init` handles the entire setup in one command — downloads references, annotates your VCF, builds lookup tables, writes config, and prints the MCP JSON snippet:
+`genechat init` handles the entire setup in one command — validates your VCF, auto-fixes contig names if needed, downloads references, annotates, builds lookup tables, writes config, and prints the MCP JSON snippet:
 
 ```bash
-uv run genechat init /path/to/your/raw.vcf.gz
+uv run genechat init /path/to/your/raw.vcf.gz --label personal
 ```
 
 This will:
-1. Download ClinVar and SnpEff databases
-2. Build a patch database with functional annotations and clinical significance
-3. Write a `config.toml` to your OS config directory (`~/Library/Application Support/genechat/` on macOS, `~/.config/genechat/` on Linux)
-4. Print the MCP JSON to paste into Claude Desktop or Claude Code
+1. Detect and fix bare contig names (e.g. GIAB VCFs use `1`, `2` instead of `chr1`, `chr2`)
+2. Download ClinVar and SnpEff databases
+3. Build a patch database with functional annotations and clinical significance
+4. Write a `config.toml` to your OS config directory (`~/Library/Application Support/genechat/` on macOS, `~/.config/genechat/` on Linux)
+5. Print the MCP JSON to paste into Claude Desktop or Claude Code
 
 **Optional extras:**
 
@@ -116,14 +117,42 @@ This will:
 uv run genechat init /path/to/your/raw.vcf.gz --gnomad
 
 # Enable GWAS trait search (~58 MB download)
-uv run python scripts/build_gwas_db.py
+uv run genechat download --gwas
 ```
 
 gnomAD is optional; without it, `query_gene` falls back to ClinVar-only filtering.
 
+### Don't have your genome sequenced?
+
+You can explore GeneChat using the [GIAB NA12878](https://www.nist.gov/programs-projects/genome-bottle) benchmark genome — a well-characterized reference sample with ~3.7M variants:
+
+```bash
+# Download the benchmark VCF (~120 MB)
+curl -L -O https://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/NA12878_HG001/NISTv4.2.1/GRCh38/HG001_GRCh38_1_22_v4.2.1_benchmark.vcf.gz
+
+# Initialize (auto-fixes contig names, downloads references, annotates)
+uv run genechat init HG001_GRCh38_1_22_v4.2.1_benchmark.vcf.gz --label giab
+```
+
+Then ask Claude questions just like you would with your own genome.
+
 ### 4. Start asking questions
 
 Open Claude and ask about your genetics. GeneChat's tools will appear automatically.
+
+### Multiple genomes
+
+GeneChat supports named genomes for side-by-side comparison (e.g. carrier screening for couples):
+
+```bash
+# Register a second genome
+uv run genechat init /path/to/partner.vcf.gz --label partner
+
+# Check what's registered
+uv run genechat status
+```
+
+The LLM can then query both genomes using the `genome` and `genome2` parameters on any tool.
 
 ## Architecture
 
@@ -137,11 +166,11 @@ flowchart TD
     end
 
     subgraph local["YOUR MACHINE -- Local Only"]
-        vcf["Raw VCF from\nSequencing Provider"]
-        init["genechat init\n(one-time setup)"]
-        patch[("patch.db\nSQLite")]
+        vcf["Raw VCF(s) from\nSequencing Provider"]
+        init["genechat init --label\n(one-time per genome)"]
+        patch[("patch.db per genome\nSQLite")]
         subgraph runtime["RUNTIME -- no network"]
-            engine["pysam reads raw VCF +\npatch.db + lookup_tables.db"]
+            engine["pysam reads raw VCF +\npatch.db + lookup_tables.db\n(one engine per genome)"]
         end
         server["MCP Server"]
     end
@@ -191,7 +220,7 @@ For developers updating seed data from upstream APIs:
 | [CPIC](https://cpicpgx.org/) via [ClinPGx API](https://api.cpicpgx.org/v1/) | PGx drug-gene guidelines, star-allele definitions | `fetch_cpic_data.py` |
 | [PGS Catalog](https://www.pgscatalog.org/) | Polygenic risk score weights (GRCh38) | `fetch_prs_data.py` |
 
-Rebuild everything: `uv run python scripts/build_seed_data.py`
+Rebuild everything: `uv run genechat update --seeds`
 
 ### Runtime Dependencies
 
@@ -233,15 +262,12 @@ The test VCF (`tests/data/test_sample.vcf.gz`) is auto-generated by a pytest fix
 Optional e2e tests against the [GIAB NA12878](https://www.nist.gov/programs-projects/genome-bottle) benchmark genome (~3.7M variants):
 
 ```bash
-# Download GIAB VCF (Python-only, no external tools):
-uv run python scripts/setup_giab.py ./giab
-
-# Annotate using the production pipeline (requires snpEff + bcftools):
+# Download and init GIAB (see "Don't have your genome sequenced?" above)
 # Include --dbsnp for rsID-based lookups in e2e tests
-uv run genechat init ./giab/HG001_raw.vcf.gz --dbsnp
+uv run genechat init HG001_GRCh38_1_22_v4.2.1_benchmark.vcf.gz --label giab --dbsnp
 
-# Run e2e tests:
-export GENECHAT_GIAB_VCF=./giab/HG001_raw.vcf.gz
+# Run e2e tests (point to the chrfixed VCF if contig rename was applied):
+export GENECHAT_GIAB_VCF=./HG001_GRCh38_1_22_v4.2.1_benchmark_chrfixed.vcf.gz
 uv run pytest tests/e2e/ -v
 
 # Fast only (skip full-VCF scans):

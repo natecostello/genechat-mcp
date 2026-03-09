@@ -1,5 +1,6 @@
 """Query all variants in a gene region."""
 
+from genechat.tools.common import resolve_engine
 from genechat.vcf_engine import VCFEngineError
 
 DISCLAIMER = (
@@ -69,13 +70,15 @@ def _should_suppress(variant: dict, protected_rsids: set[str]) -> bool:
         return not sig_terms
 
 
-def register(mcp, engine, db, config):
+def register(mcp, engines, db, config):
     @mcp.tool()
     def query_gene(
         gene: str,
         impact_filter: str = "HIGH,MODERATE",
         max_results: int = 50,
         smart_filter: bool = True,
+        genome: str | None = None,
+        genome2: str | None = None,
     ) -> str:
         """Query variants in a specific gene from your genome.
 
@@ -83,7 +86,15 @@ def register(mcp, engine, db, config):
         Filters by SnpEff impact level (HIGH, MODERATE, LOW, MODIFIER) by default.
         If functional annotation is not available, all variants are included regardless
         of impact filter.
+
+        Optional: 'genome' selects which registered genome to query (default: primary genome).
+        'genome2' queries a second genome for side-by-side comparison.
         """
+        try:
+            label, engine = resolve_engine(engines, genome, config)
+        except ValueError as e:
+            return str(e)
+
         gene_info = db.get_gene(gene)
         if not gene_info:
             return f"Gene '{gene}' not found in the database. Check the gene symbol and try again."
@@ -150,8 +161,12 @@ def register(mcp, engine, db, config):
         truncated = len(variants) > max_results
         variants = variants[:max_results]
 
+        show_label = len(engines) > 1
+        header = f"## Variants in {gene} ({gene_info['name']})"
+        if show_label:
+            header += f" — {label}"
         lines = [
-            f"## Variants in {gene} ({gene_info['name']})",
+            header,
             f"Region: {region} | Filter: {impact_filter} | Found: {len(variants)}",
             "",
         ]
@@ -198,5 +213,66 @@ def register(mcp, engine, db, config):
             )
         else:
             lines.append("No clinically notable variants remain after filtering.")
+
+        # Paired genome query
+        if genome2:
+            try:
+                label2, engine2 = resolve_engine(engines, genome2, config)
+            except ValueError as e:
+                lines.append(f"\n---\n\n**Genome '{genome2}': {e}**")
+                return "\n".join(lines) + DISCLAIMER
+
+            try:
+                variants2 = engine2.query_region(region)
+            except (ValueError, VCFEngineError) as e:
+                lines.append(f"\n---\n\n**Genome '{label2}' error: {e}**")
+                return "\n".join(lines) + DISCLAIMER
+
+            # Apply same filters
+            if impact_filter:
+                variants2 = [
+                    v
+                    for v in variants2
+                    if not v.get("annotation", {}).get("impact")
+                    or v["annotation"]["impact"].upper() in impacts
+                ]
+            variants2 = [
+                v
+                for v in variants2
+                if v.get("annotation", {}).get("impact")
+                or v.get("clinvar", {})
+                or v.get("rsid")
+            ]
+            if smart_filter:
+                variants2 = [
+                    v for v in variants2 if not _should_suppress(v, protected_rsids)
+                ]
+            variants2 = variants2[:max_results]
+
+            lines.append(
+                f"\n---\n\n## Variants in {gene} ({gene_info['name']}) — {label2}"
+            )
+            lines.append(f"Found: {len(variants2)}\n")
+            if variants2:
+                lines.append(
+                    "| rsID | Position | Genotype | Effect | Impact | ClinVar |"
+                )
+                lines.append(
+                    "|------|----------|----------|--------|--------|---------|"
+                )
+                for v in variants2:
+                    rsid_v = v["rsid"] or "."
+                    pos_v = f"{v['chrom']}:{v['pos']}"
+                    gt_v = v["genotype"]["display"]
+                    ann_v = v.get("annotation", {})
+                    effect_v = ann_v.get("effect", ".") or "."
+                    impact_v = ann_v.get("impact", ".") or "."
+                    clin_v = v.get("clinvar", {})
+                    sig_v = clin_v.get("significance", ".") if clin_v else "."
+                    lines.append(
+                        f"| {rsid_v} | {pos_v} | {gt_v} | {effect_v} | {impact_v} | {sig_v} |"
+                    )
+            else:
+                lines.append("No notable variants found.")
 
         return "\n".join(lines) + DISCLAIMER

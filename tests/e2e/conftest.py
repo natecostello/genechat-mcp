@@ -2,9 +2,10 @@
 
 These tests are auto-skipped when GENECHAT_GIAB_VCF is not set.
 To run:
-    uv run python scripts/setup_giab.py ./giab
-    uv run genechat init ./giab/HG001_raw.vcf.gz --dbsnp
-    export GENECHAT_GIAB_VCF=./giab/HG001_raw.vcf.gz
+    # Download GIAB benchmark VCF (~120 MB)
+    curl -L -O https://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/NA12878_HG001/NISTv4.2.1/GRCh38/HG001_GRCh38_1_22_v4.2.1_benchmark.vcf.gz
+    uv run genechat init HG001_GRCh38_1_22_v4.2.1_benchmark.vcf.gz --label giab --dbsnp
+    export GENECHAT_GIAB_VCF=<path to chrfixed VCF>
     uv run pytest tests/e2e/ -v
 """
 
@@ -35,9 +36,8 @@ def pytest_collection_modifyitems(config, items):
 
     skip_marker = pytest.mark.skip(
         reason=f"{GIAB_VCF_ENV} not set or file not found. "
-        "Run: uv run python scripts/setup_giab.py ./giab && "
-        "uv run genechat init ./giab/HG001_raw.vcf.gz --dbsnp && "
-        f"export {GIAB_VCF_ENV}=./giab/HG001_raw.vcf.gz"
+        "Run: uv run genechat init <GIAB VCF> --label giab --dbsnp && "
+        f"export {GIAB_VCF_ENV}=<path to chrfixed VCF>"
     )
     for item in items:
         if "e2e" in str(item.fspath):
@@ -149,6 +149,12 @@ def giab_config():
 def giab_engine(giab_config):
     """VCFEngine opened once for the entire test session."""
     return VCFEngine(giab_config)
+
+
+@pytest.fixture(scope="session")
+def giab_engines(giab_engine):
+    """Engines dict wrapping giab_engine as 'default'."""
+    return {"default": giab_engine}
 
 
 @pytest.fixture(scope="session")

@@ -2,6 +2,7 @@
 
 import re
 
+from genechat.tools.common import resolve_engine
 from genechat.tools.formatting import short_zygosity
 from genechat.vcf_engine import VCFEngineError
 
@@ -13,7 +14,7 @@ DISCLAIMER = (
 )
 
 
-def register(mcp, engine, db, config):
+def register(mcp, engines, db, config):
     @mcp.tool()
     def query_gwas(
         trait: str | None = None,
@@ -22,6 +23,7 @@ def register(mcp, engine, db, config):
         max_results: int = 30,
         deduplicate: bool = True,
         check_vcf: bool = False,
+        genome: str | None = None,
     ) -> str:
         """Search the GWAS Catalog for genome-wide association study findings.
 
@@ -30,9 +32,17 @@ def register(mcp, engine, db, config):
         Provide at least one of: trait (e.g. "type 2 diabetes"), gene (e.g. "FTO"),
         or rsid (e.g. "rs9939609").
         Results are ordered by statistical significance (lowest p-value first).
+
+        Optional: 'genome' selects which registered genome to use for VCF cross-reference
+        when check_vcf=true (default: primary genome).
         """
         if not trait and not gene and not rsid:
             return "Please provide at least one of: trait, gene, or rsid."
+
+        try:
+            _label, engine = resolve_engine(engines, genome, config)
+        except ValueError as e:
+            return str(e)
 
         if not db.has_gwas_table():
             return (

@@ -104,11 +104,20 @@ class TestValidateVcf:
 
 class TestPatchDbPathFor:
     def test_convention_from_vcf(self):
-        config = AppConfig()
-        result = _patch_db_path_for(Path("/data/sample.vcf.gz"), config)
+        from genechat.config import GenomeConfig
+
+        result = _patch_db_path_for(Path("/data/sample.vcf.gz"), GenomeConfig())
         assert result == Path("/data/sample.patch.db")
 
-    def test_from_config(self):
+    def test_from_genome_config(self):
+        from genechat.config import GenomeConfig
+
+        genome_cfg = GenomeConfig(patch_db="/custom/path.db")
+        result = _patch_db_path_for(Path("/data/sample.vcf.gz"), genome_cfg)
+        assert result == Path("/custom/path.db")
+
+    def test_backward_compat_with_app_config(self):
+        """Still works when passed an AppConfig (backward compat)."""
         config = AppConfig(genome={"patch_db": "/custom/path.db"})
         result = _patch_db_path_for(Path("/data/sample.vcf.gz"), config)
         assert result == Path("/custom/path.db")
@@ -143,11 +152,32 @@ class TestAdd:
         assert config_path.exists()
         content = config_path.read_text()
         assert str(vcf.resolve()) in content
-        assert "VCF registered" in capsys.readouterr().out
+        out = capsys.readouterr().out
+        assert "VCF registered" in out
+        assert "'default'" in out
 
         # Check permissions (owner read/write only)
         mode = config_path.stat().st_mode & 0o777
         assert mode == 0o600
+
+    def test_add_with_label(self, tmp_path, capsys, monkeypatch):
+        vcf = tmp_path / "test.vcf.gz"
+        vcf.write_bytes(b"fake")
+        (tmp_path / "test.vcf.gz.tbi").write_bytes(b"fake")
+
+        config_dir = tmp_path / "config"
+        monkeypatch.setattr(
+            "genechat.cli.user_config_dir", lambda _app: str(config_dir)
+        )
+        _mock_pysam_ok(monkeypatch)
+
+        main(["add", str(vcf), "--label", "nate"])
+
+        config_path = config_dir / "config.toml"
+        content = config_path.read_text()
+        assert "[genomes.nate]" in content
+        out = capsys.readouterr().out
+        assert "'nate'" in out
 
 
 # ---------------------------------------------------------------------------
@@ -235,6 +265,11 @@ def _mock_downloads(monkeypatch):
         lambda **kw: calls.append("dbsnp"),
     )
     monkeypatch.setattr("genechat.download.references_dir", lambda: Path("/tmp/refs"))
+    # Mock GWAS download to prevent network calls and side effects on lookup_tables.db
+    monkeypatch.setattr(
+        "genechat.cli._download_and_build_gwas",
+        lambda: calls.append("gwas"),
+    )
     return calls
 
 
@@ -257,13 +292,20 @@ class TestDownload:
     def test_all_flag(self, monkeypatch, capsys):
         calls = _mock_downloads(monkeypatch)
         main(["download", "--all"])
-        assert set(calls) == {"clinvar", "snpeff", "gnomad", "dbsnp"}
+        assert set(calls) == {"clinvar", "snpeff", "gnomad", "dbsnp", "gwas"}
 
     def test_dbsnp_flag_only(self, monkeypatch, capsys):
         """--dbsnp alone downloads only dbSNP (not ClinVar/SnpEff)."""
         calls = _mock_downloads(monkeypatch)
         main(["download", "--dbsnp"])
         assert "dbsnp" in calls
+        assert "clinvar" not in calls
+
+    def test_gwas_flag_only(self, monkeypatch, capsys):
+        """--gwas alone downloads only GWAS Catalog (not ClinVar/SnpEff)."""
+        calls = _mock_downloads(monkeypatch)
+        main(["download", "--gwas"])
+        assert "gwas" in calls
         assert "clinvar" not in calls
 
 
@@ -457,10 +499,39 @@ class TestStatus:
         main(["status"])
 
         out = capsys.readouterr().out
-        assert "test" in out
+        assert "[default]" in out
+        assert "(primary)" in out
         assert "exists" in out
         assert "Patch DB: not built" in out
         assert "dbSNP" in out
+
+    def test_multi_genome_status(self, tmp_path, monkeypatch, capsys):
+        vcf1 = tmp_path / "nate.vcf.gz"
+        vcf2 = tmp_path / "partner.vcf.gz"
+        vcf1.write_bytes(b"fake")
+        vcf2.write_bytes(b"fake")
+
+        config = AppConfig(
+            genomes={
+                "nate": {"vcf_path": str(vcf1)},
+                "partner": {"vcf_path": str(vcf2)},
+            }
+        )
+        monkeypatch.setattr("genechat.cli.load_config", lambda: config)
+        monkeypatch.setattr(
+            "genechat.download.references_dir", lambda: Path("/tmp/refs")
+        )
+        monkeypatch.setattr("genechat.download.clinvar_installed", lambda: False)
+        monkeypatch.setattr("genechat.download.snpeff_installed", lambda: False)
+        monkeypatch.setattr("genechat.download.gnomad_installed", lambda: False)
+        monkeypatch.setattr("genechat.download.dbsnp_installed", lambda: False)
+
+        main(["status"])
+
+        out = capsys.readouterr().out
+        assert "[nate]" in out
+        assert "[partner]" in out
+        assert "(primary)" in out
 
 
 # ---------------------------------------------------------------------------
@@ -504,3 +575,96 @@ class TestEnsureLookupDb:
 
         assert _ensure_lookup_db() is False
         assert "lookup_tables.db not found" in capsys.readouterr().err
+
+
+# ---------------------------------------------------------------------------
+# Contig auto-fix
+# ---------------------------------------------------------------------------
+
+
+class TestContigAutoFix:
+    def test_detect_bare_contigs_true(self, monkeypatch):
+        """Detects VCFs with bare contig names (1, 2, ...)."""
+        from genechat.cli import _detect_bare_contigs
+
+        mock_vf = MagicMock()
+        mock_vf.__enter__ = lambda s: s
+        mock_vf.__exit__ = lambda s, *a: None
+        mock_vf.header.contigs = ["1", "2", "X"]
+        monkeypatch.setattr("pysam.VariantFile", lambda *a, **kw: mock_vf)
+
+        assert _detect_bare_contigs(Path("test.vcf.gz")) is True
+
+    def test_detect_bare_contigs_false(self, monkeypatch):
+        """Returns False for VCFs with chr-prefixed contigs."""
+        from genechat.cli import _detect_bare_contigs
+
+        mock_vf = MagicMock()
+        mock_vf.__enter__ = lambda s: s
+        mock_vf.__exit__ = lambda s, *a: None
+        mock_vf.header.contigs = ["chr1", "chr2", "chrX"]
+        monkeypatch.setattr("pysam.VariantFile", lambda *a, **kw: mock_vf)
+
+        assert _detect_bare_contigs(Path("test.vcf.gz")) is False
+
+    def test_fix_user_contigs(self, tmp_path, monkeypatch):
+        """_fix_user_contigs calls bcftools and pysam.tabix_index."""
+        from genechat.cli import _fix_user_contigs
+
+        vcf = tmp_path / "test.vcf.gz"
+        vcf.write_bytes(b"fake")
+
+        run_calls = []
+        monkeypatch.setattr(
+            "genechat.cli.subprocess.run",
+            lambda cmd, **kw: run_calls.append(cmd) or MagicMock(returncode=0),
+        )
+        monkeypatch.setattr("pysam.tabix_index", lambda *a, **kw: None)
+
+        result = _fix_user_contigs(vcf)
+
+        assert "chrfixed" in result.name
+        assert len(run_calls) == 1
+        assert "--rename-chrs" in run_calls[0]
+
+
+# ---------------------------------------------------------------------------
+# _resolve_genome_label
+# ---------------------------------------------------------------------------
+
+
+class TestResolveGenomeLabel:
+    def test_no_genomes_exits(self):
+        from genechat.cli import _resolve_genome_label
+
+        config = AppConfig()
+        with pytest.raises(SystemExit):
+            _resolve_genome_label(config, None)
+
+    def test_default_genome(self):
+        from genechat.cli import _resolve_genome_label
+
+        config = AppConfig(genome={"vcf_path": "/test.vcf.gz"})
+        label, genome_cfg = _resolve_genome_label(config, None)
+        assert label == "default"
+        assert genome_cfg.vcf_path == "/test.vcf.gz"
+
+    def test_specific_genome(self):
+        from genechat.cli import _resolve_genome_label
+
+        config = AppConfig(
+            genomes={
+                "nate": {"vcf_path": "/nate.vcf.gz"},
+                "partner": {"vcf_path": "/partner.vcf.gz"},
+            }
+        )
+        label, genome_cfg = _resolve_genome_label(config, "partner")
+        assert label == "partner"
+        assert genome_cfg.vcf_path == "/partner.vcf.gz"
+
+    def test_unknown_genome_exits(self):
+        from genechat.cli import _resolve_genome_label
+
+        config = AppConfig(genome={"vcf_path": "/test.vcf.gz"})
+        with pytest.raises(SystemExit):
+            _resolve_genome_label(config, "nonexistent")

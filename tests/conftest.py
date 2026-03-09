@@ -42,6 +42,23 @@ def test_db(test_config):
     """LookupDB using the built package database."""
     if not DB_PATH.exists():
         pytest.skip("Lookup database not built. Run: python scripts/build_lookup_db.py")
+    # Verify DB has actual tables (not just an empty file)
+    import sqlite3
+
+    try:
+        conn = sqlite3.connect(str(DB_PATH))
+        tables = conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table'"
+        ).fetchall()
+        conn.close()
+        if not tables:
+            pytest.skip(
+                "Lookup database is empty. Rebuild: python scripts/build_lookup_db.py"
+            )
+    except sqlite3.DatabaseError:
+        pytest.skip(
+            "Lookup database is corrupt. Rebuild: python scripts/build_lookup_db.py"
+        )
     db = LookupDB(test_config)
     yield db
     db.close()
@@ -54,6 +71,46 @@ def mock_engine():
     engine.max_variants = 100
     engine.annotation_versions.return_value = {}
     return engine
+
+
+@pytest.fixture
+def mock_engine2():
+    """Second mock VCFEngine for multi-genome / genome2 tests."""
+    engine = MagicMock()
+    engine.max_variants = 100
+    engine.annotation_versions.return_value = {}
+    return engine
+
+
+@pytest.fixture
+def mock_engines(mock_engine):
+    """Engines dict wrapping mock_engine as 'default'."""
+    return {"default": mock_engine}
+
+
+@pytest.fixture
+def mock_engines_multi(mock_engine, mock_engine2):
+    """Engines dict with two genomes for paired-query tests."""
+    return {"default": mock_engine, "partner": mock_engine2}
+
+
+@pytest.fixture
+def test_config_multi():
+    """Config with two genomes for paired-query tests."""
+    return AppConfig(
+        genomes={
+            "default": {
+                "vcf_path": str(TEST_DATA / "test_sample.vcf.gz"),
+                "genome_build": "GRCh38",
+            },
+            "partner": {
+                "vcf_path": str(TEST_DATA / "test_sample.vcf.gz"),
+                "genome_build": "GRCh38",
+            },
+        },
+        databases={"lookup_db": str(DB_PATH)},
+        server={"max_variants_per_response": 100},
+    )
 
 
 # Sample variant dicts for testing

@@ -34,9 +34,28 @@ class DisplayConfig(BaseModel):
 
 class AppConfig(BaseModel):
     genome: GenomeConfig = GenomeConfig()
+    genomes: dict[str, GenomeConfig] = {}
     databases: DatabasesConfig = DatabasesConfig()
     server: ServerConfig = ServerConfig()
     display: DisplayConfig = DisplayConfig()
+    default_genome: str = ""
+
+    def model_post_init(self, __context: object) -> None:
+        """Normalize genome config: ensure genomes dict is populated."""
+        # If genomes dict has entries, use it as-is
+        if self.genomes:
+            # Sync legacy genome field with the first genome for backward compat
+            if not self.genome.vcf_path:
+                first_label = next(iter(self.genomes))
+                self.genome = self.genomes[first_label]
+            if not self.default_genome:
+                self.default_genome = next(iter(self.genomes))
+        elif self.genome.vcf_path:
+            # Legacy [genome] section → treat as genomes["default"]
+            self.genomes = {"default": self.genome}
+            if not self.default_genome:
+                self.default_genome = "default"
+        # If neither is set, leave both empty (no VCF configured)
 
     @property
     def lookup_db_path(self) -> str:
@@ -76,14 +95,22 @@ def _find_config_file() -> Path | None:
     return None
 
 
-def write_config(vcf_path: Path, config_dir: Path, sample_name: str = "") -> Path:
+def write_config(
+    vcf_path: Path,
+    config_dir: Path,
+    sample_name: str = "",
+    label: str = "",
+) -> Path:
     """Write or update config.toml with the given VCF path.
 
-    Preserves existing settings (server, display, patch_db) if the config
+    If ``label`` is provided, writes to ``[genomes.<label>]``.
+    If no label, writes to ``[genomes.default]``.
+    Preserves existing settings (server, display, other genomes) if the config
     already exists. Returns the config file path.
     """
     config_dir.mkdir(parents=True, exist_ok=True)
     config_path = config_dir / "config.toml"
+    label = label or "default"
 
     # Read existing config to preserve all settings
     data: dict = {}
@@ -104,8 +131,16 @@ def write_config(vcf_path: Path, config_dir: Path, sample_name: str = "") -> Pat
             )
             _sys.exit(1)
 
-    # Update genome section, preserving other genome fields (e.g. patch_db)
-    genome = data.setdefault("genome", {})
+    # Migrate legacy [genome] to [genomes.default] if present
+    if "genome" in data and "genomes" not in data:
+        data["genomes"] = {"default": data.pop("genome")}
+    elif "genome" in data and "genomes" in data:
+        # Legacy [genome] exists alongside [genomes.*] — merge into default
+        data["genomes"].setdefault("default", {}).update(data.pop("genome"))
+
+    # Update the target genome label
+    genomes = data.setdefault("genomes", {})
+    genome = genomes.setdefault(label, {})
     genome["vcf_path"] = str(vcf_path)
     if sample_name:
         genome["sample_name"] = sample_name
@@ -126,32 +161,66 @@ def write_config(vcf_path: Path, config_dir: Path, sample_name: str = "") -> Pat
     return config_path
 
 
+def _serialize_value(key: str, val: object) -> str | None:
+    """Serialize a single TOML key-value pair. Returns None to skip."""
+    if isinstance(val, str) and not val:
+        return None  # Skip unset string fields
+    if isinstance(val, bool):
+        return f"{key} = {'true' if val else 'false'}"
+    if isinstance(val, (int, float)):
+        return f"{key} = {val}"
+    s = str(val).replace("\\", "\\\\").replace('"', '\\"')
+    return f'{key} = "{s}"'
+
+
 def _serialize_config(data: dict) -> str:
-    """Serialize config dict to TOML. Handles str, int, float, bool values."""
+    """Serialize config dict to TOML. Handles nested tables (e.g. genomes.*)."""
     lines = []
     for section, values in data.items():
         if not isinstance(values, dict):
             continue
-        lines.append(f"[{section}]")
-        for key, val in values.items():
-            if isinstance(val, str) and not val:
-                continue  # Skip unset string fields
-            if isinstance(val, bool):
-                lines.append(f"{key} = {'true' if val else 'false'}")
-            elif isinstance(val, (int, float)):
-                lines.append(f"{key} = {val}")
-            else:
-                s = str(val).replace("\\", "\\\\").replace('"', '\\"')
-                lines.append(f'{key} = "{s}"')
-        lines.append("")
+        # Check if this is a table of tables (e.g. genomes with sub-dicts)
+        has_subtables = any(isinstance(v, dict) for v in values.values())
+        if has_subtables:
+            for sub_key, sub_values in values.items():
+                if isinstance(sub_values, dict):
+                    lines.append(f"[{section}.{sub_key}]")
+                    for key, val in sub_values.items():
+                        line = _serialize_value(key, val)
+                        if line:
+                            lines.append(line)
+                    lines.append("")
+                else:
+                    # Mixed table — top-level keys before subtables
+                    line = _serialize_value(sub_key, sub_values)
+                    if line:
+                        lines.insert(
+                            next(
+                                (
+                                    i
+                                    for i, ln in enumerate(lines)
+                                    if ln.startswith(f"[{section}.")
+                                ),
+                                len(lines),
+                            ),
+                            line,
+                        )
+        else:
+            lines.append(f"[{section}]")
+            for key, val in values.items():
+                line = _serialize_value(key, val)
+                if line:
+                    lines.append(line)
+            lines.append("")
     return "\n".join(lines)
 
 
 def load_config(path: str | None = None) -> AppConfig:
     """Load config from a TOML file. Falls back to defaults if no file found.
 
-    Supports GENECHAT_VCF env var as a shortcut for genome.vcf_path,
-    useful for simple setups where a config file can be skipped.
+    Supports env vars:
+    - GENECHAT_VCF: shortcut for a single-genome vcf_path
+    - GENECHAT_GENOME: select default genome label
     """
     config_path = Path(path) if path else _find_config_file()
 
@@ -162,9 +231,17 @@ def load_config(path: str | None = None) -> AppConfig:
     else:
         config = AppConfig()
 
-    # GENECHAT_VCF env var overrides vcf_path if not already set
+    # GENECHAT_VCF env var: add as genomes["default"] if no genomes configured
     vcf_env = os.environ.get("GENECHAT_VCF")
-    if vcf_env and not config.genome.vcf_path:
-        config.genome.vcf_path = vcf_env
+    if vcf_env and not config.genomes:
+        genome_cfg = GenomeConfig(vcf_path=vcf_env)
+        config.genomes = {"default": genome_cfg}
+        config.genome = genome_cfg
+        config.default_genome = "default"
+
+    # GENECHAT_GENOME env var: override default genome label
+    genome_env = os.environ.get("GENECHAT_GENOME")
+    if genome_env and genome_env in config.genomes:
+        config.default_genome = genome_env
 
     return config

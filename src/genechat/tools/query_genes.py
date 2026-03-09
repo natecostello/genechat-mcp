@@ -1,5 +1,6 @@
 """Batch query of variants across multiple genes."""
 
+from genechat.tools.common import resolve_engine
 from genechat.vcf_engine import VCFEngineError
 
 DISCLAIMER = (
@@ -8,12 +9,13 @@ DISCLAIMER = (
 )
 
 
-def register(mcp, engine, db, config):
+def register(mcp, engines, db, config):
     @mcp.tool()
     def query_genes(
         genes: str,
         impact_filter: str = "HIGH,MODERATE",
         max_results_per_gene: int = 20,
+        genome: str | None = None,
     ) -> str:
         """Query variants across multiple genes in a single call.
 
@@ -22,6 +24,8 @@ def register(mcp, engine, db, config):
         Use this when investigating a pathway, gene panel, or related group of genes.
         For example: "Check APOB,LDLR,PCSK9 for cardiovascular risk" or
         "Look at CYP2D6,CYP2C19,CYP2C9 for drug metabolism".
+
+        Optional: 'genome' selects which registered genome to query (default: primary genome).
         """
         gene_list = [g.strip().upper() for g in genes.split(",") if g.strip()]
         if not gene_list:
@@ -29,6 +33,11 @@ def register(mcp, engine, db, config):
 
         if len(gene_list) > 20:
             return "Too many genes (max 20). Please split into smaller batches."
+
+        try:
+            _label, engine = resolve_engine(engines, genome, config)
+        except ValueError as e:
+            return str(e)
 
         allowed_impacts = {"HIGH", "MODERATE", "LOW", "MODIFIER"}
         impacts = {i.strip().upper() for i in impact_filter.split(",") if i.strip()}
