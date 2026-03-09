@@ -155,8 +155,10 @@ def build_gwas_db(zip_path: Path | None = None, db_path: Path | None = None) -> 
 
     db_path.parent.mkdir(parents=True, exist_ok=True)
     tmp_db = db_path.with_suffix(".tmp.db")
+    tmp_db.unlink(missing_ok=True)  # Remove stale temp from interrupted builds
     conn = sqlite3.connect(str(tmp_db))
     try:
+        conn.execute("DROP TABLE IF EXISTS gwas_associations")
         conn.execute(CREATE_TABLE)
 
         rows_inserted = 0
