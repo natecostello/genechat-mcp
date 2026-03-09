@@ -18,6 +18,7 @@ review feedback.
 
 - [ ] Make GeneChat installable via `uv tool install` / `pip install` — [plan](docs/pip-install-plan.md)
 - [ ] Multi-genome support: named genomes, paired queries — [plan](docs/multi-genome-plan.md)
+- [ ] Verify README quickstart instructions work end-to-end with a fresh VCF
 
 ## Project Overview
 
