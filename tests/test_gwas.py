@@ -1,9 +1,6 @@
 """Tests for the GWAS module (gwas.py)."""
 
-import sqlite3
 from pathlib import Path
-
-import pytest
 
 from genechat.gwas import (
     _normalize_chrom,
