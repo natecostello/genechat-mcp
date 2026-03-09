@@ -255,6 +255,50 @@ class TestInit:
         assert gwas_calls, "_download_and_build_gwas was not called"
         assert "Optional: Enable GWAS" not in out
 
+    def test_init_gnomad_uses_incremental(self, tmp_path, capsys, monkeypatch):
+        """--gnomad uses incremental annotation (no bulk download_gnomad call)."""
+        vcf = tmp_path / "test.vcf.gz"
+        vcf.write_bytes(b"fake")
+        (tmp_path / "test.vcf.gz.tbi").write_bytes(b"fake")
+
+        config_dir = tmp_path / "config"
+        monkeypatch.setattr(
+            "genechat.cli.user_config_dir", lambda _app: str(config_dir)
+        )
+        _mock_pysam_ok(monkeypatch)
+        monkeypatch.setattr("genechat.cli._ensure_lookup_db", lambda: True)
+        monkeypatch.setattr(
+            "genechat.download.download_clinvar", lambda **kw: Path("x")
+        )
+        monkeypatch.setattr(
+            "genechat.download.download_snpeff_db", lambda: "GRCh38.p14"
+        )
+        monkeypatch.setattr("genechat.download.snpeff_installed", lambda: True)
+        monkeypatch.setattr("genechat.download.clinvar_installed", lambda: True)
+
+        annotate_calls = []
+
+        def mock_annotate_gnomad(
+            patch, vcf_path, step, total, is_update, incremental=False
+        ):
+            annotate_calls.append({"incremental": incremental})
+
+        monkeypatch.setattr("genechat.cli._annotate_gnomad", mock_annotate_gnomad)
+        # Mock _run_annotate to skip actual annotation but still run
+        monkeypatch.setattr("genechat.cli._run_annotate", lambda args: None)
+
+        # Mock PatchDB to avoid needing a real patch.db
+        class FakePatch:
+            def close(self):
+                pass
+
+        monkeypatch.setattr("genechat.patch.PatchDB", lambda *a, **kw: FakePatch())
+
+        main(["init", str(vcf), "--gnomad"])
+
+        assert len(annotate_calls) == 1
+        assert annotate_calls[0]["incremental"] is True
+
     def test_init_missing_lookup_db(self, tmp_path, capsys, monkeypatch):
         """init exits when _ensure_lookup_db fails."""
         vcf = tmp_path / "test.vcf.gz"

@@ -130,28 +130,41 @@ def _detect_snpeff_db() -> str:
     return "GRCh38.p14"
 
 
-def download_gnomad(force: bool = False) -> Path:
-    """Download gnomAD v4 exome VCFs (per-chromosome). Returns the directory."""
+def download_gnomad_chr(chrom: str, force: bool = False) -> Path:
+    """Download a single gnomAD chromosome VCF + index. Returns path to VCF."""
     gdir = gnomad_dir()
     gdir.mkdir(parents=True, exist_ok=True)
+    vcf_name = f"gnomad.exomes.v4.1.sites.chr{chrom}.vcf.bgz"
+    tbi_name = f"{vcf_name}.tbi"
+    vcf_path = gdir / vcf_name
+    tbi_path = gdir / tbi_name
 
+    if vcf_path.exists() and not force:
+        print(f"  Already exists: {vcf_name}")
+    else:
+        _download_file(f"{GNOMAD_BASE}/{vcf_name}", vcf_path, vcf_name)
+
+    if tbi_path.exists() and not force:
+        pass  # tbi already present
+    else:
+        _download_file(f"{GNOMAD_BASE}/{tbi_name}", tbi_path, tbi_name)
+
+    return vcf_path
+
+
+def delete_gnomad_chr(chrom: str) -> None:
+    """Delete a single gnomAD chromosome VCF + index to free disk space."""
+    gdir = gnomad_dir()
+    vcf_name = f"gnomad.exomes.v4.1.sites.chr{chrom}.vcf.bgz"
+    (gdir / vcf_name).unlink(missing_ok=True)
+    (gdir / f"{vcf_name}.tbi").unlink(missing_ok=True)
+
+
+def download_gnomad(force: bool = False) -> Path:
+    """Download all gnomAD v4 exome VCFs (per-chromosome). Returns the directory."""
     for chrom in GNOMAD_CHROMS:
-        vcf_name = f"gnomad.exomes.v4.1.sites.chr{chrom}.vcf.bgz"
-        tbi_name = f"{vcf_name}.tbi"
-        vcf_path = gdir / vcf_name
-        tbi_path = gdir / tbi_name
-
-        if vcf_path.exists() and not force:
-            print(f"  Already exists: {vcf_name}")
-        else:
-            _download_file(f"{GNOMAD_BASE}/{vcf_name}", vcf_path, vcf_name)
-
-        if tbi_path.exists() and not force:
-            pass  # tbi already present
-        else:
-            _download_file(f"{GNOMAD_BASE}/{tbi_name}", tbi_path, tbi_name)
-
-    return gdir
+        download_gnomad_chr(chrom, force=force)
+    return gnomad_dir()
 
 
 def dbsnp_dir() -> Path:
