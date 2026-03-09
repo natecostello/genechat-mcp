@@ -40,6 +40,9 @@ def main(argv: list[str] | None = None):
     init_p.add_argument(
         "--dbsnp", action="store_true", help="Also download dbSNP (~20 GB)"
     )
+    init_p.add_argument(
+        "--gwas", action="store_true", help="Also download GWAS Catalog (~58 MB)"
+    )
 
     # genechat add
     add_p = sub.add_parser("add", help="Register a VCF file")
@@ -969,6 +972,8 @@ def _run_init(args):
         from genechat.download import download_dbsnp
 
         download_dbsnp()
+    if args.gwas:
+        _download_and_build_gwas()
 
     # Step 6: Annotate
     print("\nStep 6: Building annotation database...")
@@ -1025,8 +1030,9 @@ def _run_init(args):
 
     print("Add this to your Claude Desktop or Claude Code MCP config:\n")
     print(json.dumps(mcp_config, indent=2))
-    print("\nOptional: Enable GWAS trait search:")
-    print("  genechat download --gwas")
+    if not args.gwas:
+        print("\nOptional: Enable GWAS trait search:")
+        print("  genechat download --gwas")
     print("\n=== Setup complete ===")
 
 
