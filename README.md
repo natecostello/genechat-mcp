@@ -47,7 +47,7 @@ Your genome data stays on your machine. GeneChat only reads from local files. No
 
 | Command | Purpose |
 |---------|---------|
-| `genechat init <vcf> [--label] [--gnomad] [--dbsnp]` | Full first-time setup: download refs, annotate, write config |
+| `genechat init <vcf> [--label] [--gnomad] [--dbsnp] [--gwas]` | Full first-time setup: download refs, annotate, write config |
 | `genechat add <vcf> [--label]` | Register a VCF file without annotation |
 | `genechat download [--gnomad] [--dbsnp] [--gwas] [--all] [--force]` | Download reference databases |
 | `genechat annotate [--clinvar] [--gnomad] [--snpeff] [--dbsnp] [--all] [--genome]` | Build or update patch.db annotation layers |
@@ -128,7 +128,7 @@ This will:
 uv run genechat init /path/to/your/raw.vcf.gz --gnomad
 
 # Enable GWAS trait search (~58 MB download)
-uv run genechat download --gwas
+uv run genechat init /path/to/your/raw.vcf.gz --gwas
 ```
 
 gnomAD is optional; without it, `query_gene` falls back to ClinVar-only filtering.
