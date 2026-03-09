@@ -222,6 +222,39 @@ class TestInit:
         assert "mcpServers" in out
         assert (config_dir / "config.toml").exists()
 
+    def test_init_gwas_flag(self, tmp_path, capsys, monkeypatch):
+        """--gwas calls _download_and_build_gwas and suppresses the hint."""
+        vcf = tmp_path / "test.vcf.gz"
+        vcf.write_bytes(b"fake")
+        (tmp_path / "test.vcf.gz.tbi").write_bytes(b"fake")
+
+        config_dir = tmp_path / "config"
+        monkeypatch.setattr(
+            "genechat.cli.user_config_dir", lambda _app: str(config_dir)
+        )
+        _mock_pysam_ok(monkeypatch)
+        monkeypatch.setattr("genechat.cli._ensure_lookup_db", lambda: True)
+        monkeypatch.setattr(
+            "genechat.download.download_clinvar", lambda **kw: Path("x")
+        )
+        monkeypatch.setattr(
+            "genechat.download.download_snpeff_db", lambda: "GRCh38.p14"
+        )
+        monkeypatch.setattr("genechat.download.snpeff_installed", lambda: False)
+        monkeypatch.setattr("genechat.download.clinvar_installed", lambda: True)
+
+        gwas_calls = []
+        monkeypatch.setattr(
+            "genechat.cli._download_and_build_gwas",
+            lambda **kw: gwas_calls.append(True),
+        )
+
+        main(["init", str(vcf), "--gwas"])
+
+        out = capsys.readouterr().out
+        assert gwas_calls, "_download_and_build_gwas was not called"
+        assert "Optional: Enable GWAS" not in out
+
     def test_init_missing_lookup_db(self, tmp_path, capsys, monkeypatch):
         """init exits when _ensure_lookup_db fails."""
         vcf = tmp_path / "test.vcf.gz"
