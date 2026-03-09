@@ -13,7 +13,7 @@ def _get_tool(giab_enginess, giab_db, giab_config):
 
 
 class TestQueryClinvarGIAB:
-    def test_pathogenic_returns_results(self, giab_enginess, giab_db, giab_config):
+    def test_pathogenic_returns_results(self, giab_engines, giab_db, giab_config):
         """Pathogenic ClinVar query should complete and return structured output."""
         fn = _get_tool(giab_engines, giab_db, giab_config)
         result = fn(significance="Pathogenic", max_results=10)
