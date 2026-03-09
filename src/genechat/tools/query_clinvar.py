@@ -61,8 +61,11 @@ def register(mcp, engines, db, config):
         truncated = len(variants) > cap
         variants = variants[:cap]
 
-        if not variants:
-            scope = f" in {gene}" if gene else " genome-wide"
+        scope = f" in {gene}" if gene else " genome-wide"
+        title_scope = f" in {gene}" if gene else ""
+        show_label = len(engines) > 1
+
+        if not variants and not genome2:
             cond_note = f" for condition '{condition}'" if condition else ""
             return (
                 f"No **{significance.replace('_', ' ')}** variants found{scope}{cond_note}.\n\n"
@@ -70,41 +73,54 @@ def register(mcp, engines, db, config):
                 "does not guarantee absence of risk — not all variants are catalogued in ClinVar."
             )
 
-        # Group by gene
-        by_gene: dict[str, list] = {}
-        for v in variants:
-            g = v.get("annotation", {}).get("gene", "Unknown") or "Unknown"
-            by_gene.setdefault(g, []).append(v)
+        lines = []
+        if variants:
+            # Group by gene
+            by_gene: dict[str, list] = {}
+            for v in variants:
+                g = v.get("annotation", {}).get("gene", "Unknown") or "Unknown"
+                by_gene.setdefault(g, []).append(v)
 
-        title_scope = f" in {gene}" if gene else ""
-        lines = [
-            f"## ClinVar {significance.replace('_', ' ')} variants{title_scope}",
-            f"Found: {len(variants)} variant(s) across {len(by_gene)} gene(s)",
-            "",
-        ]
-
-        if truncated:
-            lines.append(
-                f"*Results capped at {cap}. Narrow your query for complete results.*\n"
+            lines.extend(
+                [
+                    f"## ClinVar {significance.replace('_', ' ')} variants{title_scope}",
+                    f"Found: {len(variants)} variant(s) across {len(by_gene)} gene(s)",
+                    "",
+                ]
             )
 
-        show_label = len(engines) > 1
-        if show_label:
-            lines[0] += f" — {label}"
+            if truncated:
+                lines.append(
+                    f"*Results capped at {cap}. Narrow your query for complete results.*\n"
+                )
 
-        for gene_name, gene_variants in sorted(by_gene.items()):
-            lines.append(f"### {gene_name}")
-            lines.append("| rsID | Position | Genotype | Significance | Condition |")
-            lines.append("|------|----------|----------|-------------|-----------|")
-            for v in gene_variants:
-                rsid = v["rsid"] or "."
-                pos = f"{v['chrom']}:{v['pos']}"
-                gt = v["genotype"]["display"]
-                clin = v.get("clinvar", {})
-                sig = clin.get("significance", ".") if clin else "."
-                cond = clin.get("condition", ".") if clin else "."
-                lines.append(f"| {rsid} | {pos} | {gt} | {sig} | {cond} |")
-            lines.append("")
+            if show_label:
+                lines[0] += f" — {label}"
+
+            for gene_name, gene_variants in sorted(by_gene.items()):
+                lines.append(f"### {gene_name}")
+                lines.append(
+                    "| rsID | Position | Genotype | Significance | Condition |"
+                )
+                lines.append("|------|----------|----------|-------------|-----------|")
+                for v in gene_variants:
+                    rsid = v["rsid"] or "."
+                    pos = f"{v['chrom']}:{v['pos']}"
+                    gt = v["genotype"]["display"]
+                    clin = v.get("clinvar", {})
+                    sig = clin.get("significance", ".") if clin else "."
+                    cond = clin.get("condition", ".") if clin else "."
+                    lines.append(f"| {rsid} | {pos} | {gt} | {sig} | {cond} |")
+                lines.append("")
+        else:
+            cond_note = f" for condition '{condition}'" if condition else ""
+            label_note = f" — {label}" if show_label else ""
+            lines.append(
+                f"## ClinVar {significance.replace('_', ' ')} variants{title_scope}{label_note}\n\n"
+                f"No **{significance.replace('_', ' ')}** variants found{scope}{cond_note}.\n\n"
+                "This is generally reassuring, but absence of known pathogenic variants "
+                "does not guarantee absence of risk — not all variants are catalogued in ClinVar."
+            )
 
         # Paired genome query
         if genome2:
