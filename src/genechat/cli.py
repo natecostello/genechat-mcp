@@ -35,7 +35,7 @@ def main(argv: list[str] | None = None):
     init_p.add_argument("vcf_path", help="Path to your raw VCF (.vcf.gz)")
     init_p.add_argument("--label", help="Name for this genome (default: from filename)")
     init_p.add_argument(
-        "--gnomad", action="store_true", help="Also download gnomAD (~8 GB)"
+        "--gnomad", action="store_true", help="Also download gnomAD (~150 GB)"
     )
     init_p.add_argument(
         "--dbsnp", action="store_true", help="Also download dbSNP (~20 GB)"
@@ -52,7 +52,7 @@ def main(argv: list[str] | None = None):
     # genechat download
     dl_p = sub.add_parser("download", help="Download reference databases")
     dl_p.add_argument(
-        "--gnomad", action="store_true", help="Download gnomAD exomes (~8 GB)"
+        "--gnomad", action="store_true", help="Download gnomAD exomes (~150 GB)"
     )
     dl_p.add_argument("--dbsnp", action="store_true", help="Download dbSNP (~20 GB)")
     dl_p.add_argument("--all", action="store_true", help="Download everything")
@@ -411,7 +411,7 @@ def _run_annotate(args):
             _annotate_gnomad(patch, vcf_path, step, total_steps, not first_run)
         elif (first_run or args.gnomad) and not gnomad_installed():
             print("  gnomAD: skipped (not installed)")
-            print("    Install: genechat download --gnomad (~8 GB)")
+            print("    Install: genechat download --gnomad (~150 GB)")
 
         if run_dbsnp:
             step += 1

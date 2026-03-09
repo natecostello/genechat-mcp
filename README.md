@@ -55,13 +55,13 @@ Your genome data stays on your machine. GeneChat only reads from local files. No
 | `genechat status` | Show all registered genomes and annotation state |
 | `genechat serve` / `genechat` | Start the MCP server |
 
-> **Note:** `bcftools` and `tabix` are required for annotation (ClinVar contig rename, gnomAD, and dbSNP). dbSNP rsID backfill (`--dbsnp`) downloads ~20 GB from NCBI and is not included in the default `genechat init` — pass `--dbsnp` explicitly to enable it.
+> **Note:** `bcftools` and `tabix` are required for annotation (ClinVar contig rename, gnomAD, and dbSNP). gnomAD (`--gnomad`) downloads ~150 GB of per-chromosome exome VCFs. dbSNP (`--dbsnp`) downloads ~20 GB from NCBI. Neither is included in the default `genechat init` — pass the flags explicitly to enable them.
 
 ## Prerequisites
 
 - Python 3.11+
 - A consumer WGS VCF file (from Nucleus Genomics, Nebula, Sequencing.com, etc.)
-- ~15 GB disk for reference databases, ~2 GB for your raw VCF + patch.db
+- Disk for reference databases (see table below), ~2 GB for your raw VCF + patch.db
 
 **For annotation** (one-time setup):
 
@@ -88,8 +88,8 @@ uv sync
 ### Option B: Install as a tool
 
 ```bash
-uv tool install genechat-mcp
-# or: pip install genechat-mcp
+uv tool install git+https://github.com/natecostello/genechat-mcp.git
+# or: pip install git+https://github.com/natecostello/genechat-mcp.git
 ```
 
 ### Install annotation tools
@@ -121,17 +121,16 @@ This will:
 4. Write a `config.toml` to your OS config directory (`~/Library/Application Support/genechat/` on macOS, `~/.config/genechat/` on Linux)
 5. Print the MCP JSON to paste into Claude Desktop or Claude Code
 
-**Optional extras:**
+**Optional extras** (combine any flags in a single init):
 
 ```bash
-# Include gnomAD population frequencies (~8 GB download)
-uv run genechat init /path/to/your/raw.vcf.gz --gnomad
-
-# Enable GWAS trait search (~58 MB download)
-uv run genechat init /path/to/your/raw.vcf.gz --gwas
+# Include gnomAD population frequencies (~150 GB) and/or GWAS trait search (~58 MB download)
+uv run genechat init /path/to/your/raw.vcf.gz --gnomad --gwas
 ```
 
-gnomAD is optional; without it, `query_gene` falls back to ClinVar-only filtering.
+gnomAD is optional; without it, `query_gene` falls back to ClinVar-only filtering. GWAS enables `query_gwas` for trait association lookups. Both can also be added after init via `genechat download --gnomad` / `genechat download --gwas`.
+
+> **Time estimate:** Default init takes ~10–15 minutes (SnpEff annotation + ClinVar). With `--gnomad`, allow additional time for the ~150 GB download. Total annotation time depends on VCF size and machine specs.
 
 ### Don't have your genome sequenced?
 
@@ -147,7 +146,7 @@ uv run genechat init HG001_GRCh38_1_22_v4.2.1_benchmark.vcf.gz --label giab
 
 Then ask Claude questions just like you would with your own genome.
 
-### 4. Start asking questions
+### Start asking questions
 
 Open Claude and ask about your genetics. GeneChat's tools will appear automatically.
 
@@ -211,13 +210,15 @@ For incremental updates of individual annotation layers (e.g., updating ClinVar 
 
 ### Reference Databases
 
-| Database | What it provides | Size |
-|----------|-----------------|------|
-| [ClinVar](https://www.ncbi.nlm.nih.gov/clinvar/) | Clinical significance, disease/condition name, review status | ~100 MB |
-| [dbSNP](https://www.ncbi.nlm.nih.gov/snp/) | rsID identifiers for each genomic position | ~20 GB |
-| [gnomAD](https://gnomad.broadinstitute.org/) | Population allele frequencies (global + per-population) | ~8 GB (exomes) |
-| [SnpEff DB](https://pcingola.github.io/SnpEff/) | Gene/transcript models for functional impact prediction | ~1.6 GB |
-| [GWAS Catalog](https://www.ebi.ac.uk/gwas/) | 1M+ genome-wide association study findings | ~58 MB |
+| Database | What it provides | Size | Flag |
+|----------|-----------------|------|------|
+| [ClinVar](https://www.ncbi.nlm.nih.gov/clinvar/) | Clinical significance, disease/condition name, review status | ~100 MB | Default |
+| [SnpEff DB](https://pcingola.github.io/SnpEff/) | Gene/transcript models for functional impact prediction | ~1.6 GB | Default |
+| [gnomAD](https://gnomad.broadinstitute.org/) | Population allele frequencies (global + per-population) | ~150 GB | `--gnomad` |
+| [dbSNP](https://www.ncbi.nlm.nih.gov/snp/) | rsID identifiers for each genomic position | ~20 GB | `--dbsnp` |
+| [GWAS Catalog](https://www.ebi.ac.uk/gwas/) | 1M+ genome-wide association study findings | ~58 MB download, ~300 MB on disk | `--gwas` |
+
+Default `genechat init` downloads ClinVar + SnpEff (~2 GB). Optional databases are enabled with flags or `genechat download`. Reference files persist after annotation for reuse across multiple genomes.
 
 ### Seed Data Pipeline
 
