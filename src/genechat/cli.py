@@ -37,7 +37,7 @@ def main(argv: list[str] | None = None):
     init_p.add_argument(
         "--gnomad",
         action="store_true",
-        help="Also annotate gnomAD (incremental, ~17 GB peak disk)",
+        help="Also annotate gnomAD population frequencies (~17 GB peak disk)",
     )
     init_p.add_argument(
         "--dbsnp", action="store_true", help="Also download dbSNP (~20 GB)"
@@ -72,7 +72,11 @@ def main(argv: list[str] | None = None):
     ann_p.add_argument(
         "--clinvar", action="store_true", help="Re-annotate ClinVar layer"
     )
-    ann_p.add_argument("--gnomad", action="store_true", help="Re-annotate gnomAD layer")
+    ann_p.add_argument(
+        "--gnomad",
+        action="store_true",
+        help="Re-annotate gnomAD layer (downloads incrementally if not present)",
+    )
     ann_p.add_argument("--snpeff", action="store_true", help="Re-annotate SnpEff layer")
     ann_p.add_argument("--dbsnp", action="store_true", help="Re-annotate dbSNP layer")
     ann_p.add_argument("--all", action="store_true", help="Re-annotate all layers")
@@ -355,7 +359,9 @@ def _run_annotate(args):
     # On first run or --all, run everything available
     run_snpeff = first_run or args.snpeff or args.all
     run_clinvar = first_run or args.clinvar or args.all
-    run_gnomad = (first_run or args.gnomad or args.all) and gnomad_installed()
+    # gnomAD: run when explicitly requested, or on first run if files already exist
+    run_gnomad = args.gnomad or args.all or (first_run and gnomad_installed())
+    gnomad_incremental = run_gnomad and not gnomad_installed()
     run_dbsnp = (args.dbsnp or args.all) and dbsnp_installed()
 
     # Check prerequisites
@@ -410,11 +416,14 @@ def _run_annotate(args):
 
         if run_gnomad:
             step += 1
-            _annotate_gnomad(patch, vcf_path, step, total_steps, not first_run)
-        elif (first_run or args.gnomad) and not gnomad_installed():
-            print("  gnomAD: skipped (not installed)")
-            print("    Install: genechat download --gnomad (~150 GB)")
-            print("    Or use: genechat init --gnomad (incremental, ~17 GB peak)")
+            _annotate_gnomad(
+                patch,
+                vcf_path,
+                step,
+                total_steps,
+                not first_run,
+                incremental=gnomad_incremental,
+            )
 
         if run_dbsnp:
             step += 1
@@ -991,7 +1000,6 @@ def _run_init(args):
 
     download_clinvar()
     download_snpeff_db()
-    # gnomAD is handled incrementally in step 6 (download+annotate+delete per chromosome)
     if args.dbsnp:
         from genechat.download import download_dbsnp
 
@@ -1016,28 +1024,13 @@ def _run_init(args):
     else:
         ann_args = argparse.Namespace(
             clinvar=False,
-            gnomad=False,
+            gnomad=args.gnomad,
             snpeff=False,
             dbsnp=False,
             all=False,
             genome=label,
         )
         _run_annotate(ann_args)
-
-        # Incremental gnomAD: download+annotate+delete per chromosome (~17 GB peak)
-        if args.gnomad:
-            config = load_config()
-            _, genome_cfg = _resolve_genome_label(config, label)
-            patch_db_path = _patch_db_path_for(vcf_path, genome_cfg)
-            from genechat.patch import PatchDB
-
-            patch = PatchDB(patch_db_path)
-            try:
-                _annotate_gnomad(
-                    patch, vcf_path, step=1, total=1, is_update=False, incremental=True
-                )
-            finally:
-                patch.close()
 
     # Step 7: Print MCP config
     print("\n--- MCP Configuration ---\n")

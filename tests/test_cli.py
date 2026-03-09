@@ -255,8 +255,8 @@ class TestInit:
         assert gwas_calls, "_download_and_build_gwas was not called"
         assert "Optional: Enable GWAS" not in out
 
-    def test_init_gnomad_uses_incremental(self, tmp_path, capsys, monkeypatch):
-        """--gnomad uses incremental annotation (no bulk download_gnomad call)."""
+    def test_init_gnomad_passes_flag_to_annotate(self, tmp_path, capsys, monkeypatch):
+        """--gnomad passes through to _run_annotate (no special init handling)."""
         vcf = tmp_path / "test.vcf.gz"
         vcf.write_bytes(b"fake")
         (tmp_path / "test.vcf.gz.tbi").write_bytes(b"fake")
@@ -276,28 +276,16 @@ class TestInit:
         monkeypatch.setattr("genechat.download.snpeff_installed", lambda: True)
         monkeypatch.setattr("genechat.download.clinvar_installed", lambda: True)
 
-        annotate_calls = []
-
-        def mock_annotate_gnomad(
-            patch, vcf_path, step, total, is_update, incremental=False
-        ):
-            annotate_calls.append({"incremental": incremental})
-
-        monkeypatch.setattr("genechat.cli._annotate_gnomad", mock_annotate_gnomad)
-        # Mock _run_annotate to skip actual annotation but still run
-        monkeypatch.setattr("genechat.cli._run_annotate", lambda args: None)
-
-        # Mock PatchDB to avoid needing a real patch.db
-        class FakePatch:
-            def close(self):
-                pass
-
-        monkeypatch.setattr("genechat.patch.PatchDB", lambda *a, **kw: FakePatch())
+        annotate_args = []
+        monkeypatch.setattr(
+            "genechat.cli._run_annotate",
+            lambda args: annotate_args.append(args),
+        )
 
         main(["init", str(vcf), "--gnomad"])
 
-        assert len(annotate_calls) == 1
-        assert annotate_calls[0]["incremental"] is True
+        assert len(annotate_args) == 1
+        assert annotate_args[0].gnomad is True
 
     def test_init_missing_lookup_db(self, tmp_path, capsys, monkeypatch):
         """init exits when _ensure_lookup_db fails."""
@@ -546,6 +534,79 @@ class TestAnnotate:
         assert meta["dbsnp"]["status"] == "failed"
 
         patch.close()
+
+    def test_annotate_gnomad_incremental_when_not_installed(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        """annotate --gnomad uses incremental mode when gnomAD files aren't present."""
+        from genechat.patch import PatchDB
+
+        patch_path = tmp_path / "test.patch.db"
+        patch = PatchDB.create(patch_path)
+        patch.close()
+
+        vcf = tmp_path / "test.vcf.gz"
+        vcf.write_bytes(b"fake")
+
+        config = AppConfig(genome={"vcf_path": str(vcf), "patch_db": str(patch_path)})
+        monkeypatch.setattr("genechat.cli.load_config", lambda: config)
+        monkeypatch.setattr("genechat.download.gnomad_installed", lambda: False)
+        monkeypatch.setattr("genechat.download.snpeff_installed", lambda: True)
+        monkeypatch.setattr("genechat.download.clinvar_installed", lambda: True)
+        monkeypatch.setattr("shutil.which", lambda name: f"/usr/bin/{name}")
+
+        annotate_calls = []
+
+        def mock_annotate_gnomad(
+            patch, vcf_path, step, total, is_update, incremental=False
+        ):
+            annotate_calls.append({"incremental": incremental})
+
+        monkeypatch.setattr("genechat.cli._annotate_gnomad", mock_annotate_gnomad)
+        # Skip snpeff and clinvar
+        monkeypatch.setattr("genechat.cli._annotate_snpeff", lambda *a, **kw: None)
+        monkeypatch.setattr("genechat.cli._annotate_clinvar", lambda *a, **kw: None)
+
+        main(["annotate", "--gnomad"])
+
+        assert len(annotate_calls) == 1
+        assert annotate_calls[0]["incremental"] is True
+
+    def test_annotate_gnomad_not_incremental_when_installed(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        """annotate --gnomad uses normal mode when gnomAD files are present."""
+        from genechat.patch import PatchDB
+
+        patch_path = tmp_path / "test.patch.db"
+        patch = PatchDB.create(patch_path)
+        patch.close()
+
+        vcf = tmp_path / "test.vcf.gz"
+        vcf.write_bytes(b"fake")
+
+        config = AppConfig(genome={"vcf_path": str(vcf), "patch_db": str(patch_path)})
+        monkeypatch.setattr("genechat.cli.load_config", lambda: config)
+        monkeypatch.setattr("genechat.download.gnomad_installed", lambda: True)
+        monkeypatch.setattr("genechat.download.snpeff_installed", lambda: True)
+        monkeypatch.setattr("genechat.download.clinvar_installed", lambda: True)
+        monkeypatch.setattr("shutil.which", lambda name: f"/usr/bin/{name}")
+
+        annotate_calls = []
+
+        def mock_annotate_gnomad(
+            patch, vcf_path, step, total, is_update, incremental=False
+        ):
+            annotate_calls.append({"incremental": incremental})
+
+        monkeypatch.setattr("genechat.cli._annotate_gnomad", mock_annotate_gnomad)
+        monkeypatch.setattr("genechat.cli._annotate_snpeff", lambda *a, **kw: None)
+        monkeypatch.setattr("genechat.cli._annotate_clinvar", lambda *a, **kw: None)
+
+        main(["annotate", "--gnomad"])
+
+        assert len(annotate_calls) == 1
+        assert annotate_calls[0]["incremental"] is False
 
 
 # ---------------------------------------------------------------------------
