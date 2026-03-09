@@ -5,9 +5,9 @@ from mcp.server.fastmcp import FastMCP
 from genechat.tools.query_gene import register
 
 
-def _setup_tool(mock_engine, test_db, test_config):
+def _setup_tool(mock_engines, test_db, test_config):
     mcp = FastMCP("test")
-    register(mcp, mock_engine, test_db, test_config)
+    register(mcp, mock_engines, test_db, test_config)
     tools = mcp._tool_manager._tools
     return tools["query_gene"].fn
 
@@ -44,19 +44,23 @@ EMPTY_IMPACT_VARIANT = {
 
 
 class TestQueryGeneNoAnnotation:
-    def test_unannotated_variants_pass_through(self, mock_engine, test_db, test_config):
+    def test_unannotated_variants_pass_through(
+        self, mock_engine, mock_engines, test_db, test_config
+    ):
         """Variants with no annotation should pass through the impact filter."""
         mock_engine.query_region.return_value = [UNANNOTATED_VARIANT]
-        fn = _setup_tool(mock_engine, test_db, test_config)
+        fn = _setup_tool(mock_engines, test_db, test_config)
         result = fn(gene="SLCO1B1")
 
         assert "rs4149056" in result
         assert "T/C" in result
 
-    def test_unannotated_table_shows_dots(self, mock_engine, test_db, test_config):
+    def test_unannotated_table_shows_dots(
+        self, mock_engine, mock_engines, test_db, test_config
+    ):
         """Table should show '.' for missing effect and impact fields."""
         mock_engine.query_region.return_value = [UNANNOTATED_VARIANT]
-        fn = _setup_tool(mock_engine, test_db, test_config)
+        fn = _setup_tool(mock_engines, test_db, test_config)
         result = fn(gene="SLCO1B1")
 
         # The table row should contain dots for effect and impact
@@ -73,16 +77,18 @@ class TestQueryGeneNoAnnotation:
         assert cells[4] == "."  # effect
         assert cells[5] == "."  # impact
 
-    def test_empty_impact_passes_through(self, mock_engine, test_db, test_config):
+    def test_empty_impact_passes_through(
+        self, mock_engine, mock_engines, test_db, test_config
+    ):
         """Variants with empty impact string should pass through the filter."""
         mock_engine.query_region.return_value = [EMPTY_IMPACT_VARIANT]
-        fn = _setup_tool(mock_engine, test_db, test_config)
+        fn = _setup_tool(mock_engines, test_db, test_config)
         result = fn(gene="MTHFR", smart_filter=False)
 
         assert "rs1801133" in result
 
     def test_annotated_filtered_unannotated_kept(
-        self, mock_engine, test_db, test_config
+        self, mock_engine, mock_engines, test_db, test_config
     ):
         """Annotated variants with wrong impact are filtered; unannotated are kept."""
         low_impact_variant = {
@@ -104,7 +110,7 @@ class TestQueryGeneNoAnnotation:
             UNANNOTATED_VARIANT,
             low_impact_variant,
         ]
-        fn = _setup_tool(mock_engine, test_db, test_config)
+        fn = _setup_tool(mock_engines, test_db, test_config)
         # Default filter is HIGH,MODERATE — LOW should be excluded, unannotated kept
         result = fn(gene="SLCO1B1")
 

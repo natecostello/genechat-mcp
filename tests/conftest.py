@@ -56,6 +56,12 @@ def mock_engine():
     return engine
 
 
+@pytest.fixture
+def mock_engines(mock_engine):
+    """Engines dict wrapping mock_engine as 'default'."""
+    return {"default": mock_engine}
+
+
 # Sample variant dicts for testing
 SAMPLE_VARIANT_SLCO1B1 = {
     "chrom": "chr12",

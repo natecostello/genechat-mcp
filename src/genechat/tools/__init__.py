@@ -25,7 +25,10 @@ ALL_TOOLS = [
 ]
 
 
-def register_all(mcp, engine, db, config):
-    """Register all tools with the MCP server."""
+def register_all(mcp, engines, db, config):
+    """Register all tools with the MCP server.
+
+    ``engines`` is a dict mapping genome labels to VCFEngine instances.
+    """
     for module in ALL_TOOLS:
-        module.register(mcp, engine, db, config)
+        module.register(mcp, engines, db, config)

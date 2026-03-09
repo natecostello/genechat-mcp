@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pysam
 
-from genechat.config import AppConfig
+from genechat.config import AppConfig, GenomeConfig
 from genechat.parsers import parse_ann_field, parse_clinvar_fields, parse_genotype
 from genechat.patch import PatchDB
 
@@ -26,10 +26,16 @@ class VCFEngine:
     - Patch mode: genotypes from raw VCF, annotations from SQLite patch.db
     """
 
-    def __init__(self, config: AppConfig):
-        self.vcf_path = Path(config.genome.vcf_path)
-        self.max_variants = config.server.max_variants_per_response
-        self._sample_name = config.genome.sample_name or None
+    def __init__(self, config: AppConfig | GenomeConfig, *, max_variants: int = 100):
+        # Accept either AppConfig (legacy) or GenomeConfig (multi-genome)
+        if isinstance(config, AppConfig):
+            genome_cfg = config.genome
+            max_variants = config.server.max_variants_per_response
+        else:
+            genome_cfg = config
+        self.vcf_path = Path(genome_cfg.vcf_path)
+        self.max_variants = max_variants
+        self._sample_name = genome_cfg.sample_name or None
 
         if not self.vcf_path.exists():
             raise FileNotFoundError(
@@ -54,7 +60,7 @@ class VCFEngine:
             raise VCFEngineError(f"Cannot open VCF: {e}") from e
 
         # Open patch database if configured
-        patch_db_path = Path(config.genome.patch_db) if config.genome.patch_db else None
+        patch_db_path = Path(genome_cfg.patch_db) if genome_cfg.patch_db else None
         if patch_db_path and patch_db_path.exists():
             self._patch = PatchDB(patch_db_path, readonly=True)
             self._use_patch = True

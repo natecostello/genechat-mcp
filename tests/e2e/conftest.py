@@ -152,6 +152,12 @@ def giab_engine(giab_config):
 
 
 @pytest.fixture(scope="session")
+def giab_engines(giab_engine):
+    """Engines dict wrapping giab_engine as 'default'."""
+    return {"default": giab_engine}
+
+
+@pytest.fixture(scope="session")
 def giab_db(giab_config):
     """LookupDB opened once for the entire test session."""
     if not DB_PATH.exists():

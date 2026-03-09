@@ -16,23 +16,54 @@ def run_server():
     config_path = os.environ.get("GENECHAT_CONFIG")
     config = load_config(config_path)
 
+    genome_labels = list(config.genomes.keys()) if config.genomes else []
+    label_hint = f" ({', '.join(genome_labels)})" if len(genome_labels) > 1 else ""
     mcp = FastMCP(
         "genechat",
         instructions=(
             "GeneChat provides tools to query your whole-genome sequencing data. "
             "Ask about specific variants (rsIDs), genes, drug interactions (pharmacogenomics), "
-            "GWAS associations, or get a genome overview. "
+            "trait associations, carrier status, or get a genome overview. "
             "Always start with genome_summary for a high-level view."
+            + (
+                f" Multiple genomes are registered{label_hint}. "
+                "Use the 'genome' parameter on any tool to select which genome to query, "
+                "and 'genome2' for paired comparisons (e.g. carrier screening for couples)."
+                if len(genome_labels) > 1
+                else ""
+            )
         ),
     )
 
-    # Initialize engine and database
-    try:
-        engine = VCFEngine(config)
-    except (FileNotFoundError, Exception) as e:
-        print(f"Error initializing VCF engine: {e}", file=sys.stderr)
+    # Build engines dict — one VCFEngine per registered genome
+    max_variants = config.server.max_variants_per_response
+    engines: dict[str, VCFEngine] = {}
+    if not config.genomes:
         print(
-            "Set genome.vcf_path in your config to a valid annotated VCF.",
+            "Error: No genomes configured. Run 'genechat init <vcf>' first.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    for label, genome_cfg in config.genomes.items():
+        if not genome_cfg.vcf_path:
+            print(
+                f"Warning: Genome '{label}' has no vcf_path, skipping.",
+                file=sys.stderr,
+            )
+            continue
+        try:
+            engines[label] = VCFEngine(genome_cfg, max_variants=max_variants)
+        except (FileNotFoundError, Exception) as e:
+            print(
+                f"Error initializing genome '{label}': {e}",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+
+    if not engines:
+        print(
+            "Error: No valid genomes could be loaded.",
             file=sys.stderr,
         )
         sys.exit(1)
@@ -44,7 +75,7 @@ def run_server():
         sys.exit(1)
 
     # Register all tools
-    register_all(mcp, engine, db, config)
+    register_all(mcp, engines, db, config)
 
     # Run server
     transport = config.server.transport

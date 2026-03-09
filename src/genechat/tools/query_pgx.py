@@ -1,5 +1,6 @@
 """Pharmacogenomics query — look up drug-gene interactions and your genotypes."""
 
+from genechat.tools.common import resolve_engine
 from genechat.tools.formatting import short_zygosity
 from genechat.vcf_engine import VCFEngineError
 
@@ -9,21 +10,31 @@ DISCLAIMER = (
 )
 
 
-def register(mcp, engine, db, config):
+def register(mcp, engines, db, config):
     @mcp.tool()
     def query_pgx(
         drug: str | None = None,
         gene: str | None = None,
         include_all_variants: bool = False,
+        genome: str | None = None,
+        genome2: str | None = None,
     ) -> str:
         """Look up pharmacogenomic information for a drug or gene.
 
         Use this when a user asks about drug interactions, medication safety, or
         how their genetics affect drug metabolism. Provide either a drug name
         (e.g. "simvastatin") or a gene symbol (e.g. "CYP2D6").
+
+        Optional: 'genome' selects which registered genome to query (default: primary genome).
+        'genome2' queries a second genome for side-by-side comparison.
         """
         if not drug and not gene:
             return "Please provide either a drug name or a gene symbol."
+
+        try:
+            label, engine = resolve_engine(engines, genome, config)
+        except ValueError as e:
+            return str(e)
 
         # Find drug-gene entries
         if drug:
@@ -41,20 +52,50 @@ def register(mcp, engine, db, config):
                     "This gene may not have CPIC guidelines."
                 )
 
+        show_label = len(engines) > 1
         sections = []
         for entry in entries:
-            section = _format_pgx_entry(entry, engine, db, config, include_all_variants)
+            section = _format_pgx_entry(
+                entry,
+                engine,
+                db,
+                config,
+                include_all_variants,
+                label=label if show_label else None,
+            )
             sections.append(section)
+
+        # Paired genome query
+        if genome2:
+            try:
+                label2, engine2 = resolve_engine(engines, genome2, config)
+            except ValueError as e:
+                sections.append(f"**Genome '{genome2}': {e}**")
+                return "\n\n---\n\n".join(sections) + DISCLAIMER
+
+            for entry in entries:
+                section = _format_pgx_entry(
+                    entry,
+                    engine2,
+                    db,
+                    config,
+                    include_all_variants,
+                    label=label2,
+                )
+                sections.append(section)
 
         return "\n\n---\n\n".join(sections) + DISCLAIMER
 
 
-def _format_pgx_entry(entry, engine, db, config, include_all_variants):
+def _format_pgx_entry(entry, engine, db, config, include_all_variants, *, label=None):
     """Format a single PGx drug-gene entry with user genotypes."""
     gene = entry["gene"]
     drug_name = entry["drug_name"]
 
-    lines = [f"## Pharmacogenomics: {drug_name.title()}"]
+    header = f"## Pharmacogenomics: {drug_name.title()}"
+    if label:
+        header += f" — {label}"
+    lines = [header]
     lines.append(f"**Related gene:** {gene}")
     if entry.get("guideline_source"):
         lines.append(f"**Guideline:** {entry['guideline_source']}")
