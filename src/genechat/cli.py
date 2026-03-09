@@ -411,7 +411,7 @@ def _run_annotate(args):
             _annotate_gnomad(patch, vcf_path, step, total_steps, not first_run)
         elif (first_run or args.gnomad) and not gnomad_installed():
             print("  gnomAD: skipped (not installed)")
-            print("    Install: genechat download --gnomad (~8 GB)")
+            print("    Install: genechat download --gnomad (~150 GB)")
 
         if run_dbsnp:
             step += 1

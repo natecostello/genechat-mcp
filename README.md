@@ -216,7 +216,7 @@ For incremental updates of individual annotation layers (e.g., updating ClinVar 
 | [SnpEff DB](https://pcingola.github.io/SnpEff/) | Gene/transcript models for functional impact prediction | ~1.6 GB | Default |
 | [gnomAD](https://gnomad.broadinstitute.org/) | Population allele frequencies (global + per-population) | ~150 GB | `--gnomad` |
 | [dbSNP](https://www.ncbi.nlm.nih.gov/snp/) | rsID identifiers for each genomic position | ~20 GB | `--dbsnp` |
-| [GWAS Catalog](https://www.ebi.ac.uk/gwas/) | 1M+ genome-wide association study findings | ~300 MB | `--gwas` |
+| [GWAS Catalog](https://www.ebi.ac.uk/gwas/) | 1M+ genome-wide association study findings | ~58 MB download, ~300 MB on disk | `--gwas` |
 
 Default `genechat init` downloads ClinVar + SnpEff (~2 GB). Optional databases are enabled with flags or `genechat download`. Reference files persist after annotation for reuse across multiple genomes.
 
