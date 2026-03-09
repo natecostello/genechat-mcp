@@ -50,7 +50,7 @@ def register(mcp, engines, db, config):
         except (ValueError, VCFEngineError) as e:
             return f"Error querying variant: {e}"
 
-        if not variants:
+        if not variants and not genome2:
             query_desc = rsid if rsid else position
             return (
                 f"No variant found for {query_desc} in your genome.\n"
@@ -64,9 +64,19 @@ def register(mcp, engines, db, config):
         )
         show_label = len(engines) > 1
         lines = []
-        for v in variants:
+        if variants:
+            for v in variants:
+                lines.append(
+                    _format_variant(
+                        v, config, genome_build, label if show_label else None
+                    )
+                )
+        else:
+            query_desc = rsid if rsid else position
+            header = f"## {label}\n" if show_label else ""
             lines.append(
-                _format_variant(v, config, genome_build, label if show_label else None)
+                f"{header}No variant found for {query_desc} "
+                "(homozygous reference or not covered)."
             )
 
         # Paired genome query

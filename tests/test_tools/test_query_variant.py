@@ -103,6 +103,24 @@ class TestQueryVariantGenome2:
         assert "nonexistent" in result
         assert "SLCO1B1" in result  # Genome1 still shows
 
+    def test_genome2_genome1_empty_genome2_has_results(
+        self, mock_engine, mock_engine2, mock_engines_multi, test_db, test_config_multi
+    ):
+        """When genome1 has no variant but genome2 does, both results should appear."""
+        from tests.conftest import SAMPLE_VARIANT_CFTR
+
+        mock_engine.query_rsid.return_value = []
+        mock_engine2.query_rsid.return_value = [SAMPLE_VARIANT_CFTR]
+        fn = _setup_tool(mock_engines_multi, test_db, test_config_multi)
+        result = fn(rsid="rs113993960", genome2="partner")
+
+        # Genome1 should show "not found" message (not early-return)
+        assert "not covered" in result or "homozygous reference" in result
+        # Genome2 should still show its results
+        assert "CFTR" in result
+        assert "partner" in result
+        assert "NOTE:" in result  # disclaimer
+
     def test_genome2_engine_error(
         self, mock_engine, mock_engine2, mock_engines_multi, test_db, test_config_multi
     ):
