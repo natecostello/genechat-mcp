@@ -61,7 +61,7 @@ Your genome data stays on your machine. GeneChat only reads from local files. No
 
 - Python 3.11+
 - A consumer WGS VCF file (from Nucleus Genomics, Nebula, Sequencing.com, etc.)
-- ~15 GB disk for reference databases, ~2 GB for your raw VCF + patch.db
+- ~10 GB disk for default references (~30 GB if dbSNP included), ~2 GB for your raw VCF + patch.db
 
 **For annotation** (one-time setup):
 
