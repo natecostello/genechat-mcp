@@ -47,7 +47,7 @@ def register(mcp, engines, db, config):
         if not db.has_gwas_table():
             return (
                 "GWAS Catalog not loaded. Run: "
-                "`uv run python scripts/build_gwas_db.py` to build the GWAS database."
+                "`genechat download --gwas` to download and build the GWAS database."
             )
 
         # Clamp max_results to a safe range
@@ -64,7 +64,7 @@ def register(mcp, engines, db, config):
             return (
                 "Failed to query the GWAS Catalog due to an internal database error. "
                 "Try rebuilding the GWAS database with "
-                "`uv run python scripts/build_gwas_db.py`."
+                "`genechat download --gwas`."
             )
 
         # Deduplicate: keep first occurrence per rsid (best p-value)

@@ -166,7 +166,11 @@ def _ensure_lookup_db() -> bool:
             print("  uv run python scripts/build_lookup_db.py", file=sys.stderr)
         else:
             print(
-                "Reinstall genechat or run from a source checkout.",
+                "The built-in lookup database should have been installed with the package.",
+                file=sys.stderr,
+            )
+            print(
+                "Try reinstalling: uv tool install genechat-mcp",
                 file=sys.stderr,
             )
         return False
@@ -1021,6 +1025,8 @@ def _run_init(args):
 
     print("Add this to your Claude Desktop or Claude Code MCP config:\n")
     print(json.dumps(mcp_config, indent=2))
+    print("\nOptional: Enable GWAS trait search:")
+    print("  genechat download --gwas")
     print("\n=== Setup complete ===")
 
 
@@ -1211,6 +1217,12 @@ def _run_status():
         f"  dbSNP:    {'installed' if dbsnp_installed() else 'not installed — genechat download --dbsnp'}"
     )
 
+    from genechat.gwas import gwas_installed
+
+    print(
+        f"  GWAS:     {'installed' if gwas_installed() else 'not installed — genechat download --gwas'}"
+    )
+
     print("\nRun `genechat update` to check for newer versions.")
 
 
@@ -1253,37 +1265,8 @@ def _run_update_seeds():
 
 
 def _download_and_build_gwas():
-    """Download GWAS Catalog and build the gwas_associations table."""
-    project_root = _find_project_root()
-    if not project_root:
-        print(
-            "Error: --gwas requires a source checkout (pyproject.toml not found).",
-            file=sys.stderr,
-        )
-        sys.exit(1)
-
-    build_script = project_root / "scripts" / "build_gwas_db.py"
-    if not build_script.exists():
-        print(
-            f"Error: build_gwas_db.py not found at {build_script}",
-            file=sys.stderr,
-        )
-        sys.exit(1)
-
-    import importlib.util
-
-    spec = importlib.util.spec_from_file_location(
-        "genechat_build_gwas_db", str(build_script)
-    )
-    if spec is None or spec.loader is None:
-        print("Error: Cannot load build_gwas_db.py", file=sys.stderr)
-        sys.exit(1)
-
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-
-    zip_path = project_root / "data" / "gwas_catalog" / "gwas-catalog-associations.zip"
-    db_path = project_root / "src" / "genechat" / "data" / "lookup_tables.db"
+    """Download GWAS Catalog and build a standalone gwas.db."""
+    from genechat.gwas import build_gwas_db
 
     print("Downloading and building GWAS Catalog...")
-    mod.build_gwas_db(zip_path, db_path)
+    build_gwas_db()
