@@ -268,7 +268,7 @@ def _mock_downloads(monkeypatch):
     # Mock GWAS download to prevent network calls and side effects on lookup_tables.db
     monkeypatch.setattr(
         "genechat.cli._download_and_build_gwas",
-        lambda: calls.append("gwas"),
+        lambda **kw: calls.append("gwas"),
     )
     return calls
 
@@ -590,8 +590,7 @@ class TestEnsureLookupDb:
         scripts_dir.mkdir()
         build_script = scripts_dir / "build_lookup_db.py"
         build_script.write_text(
-            "def build_db(seed_dir, db_path):\n"
-            "    db_path.write_bytes(b'built')\n"
+            "def build_db(seed_dir, db_path):\n    db_path.write_bytes(b'built')\n"
         )
         (project_root / "pyproject.toml").write_text("[project]\nname = 'test'\n")
 
@@ -613,8 +612,7 @@ class TestEnsureLookupDb:
         scripts_dir.mkdir()
         build_script = scripts_dir / "build_lookup_db.py"
         build_script.write_text(
-            "def build_db(seed_dir, db_path):\n"
-            "    raise RuntimeError('build failed')\n"
+            "def build_db(seed_dir, db_path):\n    raise RuntimeError('build failed')\n"
         )
         (project_root / "pyproject.toml").write_text("[project]\nname = 'test'\n")
 

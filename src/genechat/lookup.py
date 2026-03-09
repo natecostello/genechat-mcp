@@ -18,8 +18,7 @@ class LookupDB:
         db_path = config.lookup_db_path
         if not Path(db_path).exists():
             raise FileNotFoundError(
-                f"Lookup database not found: {db_path}. "
-                "Run: genechat init <vcf>"
+                f"Lookup database not found: {db_path}. Run: genechat init <vcf>"
             )
         self._conn = sqlite3.connect(db_path)
         self._conn.row_factory = sqlite3.Row
@@ -34,9 +33,7 @@ class LookupDB:
             gwas_path = Path(config.gwas_db_path)
             if gwas_path.exists():
                 try:
-                    self._conn.execute(
-                        "ATTACH DATABASE ? AS gwas", (str(gwas_path),)
-                    )
+                    self._conn.execute("ATTACH DATABASE ? AS gwas", (str(gwas_path),))
                     self._gwas_prefix = "gwas."
                 except sqlite3.Error:
                     pass  # Corrupt/incompatible GWAS DB — skip silently

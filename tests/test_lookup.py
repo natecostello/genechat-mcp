@@ -142,7 +142,10 @@ class TestGwasAttach:
         self._create_lookup_db(lookup_path)
 
         config = AppConfig(
-            databases={"lookup_db": str(lookup_path), "gwas_db": str(tmp_path / "nonexistent.db")}
+            databases={
+                "lookup_db": str(lookup_path),
+                "gwas_db": str(tmp_path / "nonexistent.db"),
+            }
         )
         db = LookupDB(config)
         try:

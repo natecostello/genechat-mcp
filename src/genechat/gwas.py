@@ -142,9 +142,7 @@ def download_gwas_catalog(dest_path: Path | None = None) -> Path:
     return zip_path
 
 
-def build_gwas_db(
-    zip_path: Path | None = None, db_path: Path | None = None
-) -> int:
+def build_gwas_db(zip_path: Path | None = None, db_path: Path | None = None) -> int:
     """Process GWAS catalog zip into a standalone SQLite DB. Returns row count.
 
     If zip_path does not exist, downloads it first.
@@ -166,9 +164,7 @@ def build_gwas_db(
     with zipfile.ZipFile(str(zip_path)) as z:
         tsv_name = z.namelist()[0]
         with z.open(tsv_name) as f:
-            reader = csv.reader(
-                io.TextIOWrapper(f, encoding="utf-8"), delimiter="\t"
-            )
+            reader = csv.reader(io.TextIOWrapper(f, encoding="utf-8"), delimiter="\t")
             next(reader)  # skip header
 
             batch = []
@@ -182,26 +178,28 @@ def build_gwas_db(
                     rows_skipped += 1
                     continue
 
-                batch.append((
-                    _parse_rsid(row[COL_SNPS]),
-                    _normalize_chrom(row[COL_CHR]),
-                    _safe_int(row[COL_POS]),
-                    row[COL_MAPPED_GENE].strip() or None,
-                    trait,
-                    row[COL_MAPPED_TRAIT].strip() or None,
-                    _parse_risk_allele(row[COL_RISK_ALLELE]),
-                    _safe_float(row[COL_RAF]),
-                    _safe_float(row[COL_PVALUE]),
-                    _safe_float(row[COL_OR_BETA]),
-                    row[COL_CI].strip() or None,
-                    row[COL_PUBMEDID].strip() or None,
-                    row[COL_FIRST_AUTHOR].strip() or None,
+                batch.append(
                     (
-                        row[COL_STUDY_ACC].strip()
-                        if len(row) > COL_STUDY_ACC
-                        else None
-                    ),
-                ))
+                        _parse_rsid(row[COL_SNPS]),
+                        _normalize_chrom(row[COL_CHR]),
+                        _safe_int(row[COL_POS]),
+                        row[COL_MAPPED_GENE].strip() or None,
+                        trait,
+                        row[COL_MAPPED_TRAIT].strip() or None,
+                        _parse_risk_allele(row[COL_RISK_ALLELE]),
+                        _safe_float(row[COL_RAF]),
+                        _safe_float(row[COL_PVALUE]),
+                        _safe_float(row[COL_OR_BETA]),
+                        row[COL_CI].strip() or None,
+                        row[COL_PUBMEDID].strip() or None,
+                        row[COL_FIRST_AUTHOR].strip() or None,
+                        (
+                            row[COL_STUDY_ACC].strip()
+                            if len(row) > COL_STUDY_ACC
+                            else None
+                        ),
+                    )
+                )
                 rows_inserted += 1
 
                 if len(batch) >= 10000:
