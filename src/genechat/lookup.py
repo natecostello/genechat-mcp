@@ -17,9 +17,11 @@ class LookupDB:
     def __init__(self, config: AppConfig):
         db_path = config.lookup_db_path
         if not Path(db_path).exists():
-            raise FileNotFoundError(
-                f"Lookup database not found: {db_path}. Run: genechat init <vcf>"
-            )
+            if config.databases.lookup_db:
+                hint = f"Check [databases].lookup_db in your config: {db_path}"
+            else:
+                hint = "Try reinstalling the package or run: genechat init <vcf>"
+            raise FileNotFoundError(f"Lookup database not found: {db_path}. {hint}")
         self._conn = sqlite3.connect(db_path)
         self._conn.row_factory = sqlite3.Row
         self._conn.execute("PRAGMA query_only = ON")
