@@ -54,7 +54,7 @@ def run_server():
             continue
         try:
             engines[label] = VCFEngine(genome_cfg, max_variants=max_variants)
-        except (FileNotFoundError, Exception) as e:
+        except Exception as e:
             print(
                 f"Error initializing genome '{label}': {e}",
                 file=sys.stderr,
