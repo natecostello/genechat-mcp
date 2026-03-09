@@ -4,9 +4,8 @@ __pycache__/
 dist/
 build/
 .venv/
-*.db
-data/lookup_tables.db
-src/genechat/data/lookup_tables.db
+*.patch.db
+gwas.db
 *.vcf
 *.vcf.gz
 *.vcf.gz.tbi
