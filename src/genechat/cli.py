@@ -688,6 +688,8 @@ def _annotate_gnomad(
             if chr_name not in vcf_chroms:
                 continue
 
+            pre_existed = gnomad_chr_path(chrom).exists()
+
             if incremental:
                 download_gnomad_chr(chrom)
 
@@ -695,36 +697,37 @@ def _annotate_gnomad(
             if not gnomad_file.exists():
                 continue
 
-            print(f"    chr{chrom} ({i}/{len(GNOMAD_CHROMS)})...", end="", flush=True)
-            proc = subprocess.Popen(
-                [
-                    "bcftools",
-                    "annotate",
-                    "-a",
-                    str(gnomad_file),
-                    "-c",
-                    "INFO/AF,INFO/AF_grpmax",
-                    "-r",
-                    chr_name,
-                    str(vcf_path),
-                ],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-            )
-            rows = patch.update_gnomad_from_stream(iter(proc.stdout))
-            total_rows += rows
-            rc = proc.wait()
-            print(f" {rows:,} variants")
-            if rc != 0:
-                stderr = proc.stderr.read() if proc.stderr else ""
-                raise RuntimeError(
-                    f"bcftools annotate (gnomAD) failed with exit code {rc} "
-                    f"on chr{chrom}: {stderr}"
+            try:
+                print(f"    chr{chrom} ({i}/{len(GNOMAD_CHROMS)})...", end="", flush=True)
+                proc = subprocess.Popen(
+                    [
+                        "bcftools",
+                        "annotate",
+                        "-a",
+                        str(gnomad_file),
+                        "-c",
+                        "INFO/AF,INFO/AF_grpmax",
+                        "-r",
+                        chr_name,
+                        str(vcf_path),
+                    ],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
                 )
-
-            if incremental:
-                delete_gnomad_chr(chrom)
+                rows = patch.update_gnomad_from_stream(iter(proc.stdout))
+                total_rows += rows
+                rc = proc.wait()
+                print(f" {rows:,} variants")
+                if rc != 0:
+                    stderr = proc.stderr.read() if proc.stderr else ""
+                    raise RuntimeError(
+                        f"bcftools annotate (gnomAD) failed with exit code {rc} "
+                        f"on chr{chrom}: {stderr}"
+                    )
+            finally:
+                if incremental and not pre_existed:
+                    delete_gnomad_chr(chrom)
     except Exception:
         patch.set_metadata("gnomad", "v4.1", status="failed")
         raise
@@ -1252,10 +1255,10 @@ def _run_status():
     elif any_gnomad_annotated:
         gnomad_status = "annotated (reference files cleaned up)"
     else:
-        gnomad_status = "not installed — genechat download --gnomad"
+        gnomad_status = "not installed — genechat annotate --gnomad"
     print(f"  gnomAD:   {gnomad_status}")
     print(
-        f"  dbSNP:    {'installed' if dbsnp_installed() else 'not installed — genechat download --dbsnp'}"
+        f"  dbSNP:    {'installed' if dbsnp_installed() else 'not installed — genechat annotate --dbsnp'}"
     )
 
     gwas_ok = False

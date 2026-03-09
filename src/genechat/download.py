@@ -139,14 +139,11 @@ def download_gnomad_chr(chrom: str, force: bool = False) -> Path:
     vcf_path = gdir / vcf_name
     tbi_path = gdir / tbi_name
 
-    if vcf_path.exists() and not force:
+    if vcf_path.exists() and tbi_path.exists() and not force:
         print(f"  Already exists: {vcf_name}")
     else:
+        # Download VCF + TBI as an atomic pair (index must match the exact bgzip file)
         _download_file(f"{GNOMAD_BASE}/{vcf_name}", vcf_path, vcf_name)
-
-    if tbi_path.exists() and not force:
-        pass  # tbi already present
-    else:
         _download_file(f"{GNOMAD_BASE}/{tbi_name}", tbi_path, tbi_name)
 
     return vcf_path

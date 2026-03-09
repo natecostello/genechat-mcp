@@ -128,9 +128,9 @@ This will:
 uv run genechat init /path/to/your/raw.vcf.gz --gnomad --gwas
 ```
 
-gnomAD is optional; without it, `query_gene` falls back to ClinVar-only filtering. GWAS enables `query_gwas` for trait association lookups. Both can also be added after init via `genechat download --gnomad` / `genechat download --gwas`.
+gnomAD is optional; without it, `query_gene` falls back to ClinVar-only filtering. GWAS enables `query_gwas` for trait association lookups. Both can also be added after init via `genechat annotate --gnomad` / `genechat download --gwas`.
 
-> **Disk usage:** `--gnomad` annotation downloads each gnomAD chromosome, annotates it, then deletes the file — peak disk usage is ~17 GB (one chromosome) rather than ~150 GB for all files at once. `genechat download --gnomad` downloads all files and keeps them for reuse across multiple genomes.
+> **Disk usage:** `--gnomad` downloads each gnomAD chromosome, annotates from it, then deletes the file — peak disk usage is ~17 GB (one chromosome) rather than ~150 GB for all files at once. `genechat download --gnomad` downloads all files upfront and keeps them for reuse across multiple genomes.
 
 > **Time estimate:** Default init takes ~10–15 minutes (SnpEff annotation + ClinVar). With `--gnomad`, allow additional time for the per-chromosome downloads (~150 GB total). Total annotation time depends on VCF size and machine specs.
 

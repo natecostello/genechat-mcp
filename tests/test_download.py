@@ -326,6 +326,29 @@ class TestDownloadGnomadChr:
         assert "Already exists" in capsys.readouterr().out
 
 
+    def test_redownloads_when_tbi_missing(self, monkeypatch, tmp_path):
+        """VCF+TBI are an atomic pair; missing TBI triggers re-download of both."""
+        refs = tmp_path / "refs"
+        gdir = refs / "gnomad_exomes_v4"
+        gdir.mkdir(parents=True)
+        (gdir / "gnomad.exomes.v4.1.sites.chr1.vcf.bgz").write_bytes(b"x")
+        # No .tbi file
+        monkeypatch.setattr("genechat.download.REFERENCES_DIR", refs)
+
+        downloaded = []
+
+        def mock_download(url, dest, label=""):
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest.write_bytes(b"fake")
+            downloaded.append(dest.name)
+
+        monkeypatch.setattr("genechat.download._download_file", mock_download)
+
+        download_gnomad_chr("1")
+        assert "gnomad.exomes.v4.1.sites.chr1.vcf.bgz" in downloaded
+        assert "gnomad.exomes.v4.1.sites.chr1.vcf.bgz.tbi" in downloaded
+
+
 class TestDeleteGnomadChr:
     def test_deletes_vcf_and_tbi(self, monkeypatch, tmp_path):
         refs = tmp_path / "refs"
