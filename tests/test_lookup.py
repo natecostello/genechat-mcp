@@ -183,6 +183,25 @@ class TestGwasAttach:
         finally:
             db.close()
 
+    def test_corrupt_gwas_db_gracefully_skipped(self, tmp_path):
+        """Corrupt GWAS DB doesn't prevent lookup from working."""
+        lookup_path = tmp_path / "lookup_tables.db"
+        self._create_lookup_db(lookup_path)
+        gwas_path = tmp_path / "gwas.db"
+        gwas_path.write_bytes(b"not a sqlite database")
+
+        config = AppConfig(
+            databases={"lookup_db": str(lookup_path), "gwas_db": str(gwas_path)}
+        )
+        db = LookupDB(config)
+        try:
+            assert not db.has_gwas_table()
+            # Core lookup still works
+            gene = db.get_gene("TP53")
+            assert gene is not None
+        finally:
+            db.close()
+
     def test_gwas_traits_for_gene(self, tmp_path):
         """gwas_traits_for_gene works with attached DB."""
         lookup_path = tmp_path / "lookup_tables.db"

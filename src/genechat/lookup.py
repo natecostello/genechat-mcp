@@ -33,10 +33,13 @@ class LookupDB:
         else:
             gwas_path = Path(config.gwas_db_path)
             if gwas_path.exists():
-                self._conn.execute(
-                    "ATTACH DATABASE ? AS gwas", (str(gwas_path),)
-                )
-                self._gwas_prefix = "gwas."
+                try:
+                    self._conn.execute(
+                        "ATTACH DATABASE ? AS gwas", (str(gwas_path),)
+                    )
+                    self._gwas_prefix = "gwas."
+                except sqlite3.Error:
+                    pass  # Corrupt/incompatible GWAS DB — skip silently
 
     def _has_table_in_main(self, table_name: str) -> bool:
         row = self._conn.execute(
