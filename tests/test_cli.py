@@ -265,7 +265,7 @@ def _mock_downloads(monkeypatch):
         lambda **kw: calls.append("dbsnp"),
     )
     monkeypatch.setattr("genechat.download.references_dir", lambda: Path("/tmp/refs"))
-    # Mock GWAS download to prevent network calls and side effects on lookup_tables.db
+    # Mock GWAS download to prevent network calls and building gwas.db
     monkeypatch.setattr(
         "genechat.cli._download_and_build_gwas",
         lambda **kw: calls.append("gwas"),
