@@ -1,7 +1,7 @@
 """GWAS Catalog download and SQLite build.
 
 Downloads from EBI FTP and builds a standalone gwas.db file.
-This module is used by both the CLI (`genechat download --gwas`)
+This module is used by both the CLI (`genechat install --gwas`)
 and the build script (`scripts/build_gwas_db.py`).
 """
 

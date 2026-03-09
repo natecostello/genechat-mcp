@@ -138,7 +138,7 @@ Extract the GWAS build logic from `scripts/build_gwas_db.py` into a proper packa
    ```
 3. Implement `_download_and_build_gwas()` using the `genechat.gwas` module. Target path: `~/.local/share/genechat/gwas.db`.
 
-**Verification**: `genechat install --gwas` downloads the GWAS catalog and builds `~/.local/share/genechat/gwas.db`. `genechat install --all` includes GWAS.
+**Verification**: `genechat install --gwas` downloads the GWAS catalog and builds `~/.local/share/genechat/gwas.db`.
 
 ---
 

@@ -212,7 +212,7 @@ Fetches latest data from HGNC, CPIC, and PGS Catalog APIs, regenerates seed TSVs
 
 ### `genechat install --gwas`
 
-Downloads the GWAS Catalog and builds the gwas_associations table in lookup_tables.db. Currently a standalone script (`build_gwas_db.py`). Should integrate into the download subcommand alongside `--gnomad` and `--dbsnp`.
+Downloads the GWAS Catalog and builds a standalone `gwas.db` (separate from `lookup_tables.db`). Currently a standalone script (`build_gwas_db.py`). Integrated into the `install` subcommand as `genechat install --gwas`.
 
 ## GIAB / Demo Genome Documentation
 
