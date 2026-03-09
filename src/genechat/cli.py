@@ -381,7 +381,8 @@ def _run_annotate(args):
         print("  Install: brew install bcftools (macOS)", file=sys.stderr)
         sys.exit(1)
 
-    if (run_clinvar or run_dbsnp) and not shutil.which("tabix"):
+    needs_tabix = run_clinvar or (run_dbsnp and not dbsnp_installed())
+    if needs_tabix and not shutil.which("tabix"):
         print(
             "Error: tabix not found in PATH (needed for contig rename).",
             file=sys.stderr,
@@ -699,26 +700,24 @@ def _annotate_gnomad(
             if not gnomad_file.exists():
                 continue
 
+            print(f"    chr{chrom} ({i}/{len(GNOMAD_CHROMS)})...", end="", flush=True)
+            proc = subprocess.Popen(
+                [
+                    "bcftools",
+                    "annotate",
+                    "-a",
+                    str(gnomad_file),
+                    "-c",
+                    "INFO/AF,INFO/AF_grpmax",
+                    "-r",
+                    chr_name,
+                    str(vcf_path),
+                ],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
             try:
-                print(
-                    f"    chr{chrom} ({i}/{len(GNOMAD_CHROMS)})...", end="", flush=True
-                )
-                proc = subprocess.Popen(
-                    [
-                        "bcftools",
-                        "annotate",
-                        "-a",
-                        str(gnomad_file),
-                        "-c",
-                        "INFO/AF,INFO/AF_grpmax",
-                        "-r",
-                        chr_name,
-                        str(vcf_path),
-                    ],
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    text=True,
-                )
                 rows = patch.update_gnomad_from_stream(iter(proc.stdout))
                 total_rows += rows
                 rc = proc.wait()
@@ -729,7 +728,18 @@ def _annotate_gnomad(
                         f"bcftools annotate (gnomAD) failed with exit code {rc} "
                         f"on chr{chrom}: {stderr}"
                     )
+            except Exception:
+                if proc.poll() is None:
+                    proc.terminate()
+                    try:
+                        proc.wait(timeout=5)
+                    except subprocess.TimeoutExpired:
+                        proc.kill()
+                        proc.wait()
+                raise
             finally:
+                if proc.stdout is not None:
+                    proc.stdout.close()
                 if incremental and not pre_existed:
                     delete_gnomad_chr(chrom)
     except Exception:
