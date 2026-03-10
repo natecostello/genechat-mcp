@@ -29,19 +29,40 @@ Each DEVIATED or DEFERRED item must include a one-line rationale.
 
 ADRs live in `docs/architecture/` using [MADR 4.0](https://adr.github.io/madr/) format with these project-specific additions:
 
+### When to write an ADR
+
+Write an ADR when a decision:
+- Changes how data flows between components (VCF, patch.db, lookup.db, GWAS db)
+- Affects the MCP tool interface (new tools, changed parameters, changed output format)
+- Changes the annotation pipeline architecture (new sources, different processing)
+- Affects module boundaries or adds/removes significant components
+- Involves trade-offs between competing concerns that were debated
+- Is hard to reverse once implemented
+- Affects non-functional requirements (performance, security, privacy)
+
+If in doubt, write the ADR — a short record is better than an undocumented decision.
+
 ### Template conventions
 
-- **Frontmatter** must include `status`, `date`, and `related ADRs` (list of links to related ADRs in this directory)
+- **Frontmatter** must include `status`, `date`, and `related ADRs` (list of links to related ADRs in this directory). Optional fields: `decision-makers`, `consulted`, `informed` (per MADR 4.0 RACI convention)
+- **Decision Drivers** should capture the forces that shaped the decision
 - **Decision Outcome** must reference the implementation plan with its file path and the git commit hash where the plan can be found (plans are deleted from the tree after implementation, but preserved in git history)
-- **More Information** must list the PRs that implemented the decision (and the PR that removed legacy code, if applicable)
 - **Confirmation** section should describe how compliance is verified (tests, code review, etc.)
 - **Pros and Cons of the Options** — expand each option with bullet-point pros/cons, not just a one-line description
+- **More Information** must list the PRs that implemented the decision (and the PR that removed legacy code, if applicable)
 
 ### Numbering and lifecycle
 
 - Sequentially numbered: `0001-short-title.md`, `0002-...`, etc.
 - Update `docs/architecture/README.md` index when adding or changing an ADR
-- Status values: `proposed`, `accepted`, `deprecated`, `superseded by ADR-NNNN`
+- Status values: `proposed`, `accepted`, `rejected`, `deprecated`, `superseded by ADR-NNNN`
+- Use `rejected` when an approach was evaluated and deliberately not adopted — this documents "why we didn't do X"
+
+### Amendments and updates
+
+- For **partial updates** to an existing decision, create a new ADR that references the original. Update the original's "More Information" section to note "Amended by ADR-NNNN" but keep its status as `accepted`.
+- Reserve `superseded by ADR-NNNN` for complete replacement of a decision.
+- ADRs can be written **retroactively**. If a past decision was architecturally significant, write the ADR with the original decision date and add a note in More Information: "Documented retroactively on YYYY-MM-DD."
 
 ### Plan documents
 

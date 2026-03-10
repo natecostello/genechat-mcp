@@ -139,6 +139,7 @@ with the architecture, tool specifications, and seed data schemas defined there.
 10. **Input validation consistency** — rsID validation must use the same `^rs\d+$` pattern as `VCFEngine`. Don't use `startswith("rs")` which allows malformed IDs like `rsABC`
 11. **Patch database consistency** — `PatchDB` uses UPSERT with COALESCE to preserve existing columns when updating a single annotation layer. Verify that annotation functions correctly stream data into patch.db without overwriting unrelated columns
 12. **Plan compliance** — if the PR description references a plan or design document, verify that the implementation matches what was specified. Flag any described behavior that doesn't match the code
+13. **ADR compliance** — if the PR adds or modifies an ADR in `docs/architecture/`, verify it follows MADR 4.0 format (frontmatter with status/date/related ADRs, Decision Drivers, Considered Options with pros/cons, Decision Outcome with Consequences and Confirmation). If the PR changes architecture without an ADR, flag it as needing one
 
 ## What NOT to Flag
 

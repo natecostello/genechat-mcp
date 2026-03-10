@@ -29,6 +29,14 @@ uv run ruff check . && uv run ruff format --check .
 - Type hints on public APIs
 - Medical disclaimers on clinical tool output
 
+## Architecture Decisions
+
+Significant design decisions are recorded as [Architecture Decision Records (ADRs)](docs/architecture/) using the [MADR 4.0](https://adr.github.io/madr/) format.
+
+**When to write an ADR:** If your change affects data flow between components, the MCP tool interface, the annotation pipeline architecture, or module boundaries — write an ADR. See the full criteria in `CLAUDE.md`.
+
+**Process:** Create a new ADR in `docs/architecture/` using the next sequential number. Set status to `proposed` until the implementing PR merges, then update to `accepted`. Reference the implementing PR in the "More Information" section.
+
 ## Seed Data
 
 Don't hand-edit TSVs in `data/seed/`. Run `uv run python scripts/build_seed_data.py` to fetch from upstream APIs and rebuild.
