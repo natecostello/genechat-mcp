@@ -179,7 +179,9 @@ class VCFEngine:
             raise ValueError(f"Invalid rsID format: {rsid}. Expected rs<digits>")
 
         if not self._patch:
-            return []
+            raise VCFEngineError(
+                "rsID queries require a patch database. Run: genechat annotate --all"
+            )
 
         patch_rows = self._patch.lookup_rsid(rsid)
         if not patch_rows:
@@ -229,7 +231,9 @@ class VCFEngine:
                 raise ValueError(f"Invalid rsID format: {rsid}. Expected rs<digits>")
 
         if not self._patch:
-            return {r: [] for r in rsids}
+            raise VCFEngineError(
+                "rsID queries require a patch database. Run: genechat annotate --all"
+            )
 
         patch_results = self._patch.lookup_rsids(rsids)
         results: dict[str, list[dict]] = {r: [] for r in rsids}
@@ -285,7 +289,9 @@ class VCFEngine:
             raise ValueError(f"Invalid region format: {region}")
 
         if not self._patch:
-            return []
+            raise VCFEngineError(
+                "ClinVar queries require a patch database. Run: genechat annotate --all"
+            )
 
         if region:
             chrom, coords = region.split(":")
