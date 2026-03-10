@@ -215,7 +215,7 @@ def step3_compare(log: Logger) -> dict:
     legacy_config = AppConfig(
         genome={"vcf_path": str(LEGACY_VCF), "genome_build": "GRCh38"},
         databases={"lookup_db": str(LOOKUP_DB)},
-        server={"max_variants_per_response": 500},
+        server={"max_variants_per_response": 10000},
     )
     patch_config = AppConfig(
         genome={
@@ -224,7 +224,7 @@ def step3_compare(log: Logger) -> dict:
             "patch_db": str(PATCH_DB),
         },
         databases={"lookup_db": str(LOOKUP_DB)},
-        server={"max_variants_per_response": 500},
+        server={"max_variants_per_response": 10000},
     )
 
     legacy = VCFEngine(legacy_config)
@@ -653,6 +653,9 @@ def compare_variant_detail(lv: dict, pv: dict) -> list[str]:
 def main():
     """Run the full overnight parity test."""
     start_time = datetime.now(timezone.utc)
+    # Ensure output directories exist before opening the report file.
+    GIAB_DIR.mkdir(parents=True, exist_ok=True)
+    WORK_DIR.mkdir(parents=True, exist_ok=True)
     log = Logger(REPORT_PATH)
 
     log.log("=" * 70)
@@ -739,7 +742,7 @@ def main():
     log.log()
     log.log("# 4. Comparison was done programmatically (see results above)")
     log.log(
-        "# Both VCFEngine instances were created with max_variants_per_response=500"
+        "# Both VCFEngine instances were created with max_variants_per_response=10000"
     )
     log.log(f"# Legacy config: vcf_path={LEGACY_VCF}")
     log.log(f"# Patch config:  vcf_path={RAW_VCF}, patch_db={PATCH_DB}")
