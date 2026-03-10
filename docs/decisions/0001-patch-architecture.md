@@ -23,10 +23,9 @@ Chosen option: "Raw VCF + SQLite patch database", because it enables incremental
 
 - Good, because annotation layers can be added, updated, or cleared independently
 - Good, because the raw VCF is never modified -- users can verify their original data
-- Good, because patch generation uses the same bcftools/SnpEff commands, guaranteeing functional equivalence with the annotated-VCF approach (verified by parity tests)
-- Bad, because VCFEngine now has dual-mode complexity (legacy annotated VCF vs raw+patch)
-- Bad, because query-time joins add a dict lookup per variant (negligible in practice)
+- Good, because patch generation uses the same bcftools/SnpEff commands, guaranteeing functional equivalence with the annotated-VCF approach (verified by parity tests before legacy removal)
+- Neutral, because query-time joins add a dict lookup per variant (negligible in practice)
 
 ## More Information
 
-Implemented in PR #21. Original planning doc preserved in git history at `docs/patch-architecture-plan.md`.
+Implemented in PR #21. Legacy annotated-VCF mode was removed in PR #33 after all CLI workflows were confirmed to create a patch.db, eliminating the dual-mode complexity. Original planning doc preserved in git history at `docs/patch-architecture-plan.md`.

@@ -128,7 +128,6 @@ genechat-mcp/
     fetch_cpic_data.py             # CPIC API -> pgx_drugs + pgx_variants
     fetch_prs_data.py              # PGS Catalog FTP -> prs_weights
     generate_test_vcf.py           # Creates synthetic VCF for testing
-    overnight_parity_test.py       # Dev tool: annotated-VCF vs patch.db parity
   data/
     seed/                          # Generated TSVs (committed to git)
   src/
@@ -137,7 +136,7 @@ genechat-mcp/
       cli.py                       # CLI: init, add, annotate, install, update, status, serve
       server.py                    # MCP server entry point
       config.py                    # TOML config loader + write_config
-      vcf_engine.py                # pysam VCF query engine (dual-mode: legacy or patch)
+      vcf_engine.py                # pysam VCF query engine (genotypes from VCF, annotations from patch.db)
       patch.py                     # SQLite patch database (annotation overlay)
       lookup.py                    # SQLite query layer for seed data
       download.py                  # Reference database download functions

@@ -24,6 +24,67 @@ def ensure_test_vcf():
         generate_vcf()
 
 
+@pytest.fixture(scope="session", autouse=True)
+def ensure_test_patch_db(ensure_test_vcf):
+    """Build test patch.db from annotated test VCF if missing."""
+    vcf_path = TEST_DATA / "test_sample.vcf.gz"
+    patch_path = TEST_DATA / "test_sample.patch.db"
+    if patch_path.exists():
+        return
+    if not vcf_path.exists():
+        return  # VCF generation must have failed
+
+    import pysam
+
+    from genechat.patch import PatchDB
+
+    # Extract annotations as VCF text lines for the stream parsers
+    ann_lines = []
+    with pysam.VariantFile(str(vcf_path)) as vcf:
+        for record in vcf:
+            alt = ",".join(record.alts) if record.alts else "."
+            rsid = record.id if record.id and record.id != "." else "."
+            info_parts = []
+            for key in [
+                "ANN",
+                "CLNSIG",
+                "CLNDN",
+                "CLNREVSTAT",
+                "AF",
+                "AF_popmax",
+                "AF_grpmax",
+            ]:
+                try:
+                    val = record.info[key]
+                except KeyError:
+                    continue
+                if val is None:
+                    continue
+                if isinstance(val, tuple):
+                    val_str = ",".join(str(v) for v in val)
+                else:
+                    val_str = str(val)
+                info_parts.append(f"{key}={val_str}")
+            info = ";".join(info_parts) if info_parts else "."
+            gt_alleles = record.samples[0]["GT"]
+            gt_str = "/".join(str(a) for a in gt_alleles)
+            line = (
+                f"{record.chrom}\t{record.pos}\t{rsid}\t{record.ref}\t{alt}\t"
+                f".\tPASS\t{info}\tGT\t{gt_str}\n"
+            )
+            ann_lines.append(line)
+
+    db = PatchDB.create(patch_path)
+    db.populate_from_snpeff_stream(iter(ann_lines))
+    db.update_clinvar_from_stream(iter(ann_lines))
+    db.update_gnomad_from_stream(iter(ann_lines))
+    db.store_vcf_fingerprint(vcf_path)
+    db.set_metadata("snpeff", "test")
+    db.set_metadata("clinvar", "test")
+    db.set_metadata("gnomad", "test")
+    db.close()
+
+
 @pytest.fixture
 def test_config():
     """Config pointing to test data."""
@@ -31,6 +92,7 @@ def test_config():
         genome={
             "vcf_path": str(TEST_DATA / "test_sample.vcf.gz"),
             "genome_build": "GRCh38",
+            "patch_db": str(TEST_DATA / "test_sample.patch.db"),
         },
         databases={"lookup_db": str(DB_PATH)},
         server={"max_variants_per_response": 100},
@@ -102,10 +164,12 @@ def test_config_multi():
             "default": {
                 "vcf_path": str(TEST_DATA / "test_sample.vcf.gz"),
                 "genome_build": "GRCh38",
+                "patch_db": str(TEST_DATA / "test_sample.patch.db"),
             },
             "partner": {
                 "vcf_path": str(TEST_DATA / "test_sample.vcf.gz"),
                 "genome_build": "GRCh38",
+                "patch_db": str(TEST_DATA / "test_sample.patch.db"),
             },
         },
         databases={"lookup_db": str(DB_PATH)},

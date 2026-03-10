@@ -52,37 +52,14 @@ class TestVCFEngineInit:
 
 class TestAnnotationVersions:
     def test_returns_dict(self, test_config):
-        """annotation_versions() returns a dict (empty if no GeneChat_ headers)."""
+        """annotation_versions() returns a dict from patch.db metadata."""
         engine = VCFEngine(test_config)
         result = engine.annotation_versions()
         assert isinstance(result, dict)
-
-    def test_custom_prefix(self, test_config):
-        """annotation_versions() accepts a custom prefix."""
-        engine = VCFEngine(test_config)
-        result = engine.annotation_versions(prefix="NonExistent_")
-        assert result == {}
-
-    def test_parses_genechat_headers(self, test_config, tmp_path):
-        """annotation_versions() parses ##GeneChat_* headers correctly."""
-        import pysam
-
-        # Create a VCF with GeneChat_* headers by copying the test VCF
-        src = pysam.VariantFile(str(test_config.genome.vcf_path))
-        out_path = tmp_path / "with_headers.vcf.gz"
-        header = src.header.copy()
-        header.add_line("##GeneChat_ClinVar=2026-03-01")
-        header.add_line("##GeneChat_gnomAD=v4.1")
-        with pysam.VariantFile(str(out_path), "wz", header=header) as out:
-            for rec in src:
-                out.write(rec)
-        src.close()
-        pysam.tabix_index(str(out_path), preset="vcf", force=True)
-
-        test_config.genome.vcf_path = str(out_path)
-        engine = VCFEngine(test_config)
-        result = engine.annotation_versions()
-        assert result == {"ClinVar": "2026-03-01", "gnomAD": "v4.1"}
+        # Patch.db has SnpEff, ClinVar, gnomAD metadata set by test fixture
+        assert "SnpEff" in result
+        assert "ClinVar" in result
+        assert "gnomAD" in result
 
 
 class TestQueryRegion:
