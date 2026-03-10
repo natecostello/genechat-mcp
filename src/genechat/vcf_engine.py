@@ -71,8 +71,9 @@ class VCFEngine:
         elif patch_db_path and not patch_db_path.exists():
             warnings.warn(
                 f"Configured patch_db not found: {patch_db_path}. "
-                "Annotations will be unavailable. "
-                "Build the patch database with: genechat annotate --all",
+                "Annotations will be unavailable, and rsID/ClinVar-based queries "
+                "(query_rsid, query_rsids, query_clinvar) will fail until patch.db "
+                "is built. Build the patch database with: genechat annotate --all",
                 stacklevel=2,
             )
             self._patch = None
