@@ -25,6 +25,28 @@ When a PR implements a plan, the PR description MUST include a compliance sectio
 
 Each DEVIATED or DEFERRED item must include a one-line rationale.
 
+## Architecture Decision Records
+
+ADRs live in `docs/architecture/` using [MADR 4.0](https://adr.github.io/madr/) format with these project-specific additions:
+
+### Template conventions
+
+- **Frontmatter** must include `status`, `date`, and `related ADRs` (list of links to related ADRs in this directory)
+- **Decision Outcome** must reference the implementation plan with its file path and the git commit hash where the plan can be found (plans are deleted from the tree after implementation, but preserved in git history)
+- **More Information** must list the PRs that implemented the decision (and the PR that removed legacy code, if applicable)
+- **Confirmation** section should describe how compliance is verified (tests, code review, etc.)
+- **Pros and Cons of the Options** — expand each option with bullet-point pros/cons, not just a one-line description
+
+### Numbering and lifecycle
+
+- Sequentially numbered: `0001-short-title.md`, `0002-...`, etc.
+- Update `docs/architecture/README.md` index when adding or changing an ADR
+- Status values: `proposed`, `accepted`, `deprecated`, `superseded by ADR-NNNN`
+
+### Plan documents
+
+Active implementation plans live in `docs/plans/` while work is in progress. When the plan is fully implemented and the PR merges, the plan file is deleted from the tree. The ADR's "Decision Outcome" section preserves a reference to the plan's git commit hash so it remains discoverable via `git show <hash>:docs/plans/<file>`.
+
 ## TODO
 
 - [ ] Verify README quickstart instructions work end-to-end with a fresh VCF
@@ -113,7 +135,8 @@ genechat-mcp/
   SECURITY.md
   LICENSE
   docs/
-    decisions/                     # Architecture Decision Records (MADR)
+    architecture/                  # Architecture Decision Records (MADR 4.0)
+    plans/                         # Active implementation plans
     annotation-updates.md          # Incremental annotation update design
     security.md                    # Platform-specific encryption instructions
   .github/
@@ -169,7 +192,6 @@ genechat-mcp/
     test_cli.py
     test_vcf_engine.py
     test_patch.py
-    test_parity.py
     test_lookup.py
     test_config.py
     test_download.py

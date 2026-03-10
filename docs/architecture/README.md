@@ -1,6 +1,6 @@
 # Architecture Decision Records
 
-We use [MADR](https://adr.github.io/madr/) to document architecturally
+We use [MADR 4.0](https://adr.github.io/madr/) to document architecturally
 significant decisions.
 
 | ADR | Decision | Status |
