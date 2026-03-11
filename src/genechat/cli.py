@@ -125,6 +125,14 @@ def main(argv: list[str] | None = None):
     global _COLOR_ENABLED
     _COLOR_ENABLED = None
 
+    # Shared parent parser so --no-color works before OR after subcommand
+    global_parser = argparse.ArgumentParser(add_help=False)
+    global_parser.add_argument(
+        "--no-color",
+        action="store_true",
+        help="Disable color output",
+    )
+
     parser = argparse.ArgumentParser(
         prog="genechat",
         description="GeneChat MCP server for conversational personal genomics",
@@ -133,20 +141,17 @@ def main(argv: list[str] | None = None):
             "Issues: https://github.com/natecostello/genechat-mcp/issues"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
+        parents=[global_parser],
     )
     parser.add_argument(
         "--version", action="version", version=f"%(prog)s {__version__}"
-    )
-    parser.add_argument(
-        "--no-color",
-        action="store_true",
-        help="Disable color output",
     )
     sub = parser.add_subparsers(dest="command")
 
     # genechat init
     init_p = sub.add_parser(
         "init",
+        parents=[global_parser],
         help="Full first-time setup for a VCF file",
         description=(
             "Full first-time setup for a VCF file.\n\n"
@@ -171,13 +176,15 @@ def main(argv: list[str] | None = None):
     )
 
     # genechat add
-    add_p = sub.add_parser("add", help="Register a VCF file")
+    add_p = sub.add_parser("add", parents=[global_parser], help="Register a VCF file")
     add_p.add_argument("vcf_path", help="Path to your VCF (.vcf.gz)")
     add_p.add_argument("--label", help="Name for this genome")
 
     # genechat install
     inst_p = sub.add_parser(
-        "install", help="Install genome-independent reference databases"
+        "install",
+        parents=[global_parser],
+        help="Install genome-independent reference databases",
     )
     inst_p.add_argument(
         "--gwas", action="store_true", help="Install GWAS Catalog (~58 MB download)"
@@ -191,6 +198,7 @@ def main(argv: list[str] | None = None):
     # genechat annotate
     ann_p = sub.add_parser(
         "annotate",
+        parents=[global_parser],
         help="Build or update patch.db",
         description=(
             "Build or update the annotation database (patch.db).\n\n"
@@ -215,7 +223,9 @@ def main(argv: list[str] | None = None):
     ann_p.add_argument("--genome", help="Which genome to annotate (default: primary)")
 
     # genechat update
-    upd_p = sub.add_parser("update", help="Check for newer reference versions")
+    upd_p = sub.add_parser(
+        "update", parents=[global_parser], help="Check for newer reference versions"
+    )
     upd_p.add_argument(
         "--apply", action="store_true", help="Download + re-annotate stale sources"
     )
@@ -229,6 +239,7 @@ def main(argv: list[str] | None = None):
     # genechat status
     status_p = sub.add_parser(
         "status",
+        parents=[global_parser],
         help="Show genome info and annotation state",
         description=(
             "Show genome registration, annotation state, and reference versions.\n\n"
@@ -246,7 +257,7 @@ def main(argv: list[str] | None = None):
     )
 
     # genechat serve
-    sub.add_parser("serve", help="Start the MCP server")
+    sub.add_parser("serve", parents=[global_parser], help="Start the MCP server")
 
     args = parser.parse_args(argv)
 
@@ -1344,6 +1355,23 @@ def _run_update(args):
 # ---------------------------------------------------------------------------
 
 
+def _gwas_installed(gwas_db_path: str) -> bool:
+    """Check if the GWAS database is installed and has the expected table."""
+    import sqlite3 as _sql
+
+    path = Path(gwas_db_path)
+    if not path.exists():
+        return False
+    try:
+        with _sql.connect(str(path)) as conn:
+            row = conn.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='gwas_associations'"
+            ).fetchone()
+            return row is not None
+    except _sql.Error:
+        return False
+
+
 def _run_status(json_output: bool = False):
     """Show genome info, annotation state, reference versions."""
     config = load_config()
@@ -1447,19 +1475,7 @@ def _run_status(json_output: bool = False):
         f"  dbSNP:    {'installed' if dbsnp_installed() else 'not installed — genechat annotate --dbsnp'}"
     )
 
-    gwas_ok = False
-    gwas_path = Path(config.gwas_db_path)
-    if gwas_path.exists():
-        import sqlite3 as _sql
-
-        try:
-            with _sql.connect(str(gwas_path)) as _c:
-                _r = _c.execute(
-                    "SELECT name FROM sqlite_master WHERE type='table' AND name='gwas_associations'"
-                ).fetchone()
-                gwas_ok = _r is not None
-        except _sql.Error:
-            pass
+    gwas_ok = _gwas_installed(config.gwas_db_path)
     print(
         f"  GWAS:     {'installed' if gwas_ok else 'not installed — genechat install --gwas'}"
     )
@@ -1522,20 +1538,7 @@ def _run_status_json(config):
         "dbsnp": dbsnp_installed(),
     }
 
-    gwas_ok = False
-    gwas_path = Path(config.gwas_db_path)
-    if gwas_path.exists():
-        import sqlite3 as _sql
-
-        try:
-            with _sql.connect(str(gwas_path)) as _c:
-                _r = _c.execute(
-                    "SELECT name FROM sqlite_master WHERE type='table' AND name='gwas_associations'"
-                ).fetchone()
-                gwas_ok = _r is not None
-        except _sql.Error:
-            pass
-    data["references"]["gwas"] = gwas_ok
+    data["references"]["gwas"] = _gwas_installed(config.gwas_db_path)
 
     print(json.dumps(data, indent=2))
 
