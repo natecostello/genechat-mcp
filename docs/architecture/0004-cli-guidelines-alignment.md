@@ -42,7 +42,7 @@ guidelines as the design standard for GeneChat's CLI.
 **Chosen option: Option 2 — Selective adoption.**
 
 The full evaluation is documented in the implementation plan (`docs/plans/cli-guidelines-alignment.md`,
-commit TBD). Of 40+ individual guidelines across 16 sections, the CLI was already
+commit cfcdd08). Of 40+ individual guidelines across 16 sections, the CLI was already
 compliant on ~25. The remaining ~15 were evaluated and prioritized:
 
 - **P0 (3 items):** TTY-aware help, KeyboardInterrupt handler, `--version`
@@ -95,4 +95,4 @@ compliant on ~25. The remaining ~15 were evaluated and prioritized:
 
 - [clig.dev guidelines](https://clig.dev/#guidelines)
 - Implementation plan: `docs/plans/cli-guidelines-alignment.md`
-- Implemented in PR #TBD
+- Implemented in PR #35
