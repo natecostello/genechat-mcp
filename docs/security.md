@@ -17,11 +17,11 @@ hdiutil create -size 5g -fs APFS -encryption AES-256 \
 hdiutil attach ~/GenomeData.sparseimage
 
 # Your VCF goes in /Volumes/GenomeData/
-cp /path/to/annotated.vcf.gz /Volumes/GenomeData/
-cp /path/to/annotated.vcf.gz.tbi /Volumes/GenomeData/
+cp /path/to/raw.vcf.gz /Volumes/GenomeData/
+cp /path/to/raw.vcf.gz.tbi /Volumes/GenomeData/
 
 # Point config.toml at the mounted volume
-# vcf_path = "/Volumes/GenomeData/annotated.vcf.gz"
+# vcf_path = "/Volumes/GenomeData/raw.vcf.gz"
 
 # Unmount when not in use
 hdiutil detach /Volumes/GenomeData
@@ -52,7 +52,7 @@ For additional isolation, store your VCF on an external encrypted USB drive. Use
 Restrict access to your VCF and config file:
 
 ```bash
-chmod 600 /path/to/annotated.vcf.gz /path/to/annotated.vcf.gz.tbi
+chmod 600 /path/to/raw.vcf.gz /path/to/raw.vcf.gz.tbi
 chmod 600 /path/to/config.toml
 ```
 

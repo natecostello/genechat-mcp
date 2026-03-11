@@ -242,7 +242,7 @@ At runtime, GeneChat uses **only** local files — no external tools, no network
 
 | Library | What it does |
 |---------|-------------|
-| [pysam](https://pysam.readthedocs.io/) | Reads your annotated VCF via tabix index |
+| [pysam](https://pysam.readthedocs.io/) | Reads your raw VCF via tabix index |
 | [mcp](https://github.com/anthropics/python-sdk) | Implements the MCP server protocol |
 | SQLite (stdlib) | Queries lookup tables for gene coordinates, drug info, PRS weights |
 | [pydantic](https://docs.pydantic.dev/) | Validates tool inputs and config |
@@ -292,7 +292,7 @@ E2e tests are automatically skipped when `GENECHAT_GIAB_VCF` is not set.
 
 ## Troubleshooting
 
-**Missing VCF index (.tbi):** `tabix -p vcf /path/to/your/annotated.vcf.gz`
+**Missing VCF index (.tbi):** `tabix -p vcf /path/to/your/raw.vcf.gz`
 
 **Wrong genome build:** GeneChat expects GRCh38 with `chr` prefixed chromosomes. GRCh37/hg19 VCFs need liftover first.
 
