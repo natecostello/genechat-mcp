@@ -58,12 +58,39 @@ def _download_file(url: str, dest: Path, label: str = "") -> None:
     tmp = dest.with_suffix(dest.suffix + ".tmp")
     try:
         req = Request(url, headers={"User-Agent": "genechat/0.1"})
-        with urlopen(req, timeout=60) as resp:
+        with urlopen(req, timeout=300) as resp:
             total = resp.headers.get("Content-Length")
-            total_mb = f" ({int(total) / 1024 / 1024:.0f} MB)" if total else ""
+            total_bytes = int(total) if total else None
+            total_mb = f" ({total_bytes / 1024 / 1024:.0f} MB)" if total_bytes else ""
             print(f"  Downloading {display}{total_mb}...")
+            show_progress = (
+                total_bytes is not None
+                and total_bytes > 10 * 1024 * 1024
+                and hasattr(sys.stderr, "isatty")
+                and sys.stderr.isatty()
+            )
             with open(tmp, "wb") as f:
-                shutil.copyfileobj(resp, f)
+                downloaded = 0
+                while True:
+                    chunk = resp.read(1024 * 1024)  # 1 MB chunks
+                    if not chunk:
+                        break
+                    f.write(chunk)
+                    downloaded += len(chunk)
+                    if show_progress:
+                        pct = (
+                            f" ({100 * downloaded // total_bytes}%)"
+                            if total_bytes
+                            else ""
+                        )
+                        print(
+                            f"\r    {downloaded / 1024 / 1024:.0f} MB{pct}",
+                            end="",
+                            file=sys.stderr,
+                            flush=True,
+                        )
+                if show_progress:
+                    print(file=sys.stderr)  # newline after progress
         import os
 
         os.replace(tmp, dest)

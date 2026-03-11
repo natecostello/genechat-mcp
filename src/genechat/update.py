@@ -21,7 +21,7 @@ def check_clinvar_version() -> str | None:
         req = Request(
             CLINVAR_URL, method="HEAD", headers={"User-Agent": "genechat/0.1"}
         )
-        with urlopen(req, timeout=15) as resp:
+        with urlopen(req, timeout=30) as resp:
             last_modified = resp.headers.get("Last-Modified")
             if last_modified:
                 dt = parsedate_to_datetime(last_modified)
