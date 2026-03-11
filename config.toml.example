@@ -7,7 +7,7 @@
 # The first genome listed is the primary (default) genome.
 
 [genomes.personal]
-vcf_path = "/path/to/your/annotated.vcf.gz"
+vcf_path = "/path/to/your/raw.vcf.gz"
 genome_build = "GRCh38"
 # patch_db = ""  # Auto-derived from VCF path if not set
 
