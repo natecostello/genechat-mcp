@@ -199,7 +199,7 @@ flowchart TD
     claude -- "MCP protocol" --> server
 ```
 
-Your raw VCF is never modified. Annotations are stored in a separate SQLite patch database (`patch.db`), making updates fast and non-destructive.
+Your raw VCF is never modified. Annotations are stored in a separate SQLite patch database (`patch.db`), making updates fast and non-destructive. Architecture decisions are documented as [ADRs](docs/architecture/).
 
 ### Annotation Pipeline (one-time, handled by `genechat init`)
 
