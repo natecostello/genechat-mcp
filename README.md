@@ -137,11 +137,11 @@ genechat init /path/to/your/raw.vcf.gz --label personal
 uv run genechat init /path/to/your/raw.vcf.gz --label personal --gwas
 ```
 
-This will:
+Running with `--gwas` will:
 1. Detect and fix bare contig names (e.g. GIAB VCFs use `1`, `2` instead of `chr1`, `chr2`)
 2. Download ClinVar and SnpEff databases
 3. Build a patch database with functional annotations and clinical significance
-4. Install the GWAS Catalog for trait/disease association lookups
+4. Install the GWAS Catalog for trait/disease association lookups *(only with `--gwas`)*
 5. Write a `config.toml` to your OS config directory (`~/Library/Application Support/genechat/` on macOS, `~/.config/genechat/` on Linux)
 6. Print the MCP JSON to paste into Claude Desktop or Claude Code
 
