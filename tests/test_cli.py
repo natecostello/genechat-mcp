@@ -378,8 +378,8 @@ class TestAnnotate:
         assert exc_info.value.code == ExitCode.CONFIG_ERROR
         assert "No VCF registered" in capsys.readouterr().err
 
-    def test_shows_usage_no_flags(self, tmp_path, monkeypatch, capsys):
-        """annotate with no flags shows usage guidance with available genomes."""
+    def test_shows_usage_no_action_flags(self, tmp_path, monkeypatch, capsys):
+        """annotate with no action flags (clinvar/snpeff/etc) shows usage guidance."""
         # Create a fake patch.db so it's not a first run
         vcf = tmp_path / "test.vcf.gz"
         vcf.write_bytes(b"fake")
