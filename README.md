@@ -59,6 +59,16 @@ Your genome data stays on your machine. GeneChat only reads from local files. No
 
 Running `genechat` with no subcommand in an interactive terminal shows a help summary. When stdin is piped (e.g. from an MCP client), it starts the server — so existing MCP configurations are unaffected.
 
+### Shell Completion
+
+Enable tab completion for your shell:
+
+```bash
+genechat --install-completion
+```
+
+This enables completion for subcommands, flags, and `--genome` labels.
+
 ### Exit Codes
 
 | Code | Meaning |
