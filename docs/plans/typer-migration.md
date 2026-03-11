@@ -343,11 +343,11 @@ Add a shared fixture:
 ```python
 @pytest.fixture
 def cli():
-    return CliRunner(mix_stderr=False)
+    return CliRunner()
 ```
 
-`mix_stderr=False` keeps stdout and stderr separate (matching current `capsys`
-behavior).
+Typer's `CliRunner` does not support `mix_stderr`; stdout and stderr are mixed
+in `result.output`. Tests use `result.output` for all assertions.
 
 ---
 
@@ -376,7 +376,7 @@ genechat --install-completion bash   # or zsh, fish
 This is built-in to Typer — no code needed. Add a note to README under a
 "Shell Completion" section:
 
-```markdown
+````markdown
 ### Shell Completion
 
 Enable tab completion for your shell:
@@ -386,7 +386,7 @@ genechat --install-completion
 ```
 
 This enables completion for subcommands, flags, and `--genome` labels.
-```
+````
 
 ---
 
