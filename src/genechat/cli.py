@@ -105,7 +105,7 @@ Commands:
   genechat init <vcf>       Full first-time setup (register + annotate)
   genechat add <vcf>        Register a VCF file
   genechat annotate         Build/update annotation database
-  genechat install          Install reference databases (e.g. --gwas)
+  genechat install          Install reference databases (currently: --gwas)
   genechat update           Check for newer references
   genechat status           Show genome info and annotation state
   genechat serve            Start the MCP server
