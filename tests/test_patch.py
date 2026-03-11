@@ -344,6 +344,39 @@ class TestPatchDBClearLayer:
             full_db.clear_layer("unknown")
 
 
+class TestPatchDBRsidCoverage:
+    def test_empty_db(self, tmp_path):
+        db = PatchDB.create(tmp_path / "test.db")
+        total, has_rsid = db.rsid_coverage()
+        assert total == 0
+        assert has_rsid == 0
+        db.close()
+
+    def test_all_have_rsids(self, tmp_path):
+        db = PatchDB.create(tmp_path / "test.db")
+        lines = [
+            "chr12\t21178615\trs4149056\tT\tC\t.\tPASS\tANN=C|missense|MODERATE|SLCO1B1||\n",
+            "chr7\t117559590\trs113993960\tCTT\tC\t.\tPASS\tANN=C|frameshift|HIGH|CFTR||\n",
+        ]
+        db.populate_from_snpeff_stream(iter(lines))
+        total, has_rsid = db.rsid_coverage()
+        assert total == 2
+        assert has_rsid == 2
+        db.close()
+
+    def test_none_have_rsids(self, tmp_path):
+        db = PatchDB.create(tmp_path / "test.db")
+        lines = [
+            "chr12\t21178615\t.\tT\tC\t.\tPASS\tANN=C|missense|MODERATE|SLCO1B1||\n",
+            "chr7\t117559590\t.\tCTT\tC\t.\tPASS\tANN=C|frameshift|HIGH|CFTR||\n",
+        ]
+        db.populate_from_snpeff_stream(iter(lines))
+        total, has_rsid = db.rsid_coverage()
+        assert total == 2
+        assert has_rsid == 0
+        db.close()
+
+
 class TestPatchDBEdgeCases:
     def test_lookup_rsids_empty_list(self, tmp_path):
         db = PatchDB.create(tmp_path / "test.db")

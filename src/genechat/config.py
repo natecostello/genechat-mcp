@@ -34,29 +34,12 @@ class DisplayConfig(BaseModel):
 
 
 class AppConfig(BaseModel):
-    genome: GenomeConfig = GenomeConfig()
+    model_config = {"extra": "ignore"}  # Accept and ignore legacy fields
+
     genomes: dict[str, GenomeConfig] = {}
     databases: DatabasesConfig = DatabasesConfig()
     server: ServerConfig = ServerConfig()
     display: DisplayConfig = DisplayConfig()
-    default_genome: str = ""
-
-    def model_post_init(self, __context: object) -> None:
-        """Normalize genome config: ensure genomes dict is populated."""
-        # If genomes dict has entries, use it as-is
-        if self.genomes:
-            # Sync legacy genome field with the first genome for backward compat
-            if not self.genome.vcf_path:
-                first_label = next(iter(self.genomes))
-                self.genome = self.genomes[first_label]
-            if not self.default_genome:
-                self.default_genome = next(iter(self.genomes))
-        elif self.genome.vcf_path:
-            # Legacy [genome] section → treat as genomes["default"]
-            self.genomes = {"default": self.genome}
-            if not self.default_genome:
-                self.default_genome = "default"
-        # If neither is set, leave both empty (no VCF configured)
 
     @property
     def lookup_db_path(self) -> str:
@@ -228,30 +211,29 @@ def _serialize_config(data: dict) -> str:
 def load_config(path: str | None = None) -> AppConfig:
     """Load config from a TOML file. Falls back to defaults if no file found.
 
-    Supports env vars:
-    - GENECHAT_VCF: shortcut for a single-genome vcf_path
-    - GENECHAT_GENOME: select default genome label
+    Migrates legacy [genome] sections to [genomes.default] automatically.
     """
     config_path = Path(path) if path else _find_config_file()
 
     if config_path and config_path.exists():
         with open(config_path, "rb") as f:
             data = tomllib.load(f)
+        # Migrate legacy [genome] section → [genomes.default]
+        if "genome" in data:
+            legacy_genome = data.pop("genome")
+            genomes = data.get("genomes")
+            # If genomes is missing or empty, treat legacy genome as default
+            if not isinstance(genomes, dict) or not genomes:
+                if not isinstance(genomes, dict):
+                    genomes = {}
+                if "default" not in genomes:
+                    genomes["default"] = legacy_genome
+                data["genomes"] = genomes
+            # If genomes already has one or more configured entries, ignore legacy
+        # Drop legacy fields that no longer exist on AppConfig
+        data.pop("default_genome", None)
         config = AppConfig(**data)
     else:
         config = AppConfig()
-
-    # GENECHAT_VCF env var: add as genomes["default"] if no genomes configured
-    vcf_env = os.environ.get("GENECHAT_VCF")
-    if vcf_env and not config.genomes:
-        genome_cfg = GenomeConfig(vcf_path=vcf_env)
-        config.genomes = {"default": genome_cfg}
-        config.genome = genome_cfg
-        config.default_genome = "default"
-
-    # GENECHAT_GENOME env var: override default genome label
-    genome_env = os.environ.get("GENECHAT_GENOME")
-    if genome_env and genome_env in config.genomes:
-        config.default_genome = genome_env
 
     return config

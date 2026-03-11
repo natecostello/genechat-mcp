@@ -108,11 +108,11 @@ LLM Client (Claude Desktop / Claude Code)
     | MCP Protocol (stdio or SSE)
     v
 GeneChat MCP Server (Python)
-    +-- CLI: init, add, annotate, install, update, status, serve
+    +-- CLI: init, add, annotate, install, status, serve
     |         Flags: --version, --no-color, --json (status). Exit codes 0-6, 130.
-    +-- Tools: query_variant, query_variants, query_gene, query_genes,
-    |         query_clinvar, query_gwas, query_pgx, calculate_prs,
-    |         genome_summary
+    +-- Tools: list_genomes, query_variant, query_variants, query_gene,
+    |         query_genes, query_clinvar, query_gwas, query_pgx,
+    |         calculate_prs, genome_summary
     +-- engines: dict[str, VCFEngine] -- one per registered genome
     +-- Patch Database (SQLite) -- per-genome annotation overlay
     +-- Lookup Tables (SQLite)
@@ -178,7 +178,7 @@ genechat-mcp/
   src/
     genechat/
       __init__.py
-      cli.py                       # CLI: init, add, annotate, install, update, status, serve
+      cli.py                       # CLI: init, add, annotate, install, status, serve
       server.py                    # MCP server entry point
       config.py                    # TOML config loader + write_config
       vcf_engine.py                # pysam VCF query engine (genotypes from VCF, annotations from patch.db)
@@ -195,6 +195,7 @@ genechat-mcp/
         __init__.py
         common.py                  # resolve_engine() helper
         formatting.py              # Shared output formatting
+        list_genomes.py
         query_variant.py
         query_variants.py
         query_gene.py

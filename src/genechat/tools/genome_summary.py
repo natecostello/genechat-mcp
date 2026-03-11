@@ -23,7 +23,7 @@ def register(mcp, engines, db, config):
         except ValueError as e:
             return str(e)
 
-        genome_cfg = config.genomes.get(label, config.genome)
+        genome_cfg = config.genomes[label]
         show_label = len(engines) > 1
 
         lines = _format_summary(
@@ -38,7 +38,7 @@ def register(mcp, engines, db, config):
                 lines.append(f"\n---\n\n**Genome '{genome2}': {e}**")
                 return "\n".join(lines)
 
-            genome_cfg2 = config.genomes.get(label2, config.genome)
+            genome_cfg2 = config.genomes[label2]
             lines.append("\n---\n")
             lines.extend(_format_summary(engine2, db, config, genome_cfg2, label2))
 

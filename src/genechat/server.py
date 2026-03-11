@@ -24,7 +24,8 @@ def run_server():
             "GeneChat provides tools to query your whole-genome sequencing data. "
             "Ask about specific variants (rsIDs), genes, drug interactions (pharmacogenomics), "
             "trait associations, carrier status, or get a genome overview. "
-            "Always start with genome_summary for a high-level view."
+            "Always start with list_genomes to see available genomes, then use "
+            "genome_summary for a detailed view of a specific genome."
             + (
                 f" Multiple genomes are registered{label_hint}. "
                 "Use the 'genome' parameter on any tool to select which genome to query, "

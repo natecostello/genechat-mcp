@@ -62,7 +62,7 @@ class TestQueryVariantGenome2:
         mock_engine.query_rsid.return_value = [SAMPLE_VARIANT_SLCO1B1]
         mock_engine2.query_rsid.return_value = [SAMPLE_VARIANT_CFTR]
         fn = _setup_tool(mock_engines_multi, test_db, test_config_multi)
-        result = fn(rsid="rs4149056", genome2="partner")
+        result = fn(rsid="rs4149056", genome="default", genome2="partner")
 
         # Both genomes' results should appear
         assert "rs4149056" in result
@@ -83,7 +83,7 @@ class TestQueryVariantGenome2:
         mock_engine.query_rsid.return_value = [SAMPLE_VARIANT_SLCO1B1]
         mock_engine2.query_rsid.return_value = []
         fn = _setup_tool(mock_engines_multi, test_db, test_config_multi)
-        result = fn(rsid="rs4149056", genome2="partner")
+        result = fn(rsid="rs4149056", genome="default", genome2="partner")
 
         assert "rs4149056" in result
         assert "SLCO1B1" in result
@@ -97,7 +97,7 @@ class TestQueryVariantGenome2:
 
         mock_engine.query_rsid.return_value = [SAMPLE_VARIANT_SLCO1B1]
         fn = _setup_tool(mock_engines_multi, test_db, test_config_multi)
-        result = fn(rsid="rs4149056", genome2="nonexistent")
+        result = fn(rsid="rs4149056", genome="default", genome2="nonexistent")
 
         assert "Unknown genome" in result
         assert "nonexistent" in result
@@ -112,7 +112,7 @@ class TestQueryVariantGenome2:
         mock_engine.query_rsid.return_value = []
         mock_engine2.query_rsid.return_value = [SAMPLE_VARIANT_CFTR]
         fn = _setup_tool(mock_engines_multi, test_db, test_config_multi)
-        result = fn(rsid="rs113993960", genome2="partner")
+        result = fn(rsid="rs113993960", genome="default", genome2="partner")
 
         # Genome1 should show "not found" message (not early-return)
         assert "not covered" in result or "homozygous reference" in result
@@ -130,7 +130,7 @@ class TestQueryVariantGenome2:
         mock_engine.query_rsid.return_value = [SAMPLE_VARIANT_SLCO1B1]
         mock_engine2.query_rsid.side_effect = VCFEngineError("VCF read error")
         fn = _setup_tool(mock_engines_multi, test_db, test_config_multi)
-        result = fn(rsid="rs4149056", genome2="partner")
+        result = fn(rsid="rs4149056", genome="default", genome2="partner")
 
         assert "SLCO1B1" in result  # Genome1 still shows
         assert "error" in result.lower()

@@ -43,11 +43,13 @@ class TestParseFreq:
 
 
 class TestVCFEngineInit:
-    def test_missing_vcf(self, test_config):
+    def test_missing_vcf(self):
         """VCFEngine raises FileNotFoundError for missing VCF."""
-        test_config.genome.vcf_path = "/nonexistent/file.vcf.gz"
+        from genechat.config import GenomeConfig
+
+        cfg = GenomeConfig(vcf_path="/nonexistent/file.vcf.gz")
         with pytest.raises(FileNotFoundError):
-            VCFEngine(test_config)
+            VCFEngine(cfg)
 
 
 class TestAnnotationVersions:
