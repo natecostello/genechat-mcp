@@ -5,19 +5,10 @@ from pathlib import Path
 from genechat.config import AppConfig, load_config, write_config
 
 
-class TestAppConfigPostInit:
-    def test_legacy_genome_creates_default(self):
-        """Legacy [genome] section is treated as genomes['default']."""
-        config = AppConfig(genome={"vcf_path": "/my.vcf.gz"})
-        assert "default" in config.genomes
-        assert config.genomes["default"].vcf_path == "/my.vcf.gz"
-        assert config.default_genome == "default"
-
-    def test_genomes_dict_populates_legacy(self):
-        """genomes dict syncs to legacy genome field for backward compat."""
+class TestAppConfig:
+    def test_genomes_dict(self):
         config = AppConfig(genomes={"nate": {"vcf_path": "/nate.vcf.gz"}})
-        assert config.genome.vcf_path == "/nate.vcf.gz"
-        assert config.default_genome == "nate"
+        assert config.genomes["nate"].vcf_path == "/nate.vcf.gz"
 
     def test_multiple_genomes(self):
         config = AppConfig(
@@ -27,22 +18,24 @@ class TestAppConfigPostInit:
             }
         )
         assert len(config.genomes) == 2
-        assert config.default_genome == "nate"  # first key
-
-    def test_explicit_default_genome(self):
-        config = AppConfig(
-            genomes={
-                "nate": {"vcf_path": "/nate.vcf.gz"},
-                "partner": {"vcf_path": "/partner.vcf.gz"},
-            },
-            default_genome="partner",
-        )
-        assert config.default_genome == "partner"
 
     def test_empty_config(self):
         config = AppConfig()
         assert config.genomes == {}
-        assert config.default_genome == ""
+
+    def test_ignores_legacy_fields(self):
+        """Legacy fields (genome, default_genome) are silently ignored."""
+        config = AppConfig(
+            genome={"vcf_path": "/old.vcf.gz"},
+            default_genome="something",
+        )
+        # Legacy fields are ignored via model_config extra="ignore"
+        assert not hasattr(config, "default_genome") or config.genomes == {}
+
+    def test_no_default_genome_field(self):
+        """AppConfig no longer has a default_genome field."""
+        config = AppConfig(genomes={"nate": {"vcf_path": "/nate.vcf.gz"}})
+        assert not hasattr(config, "default_genome")
 
 
 class TestWriteConfig:
@@ -86,24 +79,32 @@ class TestWriteConfig:
 
 
 class TestLoadConfig:
-    def test_genechat_vcf_env(self, tmp_path, monkeypatch):
-        """GENECHAT_VCF env var creates a single-genome config."""
+    def test_env_vars_ignored(self, tmp_path, monkeypatch):
+        """GENECHAT_VCF and GENECHAT_GENOME env vars are no longer supported."""
         monkeypatch.setenv("GENECHAT_VCF", "/env.vcf.gz")
         monkeypatch.setattr("genechat.config._find_config_file", lambda: None)
         config = load_config()
-        assert "default" in config.genomes
-        assert config.genomes["default"].vcf_path == "/env.vcf.gz"
+        # GENECHAT_VCF should have no effect
+        assert config.genomes == {}
 
-    def test_genechat_genome_env(self, tmp_path, monkeypatch):
-        """GENECHAT_GENOME env var overrides default_genome."""
+    def test_legacy_genome_section_migrated(self, tmp_path):
+        """Legacy [genome] section is migrated to [genomes.default] at load time."""
+        config_file = tmp_path / "config.toml"
+        config_file.write_text('[genome]\nvcf_path = "/old.vcf.gz"\n')
+        config = load_config(str(config_file))
+        assert "default" in config.genomes
+        assert config.genomes["default"].vcf_path == "/old.vcf.gz"
+
+    def test_legacy_default_genome_field_ignored(self, tmp_path):
+        """Legacy default_genome field in TOML is silently dropped."""
         config_file = tmp_path / "config.toml"
         config_file.write_text(
+            'default_genome = "nate"\n\n'
             '[genomes.nate]\nvcf_path = "/nate.vcf.gz"\n\n'
             '[genomes.partner]\nvcf_path = "/partner.vcf.gz"\n'
         )
-        monkeypatch.setenv("GENECHAT_GENOME", "partner")
         config = load_config(str(config_file))
-        assert config.default_genome == "partner"
+        assert len(config.genomes) == 2
 
     def test_load_multi_genome_toml(self, tmp_path):
         """Loads [genomes.*] sections from TOML."""

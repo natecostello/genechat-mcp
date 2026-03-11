@@ -89,10 +89,12 @@ def ensure_test_patch_db(ensure_test_vcf):
 def test_config():
     """Config pointing to test data."""
     return AppConfig(
-        genome={
-            "vcf_path": str(TEST_DATA / "test_sample.vcf.gz"),
-            "genome_build": "GRCh38",
-            "patch_db": str(TEST_DATA / "test_sample.patch.db"),
+        genomes={
+            "default": {
+                "vcf_path": str(TEST_DATA / "test_sample.vcf.gz"),
+                "genome_build": "GRCh38",
+                "patch_db": str(TEST_DATA / "test_sample.patch.db"),
+            },
         },
         databases={"lookup_db": str(DB_PATH)},
         server={"max_variants_per_response": 100},

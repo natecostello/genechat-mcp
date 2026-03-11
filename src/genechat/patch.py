@@ -152,6 +152,28 @@ class PatchDB:
             ).fetchall()
         return [dict(r) for r in rows]
 
+    def rsid_coverage(self, sample_size: int = 1000) -> tuple[int, int]:
+        """Return (total, has_rsid) from a sample of annotations.
+
+        Probes the annotations table to estimate what fraction of variants
+        already have rsIDs. Used to decide whether dbSNP download is needed.
+        """
+        row = self._conn.execute(
+            "SELECT COUNT(*) AS n FROM (SELECT 1 FROM annotations LIMIT ?)",
+            (sample_size,),
+        ).fetchone()
+        total = row["n"] if row else 0
+        if total == 0:
+            return (0, 0)
+        row2 = self._conn.execute(
+            "SELECT COUNT(*) AS n FROM ("
+            "  SELECT rsid FROM annotations WHERE rsid IS NOT NULL LIMIT ?"
+            ")",
+            (sample_size,),
+        ).fetchone()
+        has_rsid = row2["n"] if row2 else 0
+        return (total, has_rsid)
+
     def get_metadata(self) -> dict[str, dict]:
         """Get all patch metadata entries."""
         rows = self._conn.execute(

@@ -3,6 +3,7 @@
 from genechat.tools import (
     calculate_prs,
     genome_summary,
+    list_genomes,
     query_clinvar,
     query_gene,
     query_genes,
@@ -13,6 +14,7 @@ from genechat.tools import (
 )
 
 ALL_TOOLS = [
+    list_genomes,
     query_variant,
     query_variants,
     query_gene,

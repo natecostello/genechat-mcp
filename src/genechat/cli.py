@@ -5,7 +5,6 @@ Commands:
   genechat add <vcf>            Register a VCF file
   genechat annotate [options]   Build/update patch.db (auto-downloads references)
   genechat install [options]    Install genome-independent reference databases
-  genechat update [--apply]     Check for newer references
   genechat status               Show genome + annotation state
   genechat serve / genechat     Start the MCP server
 """
@@ -105,8 +104,7 @@ Commands:
   genechat init <vcf>       Full first-time setup (register + annotate)
   genechat add <vcf>        Register a VCF file
   genechat annotate         Build/update annotation database
-  genechat install --gwas   Install GWAS Catalog
-  genechat update           Check for newer references
+  genechat install          Install genome-independent databases (GWAS, seeds)
   genechat status           Show genome info and annotation state
   genechat serve            Start the MCP server
 
@@ -190,6 +188,11 @@ def main(argv: list[str] | None = None):
         "--gwas", action="store_true", help="Install GWAS Catalog (~58 MB download)"
     )
     inst_p.add_argument(
+        "--seeds",
+        action="store_true",
+        help="Refresh seed data (PGx, gene coords, PRS) from upstream APIs",
+    )
+    inst_p.add_argument(
         "--force",
         action="store_true",
         help="Re-download source files even if already present (DB is always rebuilt)",
@@ -203,9 +206,9 @@ def main(argv: list[str] | None = None):
         description=(
             "Build or update the annotation database (patch.db).\n\n"
             "Examples:\n"
-            "  genechat annotate              # show status or build if new\n"
-            "  genechat annotate --all        # re-annotate all layers\n"
-            "  genechat annotate --gnomad     # add gnomAD frequencies"
+            "  genechat annotate --genome personal --all       # re-annotate all layers\n"
+            "  genechat annotate --genome personal --gnomad    # add gnomAD frequencies\n"
+            "  genechat annotate --genome personal --clinvar   # re-annotate ClinVar"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -220,21 +223,12 @@ def main(argv: list[str] | None = None):
     ann_p.add_argument("--snpeff", action="store_true", help="Re-annotate SnpEff layer")
     ann_p.add_argument("--dbsnp", action="store_true", help="Re-annotate dbSNP layer")
     ann_p.add_argument("--all", action="store_true", help="Re-annotate all layers")
-    ann_p.add_argument("--genome", help="Which genome to annotate (default: primary)")
-
-    # genechat update
-    upd_p = sub.add_parser(
-        "update", parents=[global_parser], help="Check for newer reference versions"
-    )
-    upd_p.add_argument(
-        "--apply", action="store_true", help="Download + re-annotate stale sources"
-    )
-    upd_p.add_argument("--genome", help="Which genome to update (default: primary)")
-    upd_p.add_argument(
-        "--seeds",
+    ann_p.add_argument(
+        "--force",
         action="store_true",
-        help="Fetch latest seed data from APIs and rebuild lookup_tables.db",
+        help="Override guards (e.g. skip rsID probe for dbSNP)",
     )
+    ann_p.add_argument("--genome", help="Which genome to annotate")
 
     # genechat status
     status_p = sub.add_parser(
@@ -274,8 +268,6 @@ def main(argv: list[str] | None = None):
             _run_install(args)
         elif args.command == "annotate":
             _run_annotate(args)
-        elif args.command == "update":
-            _run_update(args)
         elif args.command == "status":
             _run_status(json_output=getattr(args, "json_output", False))
         else:
@@ -452,6 +444,19 @@ def _run_install(args):
 
     print(f"Data directory: {gwas_db_path().parent}\n")
 
+    any_flag = getattr(args, "gwas", False) or getattr(args, "seeds", False)
+
+    if not any_flag:
+        print("Available databases:")
+        print(
+            "  --gwas    GWAS Catalog associations (~58 MB download, ~300 MB on disk)"
+        )
+        print(
+            "  --seeds   Seed data (PGx guidelines, gene coords, PRS weights) from APIs"
+        )
+        print("\nRun: genechat install --gwas")
+        return
+
     if args.gwas:
         from genechat.gwas import gwas_installed
 
@@ -459,13 +464,9 @@ def _run_install(args):
             print("GWAS Catalog already installed. Use --force to rebuild.")
         else:
             _download_and_build_gwas(force=args.force)
-    else:
-        print("Available databases:")
-        print(
-            "  --gwas    GWAS Catalog associations (~58 MB download, ~300 MB on disk)"
-        )
-        print("\nRun: genechat install --gwas")
-        return
+
+    if getattr(args, "seeds", False):
+        _run_update_seeds()
 
     print("\nInstall complete.")
 
@@ -476,7 +477,12 @@ def _run_install(args):
 
 
 def _resolve_genome_label(config, genome_arg: str | None) -> tuple[str, object]:
-    """Resolve a --genome arg to (label, GenomeConfig). Exits on error."""
+    """Resolve a --genome arg to (label, GenomeConfig). Exits on error.
+
+    When only one genome is registered, genome_arg may be None and defaults
+    to the only available genome.  When multiple genomes are registered,
+    genome_arg is required — omitting it prints available genomes and exits.
+    """
     if not config.genomes:
         print(
             f"{_red('Error:')} No VCF registered. Run: genechat add <vcf>",
@@ -484,7 +490,19 @@ def _resolve_genome_label(config, genome_arg: str | None) -> tuple[str, object]:
         )
         sys.exit(ExitCode.CONFIG_ERROR)
 
-    label = genome_arg or config.default_genome
+    if genome_arg is None:
+        if len(config.genomes) == 1:
+            label = next(iter(config.genomes))
+        else:
+            available = "\n".join(f"  {k}" for k in config.genomes)
+            print(
+                f"Multiple genomes registered. Use --genome <label>:\n\n{available}",
+                file=sys.stderr,
+            )
+            sys.exit(ExitCode.USAGE_ERROR)
+    else:
+        label = genome_arg
+
     if label not in config.genomes:
         available = ", ".join(config.genomes.keys())
         print(
@@ -502,6 +520,9 @@ def _run_annotate(args):
     genome_arg = getattr(args, "genome", None)
     label, genome_cfg = _resolve_genome_label(config, genome_arg)
 
+    # Check for action flags early — before VCF validation
+    any_flag = args.clinvar or args.gnomad or args.snpeff or args.dbsnp or args.all
+
     vcf_path_str = genome_cfg.vcf_path
     if not vcf_path_str:
         print(
@@ -511,15 +532,28 @@ def _run_annotate(args):
         sys.exit(ExitCode.CONFIG_ERROR)
 
     vcf_path = Path(vcf_path_str)
+
+    # Determine patch.db path
+    patch_db_path = _patch_db_path_for(vcf_path, genome_cfg)
+    first_run = not patch_db_path.exists()
+
+    if not any_flag and not first_run:
+        # No action flags and patch.db already exists → show usage guidance
+        available = "\n".join(f"  {k}" for k in config.genomes)
+        print(
+            "Usage: genechat annotate --genome <label> "
+            "[--clinvar | --snpeff | --gnomad | --dbsnp | --all]"
+        )
+        print(f"\nAvailable genomes:\n{available}")
+        print("\nRun 'genechat status' to see current annotation state.")
+        return
+
     if not vcf_path.exists():
         print(
             f"{_red('Error:')} VCF not found: {_dim(str(vcf_path))}",
             file=sys.stderr,
         )
         sys.exit(ExitCode.VCF_ERROR)
-
-    # Determine patch.db path
-    patch_db_path = _patch_db_path_for(vcf_path, genome_cfg)
 
     from genechat.download import (
         clinvar_installed,
@@ -531,15 +565,6 @@ def _run_annotate(args):
         snpeff_installed,
     )
     from genechat.patch import PatchDB
-
-    # Determine which layers to run
-    any_flag = args.clinvar or args.gnomad or args.snpeff or args.dbsnp or args.all
-    first_run = not patch_db_path.exists()
-
-    if not any_flag and not first_run:
-        # No flags and patch.db exists -> show status
-        _print_annotation_status(patch_db_path)
-        return
 
     # On first run or --all, run everything available
     run_snpeff = first_run or args.snpeff or args.all
@@ -623,6 +648,20 @@ def _run_annotate(args):
             )
 
         if run_dbsnp:
+            # rsID probe guard: skip dbSNP if VCF already has rsIDs
+            force = getattr(args, "force", False)
+            total_ann, has_rsid = patch.rsid_coverage()
+            if total_ann > 0 and not force:
+                coverage = has_rsid / total_ann
+                if coverage > 0.9:
+                    print(
+                        f"  Skipping dbSNP: {coverage:.0%} of variants already have "
+                        f"rsIDs ({has_rsid:,}/{total_ann:,}). Use --force to override."
+                    )
+                    run_dbsnp = False
+                    total_steps -= 1
+
+        if run_dbsnp:
             step += 1
             _annotate_dbsnp(patch, vcf_path, step, total_steps, not first_run)
 
@@ -640,14 +679,9 @@ def _run_annotate(args):
 
 
 def _patch_db_path_for(vcf_path: Path, genome_cfg) -> Path:
-    """Determine the patch.db path for a VCF.
+    """Determine the patch.db path for a VCF."""
+    from genechat.config import GenomeConfig
 
-    Accepts either a GenomeConfig or an AppConfig (for backward compat).
-    """
-    from genechat.config import AppConfig, GenomeConfig
-
-    if isinstance(genome_cfg, AppConfig):
-        genome_cfg = genome_cfg.genome
     if isinstance(genome_cfg, GenomeConfig) and genome_cfg.patch_db:
         return Path(genome_cfg.patch_db)
     # Convention: same directory as VCF, <stem>.patch.db
@@ -1205,7 +1239,7 @@ def _run_init(args):
     step = 5
     if args.gwas:
         print(f"\nStep {step}: Installing GWAS Catalog...")
-        install_args = argparse.Namespace(gwas=True, force=False)
+        install_args = argparse.Namespace(gwas=True, seeds=False, force=False)
         _run_install(install_args)
         step += 1
 
@@ -1217,12 +1251,14 @@ def _run_init(args):
         snpeff=False,
         dbsnp=args.dbsnp,
         all=False,
+        force=False,
         genome=label,
     )
     _run_annotate(ann_args)
 
-    # Step 7: Print MCP config
-    print("\n--- MCP Configuration ---\n")
+    # Print MCP config
+    step += 1
+    print(f"\n--- Step {step}: MCP Configuration ---\n")
     project_dir = _find_project_root()
     if project_dir:
         mcp_config = {
@@ -1251,14 +1287,46 @@ def _run_init(args):
 
     print("Add this to your Claude Desktop or Claude Code MCP config:\n")
     print(json.dumps(mcp_config, indent=2))
+
+    # Next steps
+    print("\n=== Next Steps ===\n")
+    print(f"Your genome '{label}' is ready. Here's what you can enhance:\n")
     if not args.gwas:
-        print("\nOptional: Enable GWAS trait search:")
-        print("  genechat install --gwas")
-    print("\n=== Setup complete ===")
+        print("  GWAS trait search (58 MB):     genechat install --gwas")
+    if not args.gnomad:
+        print(
+            f"  gnomAD smart filter (150 GB):  genechat annotate --genome {label} --gnomad"
+        )
+    if not args.dbsnp:
+        # rsID probe: check if VCF already has rsIDs
+        _rsid_hint = "  dbSNP rsID backfill:           "
+        try:
+            from genechat.patch import PatchDB as _PDB
+
+            _cfg = load_config()
+            _pd = _PDB(_patch_db_path_for(vcf_path, _cfg.genomes[label]), readonly=True)
+            try:
+                _total, _has = _pd.rsid_coverage()
+            finally:
+                _pd.close()
+            if _total > 0 and _has / _total > 0.9:
+                print(_rsid_hint + "[Not needed — your VCF already has rsIDs]")
+            else:
+                print(_rsid_hint + "[Recommended — your VCF lacks rsIDs]")
+                print(
+                    f"                                 genechat annotate --genome {label} --dbsnp"
+                )
+        except Exception:
+            print(
+                f"  dbSNP rsID backfill:           genechat annotate --genome {label} --dbsnp"
+            )
+
+    print("\nRun 'genechat status' to see your full setup.")
+    print("=== Setup complete ===")
 
 
 # ---------------------------------------------------------------------------
-# genechat update [--apply]
+# Version freshness helpers (used by status and future annotate --stale)
 # ---------------------------------------------------------------------------
 
 
@@ -1275,82 +1343,6 @@ def _is_version_stale(installed: str, latest: str) -> bool:
         return latest > installed
     # Non-date installed version — treat as stale
     return True
-
-
-def _run_update(args):
-    """Check for newer reference versions, optionally apply updates."""
-    # Handle --seeds: rebuild seed data from APIs
-    if args.seeds:
-        _run_update_seeds()
-        return
-
-    from genechat.update import check_all_versions, format_status_table
-
-    config = load_config()
-    genome_arg = getattr(args, "genome", None)
-
-    # update can work without a genome registered (just shows latest versions)
-    label = None
-    genome_cfg = None
-    if config.genomes:
-        label, genome_cfg = _resolve_genome_label(config, genome_arg)
-
-    patch_db_str = genome_cfg.patch_db if genome_cfg else ""
-    installed: dict[str, dict] = {}
-
-    if patch_db_str and Path(patch_db_str).exists():
-        from genechat.patch import PatchDB
-
-        patch = PatchDB(Path(patch_db_str), readonly=True)
-        try:
-            installed = patch.get_metadata()
-        finally:
-            patch.close()
-
-    latest = check_all_versions()
-    print()
-    print(format_status_table(installed, latest))
-
-    if args.apply:
-        if not label:
-            print(
-                f"{_red('Error:')} No genome registered. Run: genechat add <vcf>",
-                file=sys.stderr,
-            )
-            sys.exit(ExitCode.CONFIG_ERROR)
-
-        # Determine which sources need updating
-        stale = []
-        for source in ["clinvar"]:
-            meta = installed.get(source, {})
-            inst_ver = meta.get("version", "")
-            latest_ver = latest.get(source)
-            if latest_ver and (not inst_ver or _is_version_stale(inst_ver, latest_ver)):
-                stale.append(source)
-
-        if not stale:
-            print("\nAll installed sources are up to date.")
-            return
-
-        print(f"\nUpdating: {', '.join(stale)}")
-        from genechat.download import download_clinvar
-
-        for source in stale:
-            if source == "clinvar":
-                download_clinvar(force=True)
-
-        # Re-annotate stale layers
-        ann_args = argparse.Namespace(
-            clinvar="clinvar" in stale,
-            gnomad=False,
-            snpeff=False,
-            dbsnp=False,
-            all=False,
-            genome=label,
-        )
-        _run_annotate(ann_args)
-    else:
-        print("\nApply updates with: genechat update --apply")
 
 
 # ---------------------------------------------------------------------------
@@ -1387,30 +1379,45 @@ def _run_status(json_output: bool = False):
         print("No genome registered. Run: genechat init <vcf>")
         return
 
-    print("=== Registered Genomes ===\n")
+    from genechat.download import (
+        clinvar_installed,
+        dbsnp_installed,
+        gnomad_installed,
+        references_dir,
+        snpeff_installed,
+    )
 
+    # Section 1: Installed databases (genome-independent)
+    gwas_ok = _gwas_installed(config.gwas_db_path)
+    print("Installed databases:")
+    print(
+        f"  GWAS:           {'installed' if gwas_ok else 'not installed — genechat install --gwas'}"
+    )
+    print("  Lookup tables:  installed")
+    print()
+
+    # Section 2: Per-genome annotation state
+    print("Genomes:")
     any_gnomad_annotated = False
     for label, genome_cfg in config.genomes.items():
-        is_default = label == config.default_genome
-        suffix = " (primary)" if is_default else ""
-        print(f"[{label}]{suffix}")
+        print(f"  {label}:")
 
         vcf_path_str = genome_cfg.vcf_path
         if not vcf_path_str:
-            print("  VCF: not configured\n")
+            print("    VCF: not configured\n")
             continue
 
         vcf_path = Path(vcf_path_str)
         vcf_exists = vcf_path.exists()
         vcf_status = _green("exists") if vcf_exists else _red("NOT FOUND")
-        print(f"  VCF: {_dim(str(vcf_path))} ({vcf_status})")
+        print(f"    VCF:      {_dim(str(vcf_path))} ({vcf_status})")
 
         # Patch DB status
         patch_db_str = genome_cfg.patch_db
         if patch_db_str and Path(patch_db_str).exists():
             patch_db_path = Path(patch_db_str)
             size_mb = patch_db_path.stat().st_size / 1024 / 1024
-            print(f"  Patch DB: {_dim(str(patch_db_path))} ({size_mb:.0f} MB)")
+            print(f"    Patch DB: {_dim(str(patch_db_path))} ({size_mb:.0f} MB)")
 
             from genechat.patch import PatchDB
 
@@ -1423,67 +1430,39 @@ def _run_status(json_output: bool = False):
             if meta.get("gnomad", {}).get("status") == "complete":
                 any_gnomad_annotated = True
 
-            print("  Annotations:")
+            layers = []
             for source in ["snpeff", "clinvar", "gnomad", "dbsnp"]:
                 info = meta.get(source, {})
                 if info:
                     status = info.get("status", "unknown")
                     version = info.get("version", "?")
-                    date = info.get("updated_at", "?")
                     if status == "complete":
-                        print(f"    {source:<10} {version:<20} (applied {date})")
+                        layers.append(f"{source} ({version})")
                     elif status == "pending":
-                        print(
-                            f"    {source:<10} {version:<20} ({_yellow('in progress')})"
-                        )
+                        layers.append(f"{source} ({_yellow('in progress')})")
                     elif status == "failed":
-                        print(f"    {source:<10} {version:<20} ({_red('FAILED')})")
-                    else:
-                        print(f"    {source:<10} {version:<20} ({status})")
-                else:
-                    print(f"    {source:<10} not applied")
+                        layers.append(f"{source} ({_red('FAILED')})")
+            if layers:
+                print(f"    Layers:   {', '.join(layers)}")
+            else:
+                print("    Layers:   none")
         else:
-            print("  Patch DB: not built")
-            print(
-                "  Run: genechat annotate"
-                + (f" --genome {label}" if not is_default else "")
-            )
+            print("    Patch DB: not built")
+            print(f"    Run: genechat annotate --genome {label}")
         print()
 
-    # References status
-    from genechat.download import (
-        clinvar_installed,
-        dbsnp_installed,
-        gnomad_installed,
-        references_dir,
-        snpeff_installed,
-    )
-
-    print(f"References: {_dim(str(references_dir()))}")
-    print(
-        f"  ClinVar:  {'installed' if clinvar_installed() else 'not installed — genechat annotate'}"
-    )
-    print(
-        f"  SnpEff:   {'available' if snpeff_installed() else 'not installed — brew install brewsci/bio/snpeff'}"
-    )
+    # Section 3: Annotation caches
+    print(f"Annotation caches: {_dim(str(references_dir()))}")
+    print(f"  ClinVar:  {'cached' if clinvar_installed() else 'not cached'}")
+    print(f"  SnpEff:   {'cached' if snpeff_installed() else 'not cached'}")
+    print(f"  dbSNP:    {'cached' if dbsnp_installed() else 'not cached'}")
     gnomad_files = gnomad_installed()
     if gnomad_files:
-        gnomad_status = "installed"
+        print("  gnomAD:   cached")
     elif any_gnomad_annotated:
-        gnomad_status = "annotated (reference files cleaned up)"
+        print("  gnomAD:   not cached (downloaded per-chromosome during annotation)")
     else:
-        gnomad_status = "not installed — genechat annotate --gnomad"
-    print(f"  gnomAD:   {gnomad_status}")
-    print(
-        f"  dbSNP:    {'installed' if dbsnp_installed() else 'not installed — genechat annotate --dbsnp'}"
-    )
-
-    gwas_ok = _gwas_installed(config.gwas_db_path)
-    print(
-        f"  GWAS:     {'installed' if gwas_ok else 'not installed — genechat install --gwas'}"
-    )
-
-    print("\nRun `genechat update` to check for newer versions.")
+        print("  gnomAD:   not cached")
 
 
 def _run_status_json(config):
@@ -1504,7 +1483,7 @@ def _run_status_json(config):
             "vcf_exists": bool(
                 genome_cfg.vcf_path and Path(genome_cfg.vcf_path).exists()
             ),
-            "is_primary": label == config.default_genome,
+            "is_primary": False,  # Legacy field kept for JSON compat
             "patch_db": None,
             "annotations": {},
         }
@@ -1547,7 +1526,7 @@ def _run_status_json(config):
 
 
 # ---------------------------------------------------------------------------
-# genechat update --seeds
+# Seed data refresh (used by install --seeds)
 # ---------------------------------------------------------------------------
 
 

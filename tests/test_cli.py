@@ -13,7 +13,7 @@ from genechat.cli import (
     _validate_vcf,
     main,
 )
-from genechat.config import AppConfig
+from genechat.config import AppConfig, GenomeConfig
 
 
 # ---------------------------------------------------------------------------
@@ -137,11 +137,11 @@ class TestPatchDbPathFor:
         result = _patch_db_path_for(Path("/data/sample.vcf.gz"), genome_cfg)
         assert result == Path("/custom/path.db")
 
-    def test_backward_compat_with_app_config(self):
-        """Still works when passed an AppConfig (backward compat)."""
-        config = AppConfig(genome={"patch_db": "/custom/path.db"})
-        result = _patch_db_path_for(Path("/data/sample.vcf.gz"), config)
-        assert result == Path("/custom/path.db")
+    def test_falls_back_to_convention(self):
+        """Falls back to VCF stem convention when no patch_db configured."""
+        genome_cfg = GenomeConfig()
+        result = _patch_db_path_for(Path("/data/sample.vcf.gz"), genome_cfg)
+        assert result == Path("/data/sample.patch.db")
 
 
 # ---------------------------------------------------------------------------
@@ -322,6 +322,7 @@ class TestInstall:
         main(["install"])
         out = capsys.readouterr().out
         assert "--gwas" in out
+        assert "--seeds" in out
         assert "Available databases" in out
 
     def test_gwas_flag(self, monkeypatch, capsys):
@@ -377,25 +378,29 @@ class TestAnnotate:
         assert exc_info.value.code == ExitCode.CONFIG_ERROR
         assert "No VCF registered" in capsys.readouterr().err
 
-    def test_shows_status_no_flags(self, tmp_path, monkeypatch, capsys):
-        """annotate with no flags + existing patch.db shows annotation status."""
-        from genechat.patch import PatchDB
-
-        patch_path = tmp_path / "test.patch.db"
-        patch = PatchDB.create(patch_path)
-        patch.set_metadata("snpeff", "GRCh38.p14", status="complete")
-        patch.close()
-
+    def test_shows_usage_no_flags(self, tmp_path, monkeypatch, capsys):
+        """annotate with no flags shows usage guidance with available genomes."""
+        # Create a fake patch.db so it's not a first run
         vcf = tmp_path / "test.vcf.gz"
         vcf.write_bytes(b"fake")
+        patch_db = tmp_path / "test.patch.db"
+        patch_db.write_bytes(b"fake")
 
-        config = AppConfig(genome={"vcf_path": str(vcf), "patch_db": str(patch_path)})
+        config = AppConfig(
+            genomes={
+                "personal": {
+                    "vcf_path": str(vcf),
+                    "patch_db": str(patch_db),
+                }
+            }
+        )
         monkeypatch.setattr("genechat.cli.load_config", lambda: config)
-        main(["annotate"])
+        main(["annotate", "--genome", "personal"])
 
         out = capsys.readouterr().out
-        assert "snpeff" in out
-        assert "GRCh38.p14" in out
+        assert "Usage:" in out
+        assert "personal" in out
+        assert "status" in out.lower()
 
     def test_annotate_dbsnp_calls_bcftools(self, tmp_path, monkeypatch, capsys):
         """_annotate_dbsnp invokes bcftools with correct args and updates metadata."""
@@ -538,7 +543,9 @@ class TestAnnotate:
         vcf = tmp_path / "test.vcf.gz"
         vcf.write_bytes(b"fake")
 
-        config = AppConfig(genome={"vcf_path": str(vcf), "patch_db": str(patch_path)})
+        config = AppConfig(
+            genomes={"default": {"vcf_path": str(vcf), "patch_db": str(patch_path)}}
+        )
         monkeypatch.setattr("genechat.cli.load_config", lambda: config)
         monkeypatch.setattr("genechat.download.gnomad_installed", lambda: False)
         monkeypatch.setattr("genechat.download.snpeff_installed", lambda: True)
@@ -575,7 +582,9 @@ class TestAnnotate:
         vcf = tmp_path / "test.vcf.gz"
         vcf.write_bytes(b"fake")
 
-        config = AppConfig(genome={"vcf_path": str(vcf), "patch_db": str(patch_path)})
+        config = AppConfig(
+            genomes={"default": {"vcf_path": str(vcf), "patch_db": str(patch_path)}}
+        )
         monkeypatch.setattr("genechat.cli.load_config", lambda: config)
         monkeypatch.setattr("genechat.download.gnomad_installed", lambda: True)
         monkeypatch.setattr("genechat.download.snpeff_installed", lambda: True)
@@ -614,7 +623,7 @@ class TestStatus:
         vcf = tmp_path / "test.vcf.gz"
         vcf.write_bytes(b"fake")
 
-        config = AppConfig(genome={"vcf_path": str(vcf)})
+        config = AppConfig(genomes={"default": {"vcf_path": str(vcf)}})
         monkeypatch.setattr("genechat.cli.load_config", lambda: config)
         monkeypatch.setattr(
             "genechat.download.references_dir", lambda: Path("/tmp/refs")
@@ -627,11 +636,11 @@ class TestStatus:
         main(["status"])
 
         out = capsys.readouterr().out
-        assert "[default]" in out
-        assert "(primary)" in out
+        assert "default:" in out
         assert "exists" in out
         assert "Patch DB: not built" in out
-        assert "dbSNP" in out
+        assert "Installed databases" in out
+        assert "Annotation caches" in out
 
     def test_multi_genome_status(self, tmp_path, monkeypatch, capsys):
         vcf1 = tmp_path / "nate.vcf.gz"
@@ -657,9 +666,8 @@ class TestStatus:
         main(["status"])
 
         out = capsys.readouterr().out
-        assert "[nate]" in out
-        assert "[partner]" in out
-        assert "(primary)" in out
+        assert "nate:" in out
+        assert "partner:" in out
 
 
 # ---------------------------------------------------------------------------
@@ -667,16 +675,12 @@ class TestStatus:
 # ---------------------------------------------------------------------------
 
 
-class TestUpdate:
-    def test_prints_version_table(self, monkeypatch, capsys):
-        monkeypatch.setattr("genechat.cli.load_config", lambda: AppConfig())
-        monkeypatch.setattr("genechat.update.check_clinvar_version", lambda: None)
-
-        main(["update"])
-
-        out = capsys.readouterr().out
-        assert "Source" in out
-        assert "clinvar" in out
+class TestUpdateRemoved:
+    def test_update_not_recognized(self):
+        """'update' subcommand was removed in the UX redesign."""
+        with pytest.raises(SystemExit) as exc_info:
+            main(["update"])
+        assert exc_info.value.code == 2  # argparse usage error
 
 
 # ---------------------------------------------------------------------------
@@ -832,7 +836,7 @@ class TestResolveGenomeLabel:
     def test_default_genome(self):
         from genechat.cli import _resolve_genome_label
 
-        config = AppConfig(genome={"vcf_path": "/test.vcf.gz"})
+        config = AppConfig(genomes={"default": {"vcf_path": "/test.vcf.gz"}})
         label, genome_cfg = _resolve_genome_label(config, None)
         assert label == "default"
         assert genome_cfg.vcf_path == "/test.vcf.gz"
@@ -853,7 +857,7 @@ class TestResolveGenomeLabel:
     def test_unknown_genome_exits(self):
         from genechat.cli import _resolve_genome_label
 
-        config = AppConfig(genome={"vcf_path": "/test.vcf.gz"})
+        config = AppConfig(genomes={"default": {"vcf_path": "/test.vcf.gz"}})
         with pytest.raises(SystemExit):
             _resolve_genome_label(config, "nonexistent")
 
@@ -884,7 +888,7 @@ class TestStatusJson:
         vcf = tmp_path / "test.vcf.gz"
         vcf.write_bytes(b"fake")
 
-        config = AppConfig(genome={"vcf_path": str(vcf)})
+        config = AppConfig(genomes={"default": {"vcf_path": str(vcf)}})
         monkeypatch.setattr("genechat.cli.load_config", lambda: config)
         monkeypatch.setattr(
             "genechat.download.references_dir", lambda: Path("/tmp/refs")

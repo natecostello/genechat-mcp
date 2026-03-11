@@ -33,6 +33,7 @@ Your genome data stays on your machine. GeneChat only reads from local files. No
 
 | Tool | Purpose |
 |------|---------|
+| `list_genomes` | List registered genomes so the LLM can ask which to query |
 | `query_variant` | Look up a single variant by rsID or position |
 | `query_variants` | Batch lookup of multiple rsIDs in a single VCF scan |
 | `query_gene` | List notable variants in a gene with smart filter |
@@ -49,10 +50,9 @@ Your genome data stays on your machine. GeneChat only reads from local files. No
 |---------|---------|
 | `genechat init <vcf> [--label] [--gnomad] [--dbsnp] [--gwas]` | Full first-time setup: annotate, write config |
 | `genechat add <vcf> [--label]` | Register a VCF file without annotation |
-| `genechat annotate [--clinvar] [--gnomad] [--snpeff] [--dbsnp] [--all] [--genome]` | Build or update patch.db (auto-downloads references) |
-| `genechat install [--gwas] [--force]` | Install genome-independent reference databases |
-| `genechat update [--apply] [--genome] [--seeds]` | Check for newer reference versions |
-| `genechat status [--json]` | Show all registered genomes and annotation state |
+| `genechat annotate [--clinvar] [--gnomad] [--snpeff] [--dbsnp] [--all] [--force] [--genome]` | Build or update patch.db (auto-downloads references) |
+| `genechat install [--gwas] [--seeds] [--force]` | Install genome-independent reference databases |
+| `genechat status [--json]` | Show all registered genomes, annotation state, and caches |
 | `genechat serve` / `genechat` | Start the MCP server |
 
 **Global flags:** `--version` (print version), `--no-color` (disable colored output). Color output respects the `NO_COLOR` environment variable and is automatically disabled when stdout or stderr is not a TTY.
@@ -251,7 +251,7 @@ For developers updating seed data from upstream APIs:
 | [CPIC](https://cpicpgx.org/) via [ClinPGx API](https://api.cpicpgx.org/v1/) | PGx drug-gene guidelines, star-allele definitions | `fetch_cpic_data.py` |
 | [PGS Catalog](https://www.pgscatalog.org/) | Polygenic risk score weights (GRCh38) | `fetch_prs_data.py` |
 
-Rebuild everything: `uv run genechat update --seeds`
+Rebuild everything: `uv run genechat install --seeds`
 
 ### Runtime Dependencies
 

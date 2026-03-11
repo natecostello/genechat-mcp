@@ -28,7 +28,9 @@ class VCFEngine:
     def __init__(self, config: AppConfig | GenomeConfig, *, max_variants: int = 100):
         # Accept either AppConfig or GenomeConfig (multi-genome)
         if isinstance(config, AppConfig):
-            genome_cfg = config.genome
+            if not config.genomes:
+                raise VCFEngineError("No genomes configured")
+            genome_cfg = next(iter(config.genomes.values()))
             max_variants = config.server.max_variants_per_response
         else:
             genome_cfg = config
