@@ -418,17 +418,14 @@ For annotation specifically: the subprocess pipes should handle SIGINT gracefull
 
 ---
 
-## Files Changed
+## Files Changed in This PR
 
 | File | Changes |
 |------|---------|
-| `src/genechat/cli.py` | Exit codes, TTY-aware no-subcommand behavior, --version, --no-color, --json on status, help examples, epilog links, exception handler, KeyboardInterrupt handler, color helper, SnpEff message, gnomAD checkpointing |
-| `src/genechat/__init__.py` | Export `__version__` from package metadata |
+| `src/genechat/cli.py` | Exit codes, TTY-aware no-subcommand behavior, --version, --no-color, --json on status, help examples, epilog links, exception handler, KeyboardInterrupt handler, color helper, SnpEff message |
 | `src/genechat/download.py` | Download progress callbacks, network timeouts |
 | `src/genechat/update.py` | Version check timeouts |
 | `tests/test_cli.py` | Updated exit codes, new tests for TTY behavior, --json, --version, color, exception handler |
-| `README.md` | Document exit codes |
-| `CLAUDE.md` | Update CLI section with new flags |
 
 ---
 
