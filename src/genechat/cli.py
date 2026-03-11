@@ -51,7 +51,10 @@ _COLOR_ENABLED: bool | None = None
 
 
 def _color_enabled() -> bool:
-    """Check if color output is enabled (respects NO_COLOR, TERM, TTY)."""
+    """Check if color output is enabled (respects NO_COLOR, TERM, TTY).
+
+    Checks both stdout and stderr since styled output may be written to either.
+    """
     global _COLOR_ENABLED
     if _COLOR_ENABLED is not None:
         return _COLOR_ENABLED
@@ -60,6 +63,8 @@ def _color_enabled() -> bool:
     elif os.environ.get("TERM") == "dumb":
         _COLOR_ENABLED = False
     elif not hasattr(sys.stdout, "isatty") or not sys.stdout.isatty():
+        _COLOR_ENABLED = False
+    elif not hasattr(sys.stderr, "isatty") or not sys.stderr.isatty():
         _COLOR_ENABLED = False
     else:
         _COLOR_ENABLED = True
