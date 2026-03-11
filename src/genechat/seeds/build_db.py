@@ -68,6 +68,39 @@ TSV_FILES = {
     "prs_weights": "prs_weights.tsv",
 }
 
+EXPECTED_COLUMNS = {
+    "genes": ["symbol", "name", "chrom", "start", "end", "strand"],
+    "pgx_drugs": [
+        "drug_name",
+        "gene",
+        "guideline_source",
+        "guideline_url",
+        "clinical_summary",
+        "cpic_level",
+        "pgx_testing",
+    ],
+    "pgx_variants": [
+        "gene",
+        "rsid",
+        "chrom",
+        "pos",
+        "ref",
+        "alt",
+        "star_allele",
+        "function_impact",
+        "notes",
+    ],
+    "prs_weights": [
+        "prs_id",
+        "trait",
+        "rsid",
+        "chrom",
+        "pos",
+        "effect_allele",
+        "weight",
+    ],
+}
+
 INT_COLUMNS = {"start", "end", "pos"}
 FLOAT_COLUMNS = {"weight"}
 
@@ -107,20 +140,31 @@ def build_db(seed_dir: Path, db_path: Path):
     cursor = conn.cursor()
 
     for table_name, schema_sql in SCHEMAS.items():
-        tsv_file = seed_dir / TSV_FILES[table_name]
-        if not tsv_file.exists():
-            print(f"WARNING: {tsv_file} not found, skipping {table_name}")
-            continue
-
+        # Always drop and recreate the table to keep the build idempotent,
+        # even if the corresponding TSV is missing.
         cursor.execute(f"DROP TABLE IF EXISTS {table_name}")
         cursor.executescript(schema_sql)
+
+        tsv_file = seed_dir / TSV_FILES[table_name]
+        if not tsv_file.exists():
+            print(f"WARNING: {tsv_file} not found, created empty table {table_name}")
+            continue
 
         rows = load_tsv(tsv_file)
         if not rows:
             print(f"WARNING: {tsv_file} has no data rows")
             continue
 
-        columns = list(rows[0].keys())
+        # Validate TSV headers match expected columns
+        expected = EXPECTED_COLUMNS[table_name]
+        actual = list(rows[0].keys())
+        if actual != expected:
+            raise ValueError(
+                f"{tsv_file.name}: header mismatch for table '{table_name}'. "
+                f"Expected {expected}, got {actual}"
+            )
+
+        columns = expected
         placeholders = ", ".join(["?"] * len(columns))
         col_names = ", ".join(columns)
         insert_sql = f"INSERT INTO {table_name} ({col_names}) VALUES ({placeholders})"
