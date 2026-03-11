@@ -149,4 +149,4 @@ ecosystem.
 - [Typer documentation](https://typer.tiangolo.com/)
 - [clig.dev guidelines](https://clig.dev/) (ADR-0004)
 - Implementation plan: `docs/plans/typer-migration.md` (commit `0f74c62`)
-- Implemented in PR #__ (to be filled)
+- Implemented in PR #41
