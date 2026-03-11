@@ -1,7 +1,6 @@
 """Tests for the genechat CLI (all 7 subcommands)."""
 
 import importlib.resources as _real_resources
-import io
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -22,12 +21,20 @@ from genechat.config import AppConfig
 # ---------------------------------------------------------------------------
 
 
+class _FakeStdin:
+    """Stub stdin with configurable isatty()."""
+
+    def __init__(self, *, tty: bool):
+        self._tty = tty
+
+    def isatty(self):
+        return self._tty
+
+
 class TestRouting:
     def test_no_subcommand_shows_help_when_tty(self, monkeypatch, capsys):
         """No subcommand in interactive terminal shows help, not server."""
-        monkeypatch.setattr("sys.stdin", io.StringIO())
-        # Make stdin look like a TTY
-        monkeypatch.setattr("sys.stdin.isatty", lambda: True)
+        monkeypatch.setattr("sys.stdin", _FakeStdin(tty=True))
         main([])
         out = capsys.readouterr().out
         assert "genechat init" in out
@@ -37,8 +44,7 @@ class TestRouting:
         """No subcommand with piped stdin starts the server."""
         called = []
         monkeypatch.setattr("genechat.cli._run_serve", lambda: called.append(True))
-        monkeypatch.setattr("sys.stdin", io.StringIO())
-        monkeypatch.setattr("sys.stdin.isatty", lambda: False)
+        monkeypatch.setattr("sys.stdin", _FakeStdin(tty=False))
         main([])
         assert called == [True]
 
