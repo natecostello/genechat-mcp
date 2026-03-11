@@ -8,3 +8,4 @@ significant decisions.
 | [0001](0001-patch-architecture.md) | Raw VCF + SQLite patch.db for annotations | Accepted |
 | [0002](0002-multi-genome-support.md) | Named genomes via config sections | Accepted |
 | [0003](0003-pip-installable-package.md) | pip/uv installable package | Accepted |
+| [0004](0004-cli-guidelines-alignment.md) | Adopt clig.dev CLI design guidelines | Accepted |

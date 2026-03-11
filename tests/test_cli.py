@@ -7,6 +7,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from genechat.cli import (
+    ExitCode,
     _ensure_lookup_db,
     _patch_db_path_for,
     _validate_vcf,
@@ -20,10 +21,30 @@ from genechat.config import AppConfig
 # ---------------------------------------------------------------------------
 
 
+class _FakeStdin:
+    """Stub stdin with configurable isatty()."""
+
+    def __init__(self, *, tty: bool):
+        self._tty = tty
+
+    def isatty(self):
+        return self._tty
+
+
 class TestRouting:
-    def test_no_subcommand_invokes_serve(self, monkeypatch):
+    def test_no_subcommand_shows_help_when_tty(self, monkeypatch, capsys):
+        """No subcommand in interactive terminal shows help, not server."""
+        monkeypatch.setattr("sys.stdin", _FakeStdin(tty=True))
+        main([])
+        out = capsys.readouterr().out
+        assert "genechat init" in out
+        assert "Quick start" in out
+
+    def test_no_subcommand_invokes_serve_when_piped(self, monkeypatch):
+        """No subcommand with piped stdin starts the server."""
         called = []
         monkeypatch.setattr("genechat.cli._run_serve", lambda: called.append(True))
+        monkeypatch.setattr("sys.stdin", _FakeStdin(tty=False))
         main([])
         assert called == [True]
 
@@ -132,7 +153,7 @@ class TestAdd:
     def test_add_missing_vcf(self, capsys):
         with pytest.raises(SystemExit) as exc_info:
             main(["add", "/nonexistent/file.vcf.gz"])
-        assert exc_info.value.code == 1
+        assert exc_info.value.code == ExitCode.VCF_ERROR
         assert "not found" in capsys.readouterr().err
 
     def test_add_writes_config(self, tmp_path, capsys, monkeypatch):
@@ -189,7 +210,7 @@ class TestInit:
     def test_init_missing_vcf(self, capsys):
         with pytest.raises(SystemExit) as exc_info:
             main(["init", "/nonexistent/file.vcf.gz"])
-        assert exc_info.value.code == 1
+        assert exc_info.value.code == ExitCode.VCF_ERROR
         assert "not found" in capsys.readouterr().err
 
     def test_init_full_pipeline(self, tmp_path, capsys, monkeypatch):
@@ -284,7 +305,7 @@ class TestInit:
 
         with pytest.raises(SystemExit) as exc_info:
             main(["init", str(vcf)])
-        assert exc_info.value.code == 1
+        assert exc_info.value.code == ExitCode.CONFIG_ERROR
 
 
 # ---------------------------------------------------------------------------
@@ -353,7 +374,7 @@ class TestAnnotate:
         monkeypatch.setattr("genechat.cli.load_config", lambda: AppConfig())
         with pytest.raises(SystemExit) as exc_info:
             main(["annotate"])
-        assert exc_info.value.code == 1
+        assert exc_info.value.code == ExitCode.CONFIG_ERROR
         assert "No VCF registered" in capsys.readouterr().err
 
     def test_shows_status_no_flags(self, tmp_path, monkeypatch, capsys):
@@ -835,3 +856,137 @@ class TestResolveGenomeLabel:
         config = AppConfig(genome={"vcf_path": "/test.vcf.gz"})
         with pytest.raises(SystemExit):
             _resolve_genome_label(config, "nonexistent")
+
+
+# ---------------------------------------------------------------------------
+# --version flag
+# ---------------------------------------------------------------------------
+
+
+class TestVersion:
+    def test_version_flag(self, capsys):
+        with pytest.raises(SystemExit) as exc_info:
+            main(["--version"])
+        assert exc_info.value.code == 0
+        out = capsys.readouterr().out
+        assert "genechat" in out
+
+
+# ---------------------------------------------------------------------------
+# --json flag on status
+# ---------------------------------------------------------------------------
+
+
+class TestStatusJson:
+    def test_json_output(self, tmp_path, monkeypatch, capsys):
+        import json as _json
+
+        vcf = tmp_path / "test.vcf.gz"
+        vcf.write_bytes(b"fake")
+
+        config = AppConfig(genome={"vcf_path": str(vcf)})
+        monkeypatch.setattr("genechat.cli.load_config", lambda: config)
+        monkeypatch.setattr(
+            "genechat.download.references_dir", lambda: Path("/tmp/refs")
+        )
+        monkeypatch.setattr("genechat.download.clinvar_installed", lambda: False)
+        monkeypatch.setattr("genechat.download.snpeff_installed", lambda: False)
+        monkeypatch.setattr("genechat.download.gnomad_installed", lambda: False)
+        monkeypatch.setattr("genechat.download.dbsnp_installed", lambda: False)
+
+        main(["status", "--json"])
+
+        out = capsys.readouterr().out
+        data = _json.loads(out)
+        assert "genomes" in data
+        assert "references" in data
+        assert "default" in data["genomes"]
+        assert data["genomes"]["default"]["vcf_exists"] is True
+
+    def test_json_no_genome(self, monkeypatch, capsys):
+        import json as _json
+
+        monkeypatch.setattr("genechat.cli.load_config", lambda: AppConfig())
+        monkeypatch.setattr(
+            "genechat.download.references_dir", lambda: Path("/tmp/refs")
+        )
+        monkeypatch.setattr("genechat.download.clinvar_installed", lambda: False)
+        monkeypatch.setattr("genechat.download.snpeff_installed", lambda: False)
+        monkeypatch.setattr("genechat.download.gnomad_installed", lambda: False)
+        monkeypatch.setattr("genechat.download.dbsnp_installed", lambda: False)
+
+        main(["status", "--json"])
+
+        out = capsys.readouterr().out
+        data = _json.loads(out)
+        assert data["genomes"] == {}
+
+
+# ---------------------------------------------------------------------------
+# Color support
+# ---------------------------------------------------------------------------
+
+
+class TestColor:
+    def test_no_color_env_disables_color(self, monkeypatch):
+        from genechat.cli import _red
+
+        import genechat.cli
+
+        genechat.cli._COLOR_ENABLED = None
+        monkeypatch.setenv("NO_COLOR", "1")
+        assert _red("text") == "text"
+
+    def test_no_color_flag(self, monkeypatch, capsys):
+        """--no-color flag disables color in output."""
+        monkeypatch.setattr("genechat.cli.load_config", lambda: AppConfig())
+        monkeypatch.setattr(
+            "genechat.download.references_dir", lambda: Path("/tmp/refs")
+        )
+        monkeypatch.setattr("genechat.download.clinvar_installed", lambda: False)
+        monkeypatch.setattr("genechat.download.snpeff_installed", lambda: False)
+        monkeypatch.setattr("genechat.download.gnomad_installed", lambda: False)
+        monkeypatch.setattr("genechat.download.dbsnp_installed", lambda: False)
+        main(["--no-color", "status"])
+        out = capsys.readouterr().out
+        assert "\033[" not in out
+
+
+# ---------------------------------------------------------------------------
+# Exception handling
+# ---------------------------------------------------------------------------
+
+
+class TestExceptionHandling:
+    def test_keyboard_interrupt_exits_130(self, monkeypatch, capsys):
+        monkeypatch.setattr(
+            "genechat.cli._run_serve",
+            lambda: (_ for _ in ()).throw(KeyboardInterrupt),
+        )
+        with pytest.raises(SystemExit) as exc_info:
+            main(["serve"])
+        assert exc_info.value.code == 130
+        assert "Interrupted" in capsys.readouterr().err
+
+    def test_unexpected_exception_exits_1(self, monkeypatch, capsys):
+        def raise_runtime():
+            raise RuntimeError("something broke")
+
+        monkeypatch.setattr("genechat.cli._run_serve", raise_runtime)
+        with pytest.raises(SystemExit) as exc_info:
+            main(["serve"])
+        assert exc_info.value.code == ExitCode.GENERAL_ERROR
+        err = capsys.readouterr().err
+        assert "something broke" in err
+        assert "github.com" in err
+
+
+# ---------------------------------------------------------------------------
+# Exit codes
+# ---------------------------------------------------------------------------
+
+
+class TestExitCodes:
+    def test_exit_codes_are_distinct(self):
+        values = [e.value for e in ExitCode]
+        assert len(values) == len(set(values))

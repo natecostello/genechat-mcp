@@ -12,26 +12,155 @@ Commands:
 
 import argparse
 import json
+import os
 import shlex
 import shutil
 import subprocess
 import sys
+from enum import IntEnum
 from pathlib import Path
 
 from platformdirs import user_config_dir
 
+from genechat import __version__
 from genechat.config import load_config, write_config
 
 
+# ---------------------------------------------------------------------------
+# Exit codes
+# ---------------------------------------------------------------------------
+
+
+class ExitCode(IntEnum):
+    """Named exit codes for distinct failure modes."""
+
+    SUCCESS = 0
+    GENERAL_ERROR = 1
+    USAGE_ERROR = 2
+    CONFIG_ERROR = 3
+    VCF_ERROR = 4
+    TOOL_ERROR = 5
+    NETWORK_ERROR = 6
+
+
+# ---------------------------------------------------------------------------
+# Color helpers
+# ---------------------------------------------------------------------------
+
+_COLOR_ENABLED: bool | None = None
+
+
+def _color_enabled() -> bool:
+    """Check if color output is enabled (respects NO_COLOR, TERM, TTY).
+
+    Checks both stdout and stderr since styled output may be written to either.
+    """
+    global _COLOR_ENABLED
+    if _COLOR_ENABLED is not None:
+        return _COLOR_ENABLED
+    if os.environ.get("NO_COLOR") is not None:
+        _COLOR_ENABLED = False
+    elif os.environ.get("TERM") == "dumb":
+        _COLOR_ENABLED = False
+    elif not hasattr(sys.stdout, "isatty") or not sys.stdout.isatty():
+        _COLOR_ENABLED = False
+    elif not hasattr(sys.stderr, "isatty") or not sys.stderr.isatty():
+        _COLOR_ENABLED = False
+    else:
+        _COLOR_ENABLED = True
+    return _COLOR_ENABLED
+
+
+def _style(text: str, code: str) -> str:
+    """Wrap text in ANSI escape codes if color is enabled."""
+    if not _color_enabled():
+        return text
+    return f"\033[{code}m{text}\033[0m"
+
+
+def _red(text: str) -> str:
+    return _style(text, "31")
+
+
+def _green(text: str) -> str:
+    return _style(text, "32")
+
+
+def _yellow(text: str) -> str:
+    return _style(text, "33")
+
+
+def _dim(text: str) -> str:
+    return _style(text, "2")
+
+
+# ---------------------------------------------------------------------------
+# Concise help text for interactive use with no subcommand
+# ---------------------------------------------------------------------------
+
+_INTERACTIVE_HELP = """\
+GeneChat — MCP server for conversational personal genomics
+
+Commands:
+  genechat init <vcf>       Full first-time setup (register + annotate)
+  genechat add <vcf>        Register a VCF file
+  genechat annotate         Build/update annotation database
+  genechat install --gwas   Install GWAS Catalog
+  genechat update           Check for newer references
+  genechat status           Show genome info and annotation state
+  genechat serve            Start the MCP server
+
+Quick start:
+  genechat init /path/to/your/raw.vcf.gz
+
+Run 'genechat <command> --help' for details on each command.
+
+Docs:  https://github.com/natecostello/genechat-mcp#readme
+Issues: https://github.com/natecostello/genechat-mcp/issues
+"""
+
+
 def main(argv: list[str] | None = None):
+    # Reset color cache for testability
+    global _COLOR_ENABLED
+    _COLOR_ENABLED = None
+
+    # Shared parent parser so --no-color works before OR after subcommand
+    global_parser = argparse.ArgumentParser(add_help=False)
+    global_parser.add_argument(
+        "--no-color",
+        action="store_true",
+        help="Disable color output",
+    )
+
     parser = argparse.ArgumentParser(
         prog="genechat",
         description="GeneChat MCP server for conversational personal genomics",
+        epilog=(
+            "Docs:   https://github.com/natecostello/genechat-mcp#readme\n"
+            "Issues: https://github.com/natecostello/genechat-mcp/issues"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        parents=[global_parser],
+    )
+    parser.add_argument(
+        "--version", action="version", version=f"%(prog)s {__version__}"
     )
     sub = parser.add_subparsers(dest="command")
 
     # genechat init
-    init_p = sub.add_parser("init", help="Full first-time setup for a VCF file")
+    init_p = sub.add_parser(
+        "init",
+        parents=[global_parser],
+        help="Full first-time setup for a VCF file",
+        description=(
+            "Full first-time setup for a VCF file.\n\n"
+            "Examples:\n"
+            "  genechat init /path/to/raw.vcf.gz\n"
+            "  genechat init /path/to/raw.vcf.gz --label personal --gnomad"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
     init_p.add_argument("vcf_path", help="Path to your raw VCF (.vcf.gz)")
     init_p.add_argument("--label", help="Name for this genome (default: from filename)")
     init_p.add_argument(
@@ -47,13 +176,15 @@ def main(argv: list[str] | None = None):
     )
 
     # genechat add
-    add_p = sub.add_parser("add", help="Register a VCF file")
+    add_p = sub.add_parser("add", parents=[global_parser], help="Register a VCF file")
     add_p.add_argument("vcf_path", help="Path to your VCF (.vcf.gz)")
     add_p.add_argument("--label", help="Name for this genome")
 
     # genechat install
     inst_p = sub.add_parser(
-        "install", help="Install genome-independent reference databases"
+        "install",
+        parents=[global_parser],
+        help="Install genome-independent reference databases",
     )
     inst_p.add_argument(
         "--gwas", action="store_true", help="Install GWAS Catalog (~58 MB download)"
@@ -65,7 +196,19 @@ def main(argv: list[str] | None = None):
     )
 
     # genechat annotate
-    ann_p = sub.add_parser("annotate", help="Build or update patch.db")
+    ann_p = sub.add_parser(
+        "annotate",
+        parents=[global_parser],
+        help="Build or update patch.db",
+        description=(
+            "Build or update the annotation database (patch.db).\n\n"
+            "Examples:\n"
+            "  genechat annotate              # show status or build if new\n"
+            "  genechat annotate --all        # re-annotate all layers\n"
+            "  genechat annotate --gnomad     # add gnomAD frequencies"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
     ann_p.add_argument(
         "--clinvar", action="store_true", help="Re-annotate ClinVar layer"
     )
@@ -80,7 +223,9 @@ def main(argv: list[str] | None = None):
     ann_p.add_argument("--genome", help="Which genome to annotate (default: primary)")
 
     # genechat update
-    upd_p = sub.add_parser("update", help="Check for newer reference versions")
+    upd_p = sub.add_parser(
+        "update", parents=[global_parser], help="Check for newer reference versions"
+    )
     upd_p.add_argument(
         "--apply", action="store_true", help="Download + re-annotate stale sources"
     )
@@ -92,28 +237,68 @@ def main(argv: list[str] | None = None):
     )
 
     # genechat status
-    sub.add_parser("status", help="Show genome info and annotation state")
+    status_p = sub.add_parser(
+        "status",
+        parents=[global_parser],
+        help="Show genome info and annotation state",
+        description=(
+            "Show genome registration, annotation state, and reference versions.\n\n"
+            "Examples:\n"
+            "  genechat status          # human-readable summary\n"
+            "  genechat status --json   # machine-readable JSON output"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    status_p.add_argument(
+        "--json",
+        action="store_true",
+        dest="json_output",
+        help="Output status as JSON",
+    )
 
     # genechat serve
-    sub.add_parser("serve", help="Start the MCP server")
+    sub.add_parser("serve", parents=[global_parser], help="Start the MCP server")
 
     args = parser.parse_args(argv)
 
-    if args.command == "init":
-        _run_init(args)
-    elif args.command == "add":
-        _run_add(args.vcf_path, args.label)
-    elif args.command == "install":
-        _run_install(args)
-    elif args.command == "annotate":
-        _run_annotate(args)
-    elif args.command == "update":
-        _run_update(args)
-    elif args.command == "status":
-        _run_status()
-    else:
-        # No subcommand or "serve" -> start MCP server
-        _run_serve()
+    # Handle --no-color
+    if getattr(args, "no_color", False):
+        _COLOR_ENABLED = False
+
+    try:
+        if args.command == "init":
+            _run_init(args)
+        elif args.command == "add":
+            _run_add(args.vcf_path, args.label)
+        elif args.command == "install":
+            _run_install(args)
+        elif args.command == "annotate":
+            _run_annotate(args)
+        elif args.command == "update":
+            _run_update(args)
+        elif args.command == "status":
+            _run_status(json_output=getattr(args, "json_output", False))
+        else:
+            # No subcommand or "serve"
+            if args.command is None and getattr(sys.stdin, "isatty", lambda: False)():
+                print(_INTERACTIVE_HELP, end="")
+            else:
+                _run_serve()
+    except KeyboardInterrupt:
+        print("\nInterrupted.", file=sys.stderr)
+        sys.exit(130)
+    except BrokenPipeError:
+        # Piped to head/less — exit quietly
+        sys.exit(0)
+    except SystemExit:
+        raise
+    except Exception as exc:
+        print(f"\n{_red('Unexpected error:')} {exc}", file=sys.stderr)
+        print(
+            "Please report this at https://github.com/natecostello/genechat-mcp/issues",
+            file=sys.stderr,
+        )
+        sys.exit(ExitCode.GENERAL_ERROR)
 
 
 def _find_project_root() -> Path | None:
@@ -199,7 +384,10 @@ def _validate_vcf(vcf_path: Path) -> bool:
     Prints errors and returns False on failure.
     """
     if not vcf_path.exists():
-        print(f"Error: VCF file not found: {vcf_path}", file=sys.stderr)
+        print(
+            f"{_red('Error:')} VCF file not found: {_dim(str(vcf_path))}",
+            file=sys.stderr,
+        )
         return False
 
     # Check for index
@@ -243,7 +431,7 @@ def _run_add(vcf_path_str: str, label: str | None = None):
     vcf_path = Path(vcf_path_str).expanduser().resolve()
 
     if not _validate_vcf(vcf_path):
-        sys.exit(1)
+        sys.exit(ExitCode.VCF_ERROR)
 
     # Write config
     config_dir = Path(user_config_dir("genechat"))
@@ -290,17 +478,20 @@ def _run_install(args):
 def _resolve_genome_label(config, genome_arg: str | None) -> tuple[str, object]:
     """Resolve a --genome arg to (label, GenomeConfig). Exits on error."""
     if not config.genomes:
-        print("Error: No VCF registered. Run: genechat add <vcf>", file=sys.stderr)
-        sys.exit(1)
+        print(
+            f"{_red('Error:')} No VCF registered. Run: genechat add <vcf>",
+            file=sys.stderr,
+        )
+        sys.exit(ExitCode.CONFIG_ERROR)
 
     label = genome_arg or config.default_genome
     if label not in config.genomes:
         available = ", ".join(config.genomes.keys())
         print(
-            f"Error: Unknown genome '{label}'. Available: {available}",
+            f"{_red('Error:')} Unknown genome '{label}'. Available: {available}",
             file=sys.stderr,
         )
-        sys.exit(1)
+        sys.exit(ExitCode.CONFIG_ERROR)
 
     return label, config.genomes[label]
 
@@ -314,15 +505,18 @@ def _run_annotate(args):
     vcf_path_str = genome_cfg.vcf_path
     if not vcf_path_str:
         print(
-            f"Error: Genome '{label}' has no vcf_path. Run: genechat add <vcf>",
+            f"{_red('Error:')} Genome '{label}' has no vcf_path. Run: genechat add <vcf>",
             file=sys.stderr,
         )
-        sys.exit(1)
+        sys.exit(ExitCode.CONFIG_ERROR)
 
     vcf_path = Path(vcf_path_str)
     if not vcf_path.exists():
-        print(f"Error: VCF not found: {vcf_path}", file=sys.stderr)
-        sys.exit(1)
+        print(
+            f"{_red('Error:')} VCF not found: {_dim(str(vcf_path))}",
+            file=sys.stderr,
+        )
+        sys.exit(ExitCode.VCF_ERROR)
 
     # Determine patch.db path
     patch_db_path = _patch_db_path_for(vcf_path, genome_cfg)
@@ -358,25 +552,25 @@ def _run_annotate(args):
     # Check tool prerequisites (can't auto-install system packages)
     if run_snpeff and not snpeff_installed():
         print(
-            "Error: snpEff not found in PATH. Required for functional annotation.",
+            f"{_red('Error:')} snpEff not found in PATH. Required for functional annotation.",
             file=sys.stderr,
         )
         print("  Install: brew install brewsci/bio/snpeff (macOS)", file=sys.stderr)
-        sys.exit(1)
+        sys.exit(ExitCode.TOOL_ERROR)
 
     if not shutil.which("bcftools"):
-        print("Error: bcftools not found in PATH.", file=sys.stderr)
+        print(f"{_red('Error:')} bcftools not found in PATH.", file=sys.stderr)
         print("  Install: brew install bcftools (macOS)", file=sys.stderr)
-        sys.exit(1)
+        sys.exit(ExitCode.TOOL_ERROR)
 
     needs_tabix = run_clinvar or (run_dbsnp and not dbsnp_installed())
     if needs_tabix and not shutil.which("tabix"):
         print(
-            "Error: tabix not found in PATH (needed for contig rename).",
+            f"{_red('Error:')} tabix not found in PATH (needed for contig rename).",
             file=sys.stderr,
         )
         print("  Install: brew install htslib (macOS)", file=sys.stderr)
-        sys.exit(1)
+        sys.exit(ExitCode.TOOL_ERROR)
 
     # Auto-download references if not present
     if run_clinvar and not clinvar_installed():
@@ -385,15 +579,17 @@ def _run_annotate(args):
 
     if run_snpeff:
         if download_snpeff_db() is None:
-            print("Error: SnpEff database download failed.", file=sys.stderr)
-            sys.exit(1)
+            print(f"{_red('Error:')} SnpEff database download failed.", file=sys.stderr)
+            sys.exit(ExitCode.NETWORK_ERROR)
 
     if run_dbsnp and not dbsnp_installed():
         print("  Downloading dbSNP reference...")
         result = download_dbsnp()
         if result is None:
-            print("Error: dbSNP download/processing failed.", file=sys.stderr)
-            sys.exit(1)
+            print(
+                f"{_red('Error:')} dbSNP download/processing failed.", file=sys.stderr
+            )
+            sys.exit(ExitCode.NETWORK_ERROR)
 
     # Create or open patch.db
     if first_run:
@@ -527,6 +723,10 @@ def _annotate_snpeff(patch, vcf_path: Path, step: int, total: int, is_update: bo
             chroms = list(vf.header.contigs)
 
         total_rows = 0
+        print(
+            "    Starting SnpEff (JVM startup may take a few seconds)...",
+            flush=True,
+        )
         for i, chrom in enumerate(chroms, 1):
             print(f"    {chrom} ({i}/{len(chroms)})...", end="", flush=True)
             # Per-chromosome to avoid SnpEff OOM
@@ -970,19 +1170,19 @@ def _run_init(args):
     # Step 1: Validate VCF
     print("Step 1: Validating VCF...")
     if not _validate_vcf(vcf_path):
-        sys.exit(1)
+        sys.exit(ExitCode.VCF_ERROR)
 
     # Step 2: Detect and fix bare contig names
     print("\nStep 2: Checking contig names...")
     if _detect_bare_contigs(vcf_path):
         if not shutil.which("bcftools"):
             print(
-                "Error: VCF uses bare contig names (1, 2, ...) but bcftools "
+                f"{_red('Error:')} VCF uses bare contig names (1, 2, ...) but bcftools "
                 "is needed to fix them.",
                 file=sys.stderr,
             )
             print("  Install: brew install bcftools (macOS)", file=sys.stderr)
-            sys.exit(1)
+            sys.exit(ExitCode.TOOL_ERROR)
         print("  Bare contig names detected. Adding chr prefix...")
         vcf_path = _fix_user_contigs(vcf_path)
         print(f"  Fixed VCF: {vcf_path}")
@@ -998,7 +1198,7 @@ def _run_init(args):
     # Step 4: Ensure lookup_tables.db
     print("\nStep 4: Checking lookup database...")
     if not _ensure_lookup_db():
-        sys.exit(1)
+        sys.exit(ExitCode.CONFIG_ERROR)
     print("  lookup_tables.db: OK")
 
     # Step 5: Install GWAS if requested
@@ -1114,10 +1314,10 @@ def _run_update(args):
     if args.apply:
         if not label:
             print(
-                "Error: No genome registered. Run: genechat add <vcf>",
+                f"{_red('Error:')} No genome registered. Run: genechat add <vcf>",
                 file=sys.stderr,
             )
-            sys.exit(1)
+            sys.exit(ExitCode.CONFIG_ERROR)
 
         # Determine which sources need updating
         stale = []
@@ -1158,9 +1358,30 @@ def _run_update(args):
 # ---------------------------------------------------------------------------
 
 
-def _run_status():
+def _gwas_installed(gwas_db_path: str) -> bool:
+    """Check if the GWAS database is installed and has the expected table."""
+    import sqlite3 as _sql
+
+    path = Path(gwas_db_path)
+    if not path.exists():
+        return False
+    try:
+        with _sql.connect(str(path)) as conn:
+            row = conn.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='gwas_associations'"
+            ).fetchone()
+            return row is not None
+    except _sql.Error:
+        return False
+
+
+def _run_status(json_output: bool = False):
     """Show genome info, annotation state, reference versions."""
     config = load_config()
+
+    if json_output:
+        _run_status_json(config)
+        return
 
     if not config.genomes:
         print("No genome registered. Run: genechat init <vcf>")
@@ -1180,14 +1401,16 @@ def _run_status():
             continue
 
         vcf_path = Path(vcf_path_str)
-        print(f"  VCF: {vcf_path} ({'exists' if vcf_path.exists() else 'NOT FOUND'})")
+        vcf_exists = vcf_path.exists()
+        vcf_status = _green("exists") if vcf_exists else _red("NOT FOUND")
+        print(f"  VCF: {_dim(str(vcf_path))} ({vcf_status})")
 
         # Patch DB status
         patch_db_str = genome_cfg.patch_db
         if patch_db_str and Path(patch_db_str).exists():
             patch_db_path = Path(patch_db_str)
             size_mb = patch_db_path.stat().st_size / 1024 / 1024
-            print(f"  Patch DB: {patch_db_path} ({size_mb:.0f} MB)")
+            print(f"  Patch DB: {_dim(str(patch_db_path))} ({size_mb:.0f} MB)")
 
             from genechat.patch import PatchDB
 
@@ -1210,9 +1433,11 @@ def _run_status():
                     if status == "complete":
                         print(f"    {source:<10} {version:<20} (applied {date})")
                     elif status == "pending":
-                        print(f"    {source:<10} {version:<20} (in progress)")
+                        print(
+                            f"    {source:<10} {version:<20} ({_yellow('in progress')})"
+                        )
                     elif status == "failed":
-                        print(f"    {source:<10} {version:<20} (FAILED)")
+                        print(f"    {source:<10} {version:<20} ({_red('FAILED')})")
                     else:
                         print(f"    {source:<10} {version:<20} ({status})")
                 else:
@@ -1234,7 +1459,7 @@ def _run_status():
         snpeff_installed,
     )
 
-    print(f"References: {references_dir()}")
+    print(f"References: {_dim(str(references_dir()))}")
     print(
         f"  ClinVar:  {'installed' if clinvar_installed() else 'not installed — genechat annotate'}"
     )
@@ -1253,24 +1478,72 @@ def _run_status():
         f"  dbSNP:    {'installed' if dbsnp_installed() else 'not installed — genechat annotate --dbsnp'}"
     )
 
-    gwas_ok = False
-    gwas_path = Path(config.gwas_db_path)
-    if gwas_path.exists():
-        import sqlite3 as _sql
-
-        try:
-            with _sql.connect(str(gwas_path)) as _c:
-                _r = _c.execute(
-                    "SELECT name FROM sqlite_master WHERE type='table' AND name='gwas_associations'"
-                ).fetchone()
-                gwas_ok = _r is not None
-        except _sql.Error:
-            pass
+    gwas_ok = _gwas_installed(config.gwas_db_path)
     print(
         f"  GWAS:     {'installed' if gwas_ok else 'not installed — genechat install --gwas'}"
     )
 
     print("\nRun `genechat update` to check for newer versions.")
+
+
+def _run_status_json(config):
+    """Output status as JSON."""
+    from genechat.download import (
+        clinvar_installed,
+        dbsnp_installed,
+        gnomad_installed,
+        references_dir,
+        snpeff_installed,
+    )
+
+    data: dict = {"genomes": {}, "references": {}}
+
+    for label, genome_cfg in config.genomes.items():
+        genome_info: dict = {
+            "vcf_path": genome_cfg.vcf_path or None,
+            "vcf_exists": bool(
+                genome_cfg.vcf_path and Path(genome_cfg.vcf_path).exists()
+            ),
+            "is_primary": label == config.default_genome,
+            "patch_db": None,
+            "annotations": {},
+        }
+
+        patch_db_str = genome_cfg.patch_db
+        if patch_db_str and Path(patch_db_str).exists():
+            patch_db_path = Path(patch_db_str)
+            genome_info["patch_db"] = str(patch_db_path)
+
+            from genechat.patch import PatchDB
+
+            patch = PatchDB(patch_db_path, readonly=True)
+            try:
+                meta = patch.get_metadata()
+            finally:
+                patch.close()
+
+            for source in ["snpeff", "clinvar", "gnomad", "dbsnp"]:
+                info = meta.get(source, {})
+                if info:
+                    genome_info["annotations"][source] = {
+                        "status": info.get("status"),
+                        "version": info.get("version"),
+                        "updated_at": info.get("updated_at"),
+                    }
+
+        data["genomes"][label] = genome_info
+
+    data["references"] = {
+        "directory": str(references_dir()),
+        "clinvar": clinvar_installed(),
+        "snpeff": snpeff_installed(),
+        "gnomad": gnomad_installed(),
+        "dbsnp": dbsnp_installed(),
+    }
+
+    data["references"]["gwas"] = _gwas_installed(config.gwas_db_path)
+
+    print(json.dumps(data, indent=2))
 
 
 # ---------------------------------------------------------------------------
@@ -1283,18 +1556,18 @@ def _run_update_seeds():
     project_root = _find_project_root()
     if not project_root:
         print(
-            "Error: --seeds requires a source checkout (pyproject.toml not found).",
+            f"{_red('Error:')} --seeds requires a source checkout (pyproject.toml not found).",
             file=sys.stderr,
         )
-        sys.exit(1)
+        sys.exit(ExitCode.CONFIG_ERROR)
 
     build_script = project_root / "scripts" / "build_seed_data.py"
     if not build_script.exists():
         print(
-            f"Error: build_seed_data.py not found at {build_script}",
+            f"{_red('Error:')} build_seed_data.py not found at {build_script}",
             file=sys.stderr,
         )
-        sys.exit(1)
+        sys.exit(ExitCode.CONFIG_ERROR)
 
     print("Updating seed data from upstream APIs...")
     result = subprocess.run(
@@ -1302,8 +1575,8 @@ def _run_update_seeds():
         cwd=str(project_root),
     )
     if result.returncode != 0:
-        print("Error: Seed data update failed.", file=sys.stderr)
-        sys.exit(1)
+        print(f"{_red('Error:')} Seed data update failed.", file=sys.stderr)
+        sys.exit(ExitCode.GENERAL_ERROR)
 
 
 # ---------------------------------------------------------------------------
