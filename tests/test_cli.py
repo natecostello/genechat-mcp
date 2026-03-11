@@ -11,7 +11,9 @@ from typer.testing import CliRunner
 from genechat.cli import (
     ExitCode,
     _ensure_lookup_db,
+    _freshness_indicator,
     _patch_db_path_for,
+    _resolve_stale_layers,
     _validate_vcf,
     app,
     main,
@@ -613,6 +615,84 @@ class TestAnnotate:
         assert len(annotate_calls) == 1
         assert annotate_calls[0]["incremental"] is False
 
+    def test_annotate_stale_enables_outdated_layers(self, cli, tmp_path, monkeypatch):
+        """annotate --stale checks versions and enables stale layers."""
+        from genechat.patch import PatchDB
+
+        patch_path = tmp_path / "test.patch.db"
+        patch = PatchDB.create(patch_path)
+        patch.set_metadata("clinvar", "2025-01-01", "complete")
+        patch.close()
+
+        vcf = tmp_path / "test.vcf.gz"
+        vcf.write_bytes(b"fake")
+
+        config = AppConfig(
+            genomes={"default": {"vcf_path": str(vcf), "patch_db": str(patch_path)}}
+        )
+        monkeypatch.setattr("genechat.cli.load_config", lambda: config)
+        monkeypatch.setattr("genechat.download.clinvar_installed", lambda: True)
+        monkeypatch.setattr("genechat.download.snpeff_installed", lambda: True)
+        monkeypatch.setattr("genechat.download.gnomad_installed", lambda: False)
+        monkeypatch.setattr("shutil.which", lambda name: f"/usr/bin/{name}")
+
+        # Mock check_all_versions to return a newer ClinVar
+        monkeypatch.setattr(
+            "genechat.update.check_all_versions",
+            lambda: {
+                "clinvar": "2025-06-15",
+                "gnomad": None,
+                "snpeff": None,
+                "dbsnp": None,
+            },
+        )
+
+        annotate_calls = []
+
+        def mock_annotate_clinvar(patch, vcf_path, step, total, is_update):
+            annotate_calls.append("clinvar")
+
+        monkeypatch.setattr("genechat.cli._annotate_clinvar", mock_annotate_clinvar)
+        monkeypatch.setattr("genechat.cli._annotate_snpeff", lambda *a, **kw: None)
+
+        result = cli.invoke(app, ["annotate", "--stale"])
+
+        assert result.exit_code == 0
+        assert "Stale layers detected: clinvar" in result.output
+        assert "clinvar" in annotate_calls
+
+    def test_annotate_stale_all_up_to_date(self, cli, tmp_path, monkeypatch):
+        """annotate --stale with no stale layers shows up-to-date message."""
+        from genechat.patch import PatchDB
+
+        patch_path = tmp_path / "test.patch.db"
+        patch = PatchDB.create(patch_path)
+        patch.set_metadata("clinvar", "2025-06-15", "complete")
+        patch.close()
+
+        vcf = tmp_path / "test.vcf.gz"
+        vcf.write_bytes(b"fake")
+
+        config = AppConfig(
+            genomes={"default": {"vcf_path": str(vcf), "patch_db": str(patch_path)}}
+        )
+        monkeypatch.setattr("genechat.cli.load_config", lambda: config)
+
+        monkeypatch.setattr(
+            "genechat.update.check_all_versions",
+            lambda: {
+                "clinvar": "2025-06-15",
+                "gnomad": None,
+                "snpeff": None,
+                "dbsnp": None,
+            },
+        )
+
+        result = cli.invoke(app, ["annotate", "--stale"])
+
+        assert result.exit_code == 0
+        assert "up to date" in result.output
+
 
 # ---------------------------------------------------------------------------
 # genechat status
@@ -678,6 +758,176 @@ class TestStatus:
         assert "nate:" in out
         assert "partner:" in out
 
+    def test_check_updates_shows_freshness(self, cli, tmp_path, monkeypatch):
+        """status --check-updates shows freshness indicators for layers."""
+        from genechat.patch import PatchDB
+
+        vcf = tmp_path / "test.vcf.gz"
+        vcf.write_bytes(b"fake")
+        patch_path = tmp_path / "test.patch.db"
+        patch = PatchDB.create(patch_path)
+        patch.set_metadata("clinvar", "2025-01-01", "complete")
+        patch.set_metadata("snpeff", "GRCh38.p14", "complete")
+        patch.close()
+
+        config = AppConfig(
+            genomes={"default": {"vcf_path": str(vcf), "patch_db": str(patch_path)}}
+        )
+        monkeypatch.setattr("genechat.cli.load_config", lambda: config)
+        monkeypatch.setattr(
+            "genechat.download.references_dir", lambda: Path("/tmp/refs")
+        )
+        monkeypatch.setattr("genechat.download.clinvar_installed", lambda: True)
+        monkeypatch.setattr("genechat.download.snpeff_installed", lambda: True)
+        monkeypatch.setattr("genechat.download.gnomad_installed", lambda: False)
+        monkeypatch.setattr("genechat.download.dbsnp_installed", lambda: False)
+        monkeypatch.setattr(
+            "genechat.update.check_all_versions",
+            lambda: {
+                "clinvar": "2025-06-15",
+                "gnomad": None,
+                "snpeff": None,
+                "dbsnp": None,
+            },
+        )
+
+        result = cli.invoke(app, ["status", "--check-updates"])
+
+        assert result.exit_code == 0
+        out = result.output
+        assert "newer: 2025-06-15" in out
+
+
+# ---------------------------------------------------------------------------
+# _freshness_indicator / _resolve_stale_layers helpers
+# ---------------------------------------------------------------------------
+
+
+class TestFreshnessIndicator:
+    def test_returns_empty_when_no_latest(self):
+        assert _freshness_indicator("clinvar", "2025-01-01", {}) == ""
+
+    def test_returns_empty_when_source_not_in_latest(self):
+        assert (
+            _freshness_indicator("gnomad", "2025-01-01", {"clinvar": "2025-06-15"})
+            == ""
+        )
+
+    def test_returns_empty_when_latest_is_none(self):
+        assert _freshness_indicator("clinvar", "2025-01-01", {"clinvar": None}) == ""
+
+    def test_shows_newer_when_stale(self):
+        result = _freshness_indicator(
+            "clinvar", "2025-01-01", {"clinvar": "2025-06-15"}
+        )
+        assert "newer: 2025-06-15" in result
+        assert "yellow" in result
+
+    def test_shows_up_to_date_when_current(self):
+        result = _freshness_indicator(
+            "clinvar", "2025-06-15", {"clinvar": "2025-06-15"}
+        )
+        assert "up to date" in result
+        assert "green" in result
+
+
+class TestResolveStaleLayersUnit:
+    def test_enables_stale_clinvar(self, tmp_path, monkeypatch):
+        from genechat.patch import PatchDB
+
+        vcf = tmp_path / "test.vcf.gz"
+        vcf.write_bytes(b"fake")
+        patch_path = tmp_path / "test.patch.db"
+        patch = PatchDB.create(patch_path)
+        patch.set_metadata("clinvar", "2025-01-01", "complete")
+        patch.close()
+
+        genome_cfg = GenomeConfig(vcf_path=str(vcf), patch_db=str(patch_path))
+
+        monkeypatch.setattr(
+            "genechat.update.check_all_versions",
+            lambda: {
+                "clinvar": "2025-06-15",
+                "gnomad": None,
+                "snpeff": None,
+                "dbsnp": None,
+            },
+        )
+
+        clinvar, gnomad, snpeff, dbsnp = _resolve_stale_layers(
+            genome_cfg, False, False, False, False
+        )
+        assert clinvar is True
+        assert gnomad is False
+        assert snpeff is False
+        assert dbsnp is False
+
+    def test_no_stale_when_up_to_date(self, tmp_path, monkeypatch):
+        from genechat.patch import PatchDB
+
+        vcf = tmp_path / "test.vcf.gz"
+        vcf.write_bytes(b"fake")
+        patch_path = tmp_path / "test.patch.db"
+        patch = PatchDB.create(patch_path)
+        patch.set_metadata("clinvar", "2025-06-15", "complete")
+        patch.close()
+
+        genome_cfg = GenomeConfig(vcf_path=str(vcf), patch_db=str(patch_path))
+
+        monkeypatch.setattr(
+            "genechat.update.check_all_versions",
+            lambda: {
+                "clinvar": "2025-06-15",
+                "gnomad": None,
+                "snpeff": None,
+                "dbsnp": None,
+            },
+        )
+
+        clinvar, gnomad, snpeff, dbsnp = _resolve_stale_layers(
+            genome_cfg, False, False, False, False
+        )
+        assert clinvar is False
+
+    def test_preserves_existing_flags(self, tmp_path, monkeypatch):
+        """--stale doesn't disable layers the user explicitly requested."""
+        from genechat.patch import PatchDB
+
+        vcf = tmp_path / "test.vcf.gz"
+        vcf.write_bytes(b"fake")
+        patch_path = tmp_path / "test.patch.db"
+        patch = PatchDB.create(patch_path)
+        patch.close()
+
+        genome_cfg = GenomeConfig(vcf_path=str(vcf), patch_db=str(patch_path))
+
+        monkeypatch.setattr(
+            "genechat.update.check_all_versions",
+            lambda: {"clinvar": None, "gnomad": None, "snpeff": None, "dbsnp": None},
+        )
+
+        # User passed --gnomad explicitly, should be preserved
+        clinvar, gnomad, snpeff, dbsnp = _resolve_stale_layers(
+            genome_cfg, False, True, False, False
+        )
+        assert gnomad is True
+
+    def test_no_patch_db_returns_flags_unchanged(self, tmp_path, monkeypatch):
+        """If patch.db doesn't exist, flags pass through unchanged."""
+        vcf = tmp_path / "test.vcf.gz"
+        vcf.write_bytes(b"fake")
+
+        genome_cfg = GenomeConfig(
+            vcf_path=str(vcf),
+            patch_db=str(tmp_path / "nonexistent.patch.db"),
+        )
+
+        clinvar, gnomad, snpeff, dbsnp = _resolve_stale_layers(
+            genome_cfg, False, True, False, False
+        )
+        assert clinvar is False
+        assert gnomad is True
+
 
 # ---------------------------------------------------------------------------
 # genechat update
@@ -718,46 +968,52 @@ class TestEnsureLookupDb:
 
     def test_auto_builds_from_source_checkout(self, tmp_path, monkeypatch, capsys):
         """When in source checkout with seed data, auto-builds lookup_tables.db."""
+        import sys
+
+        import genechat.seeds.build_db  # noqa: F401 — force module into sys.modules
+
+        _build_db_mod = sys.modules["genechat.seeds.build_db"]
+
         pkg_data = tmp_path / "pkg" / "data"
         pkg_data.mkdir(parents=True)
-        # No lookup_tables.db yet
 
-        # Set up fake project root with seed dir and build script
         project_root = tmp_path / "project"
         seed_dir = project_root / "data" / "seed"
         seed_dir.mkdir(parents=True)
-        scripts_dir = project_root / "scripts"
-        scripts_dir.mkdir()
-        build_script = scripts_dir / "build_lookup_db.py"
-        build_script.write_text(
-            "def build_db(seed_dir, db_path):\n    db_path.write_bytes(b'built')\n"
-        )
         (project_root / "pyproject.toml").write_text("[project]\nname = 'test'\n")
+
+        def fake_build(seed_dir, db_path):
+            db_path.write_bytes(b"built")
 
         monkeypatch.setattr(_real_resources, "files", lambda _pkg: tmp_path / "pkg")
         monkeypatch.setattr("genechat.cli._find_project_root", lambda: project_root)
+        monkeypatch.setattr(_build_db_mod, "build_db", fake_build)
 
         assert _ensure_lookup_db() is True
         assert "Building lookup_tables.db" in capsys.readouterr().out
 
     def test_auto_build_failure_returns_false(self, tmp_path, monkeypatch, capsys):
         """When auto-build raises an exception, returns False."""
+        import sys
+
+        import genechat.seeds.build_db  # noqa: F401 — force module into sys.modules
+
+        _build_db_mod = sys.modules["genechat.seeds.build_db"]
+
         pkg_data = tmp_path / "pkg" / "data"
         pkg_data.mkdir(parents=True)
 
         project_root = tmp_path / "project"
         seed_dir = project_root / "data" / "seed"
         seed_dir.mkdir(parents=True)
-        scripts_dir = project_root / "scripts"
-        scripts_dir.mkdir()
-        build_script = scripts_dir / "build_lookup_db.py"
-        build_script.write_text(
-            "def build_db(seed_dir, db_path):\n    raise RuntimeError('build failed')\n"
-        )
         (project_root / "pyproject.toml").write_text("[project]\nname = 'test'\n")
+
+        def failing_build(seed_dir, db_path):
+            raise RuntimeError("build failed")
 
         monkeypatch.setattr(_real_resources, "files", lambda _pkg: tmp_path / "pkg")
         monkeypatch.setattr("genechat.cli._find_project_root", lambda: project_root)
+        monkeypatch.setattr(_build_db_mod, "build_db", failing_build)
 
         assert _ensure_lookup_db() is False
         assert "Error building" in capsys.readouterr().err

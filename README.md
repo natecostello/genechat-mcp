@@ -50,9 +50,9 @@ Your genome data stays on your machine. GeneChat only reads from local files. No
 |---------|---------|
 | `genechat init <vcf> [--label] [--gnomad] [--dbsnp] [--gwas]` | Full first-time setup: annotate, write config |
 | `genechat add <vcf> [--label]` | Register a VCF file without annotation |
-| `genechat annotate [--clinvar] [--gnomad] [--snpeff] [--dbsnp] [--all] [--force] [--genome]` | Build or update patch.db (auto-downloads references) |
+| `genechat annotate [--clinvar] [--gnomad] [--snpeff] [--dbsnp] [--all] [--stale] [--force] [--genome]` | Build or update patch.db (auto-downloads references) |
 | `genechat install [--gwas] [--seeds] [--force]` | Install genome-independent reference databases |
-| `genechat status [--json]` | Show all registered genomes, annotation state, and caches |
+| `genechat status [--json] [--check-updates]` | Show all registered genomes, annotation state, and caches |
 | `genechat serve` / `genechat` | Start the MCP server |
 
 **Global flags:** `--version` (print version), `--no-color` (disable colored output). Color output respects the `NO_COLOR` environment variable and is automatically disabled when stdout or stderr is not a TTY.

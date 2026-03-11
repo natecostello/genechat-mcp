@@ -109,7 +109,8 @@ LLM Client (Claude Desktop / Claude Code)
     v
 GeneChat MCP Server (Python)
     +-- CLI: init, add, annotate, install, status, serve
-    |         Flags: --version, --no-color, --json (status). Exit codes 0-6, 130.
+    |         Flags: --version, --no-color, --json (status), --stale (annotate),
+    |                --check-updates (status). Exit codes 0-6, 130.
     +-- Tools: list_genomes, query_variant, query_variants, query_gene,
     |         query_genes, query_clinvar, query_gwas, query_pgx,
     |         calculate_prs, genome_summary
@@ -205,6 +206,13 @@ genechat-mcp/
         query_pgx.py
         calculate_prs.py
         genome_summary.py
+      seeds/
+        __init__.py                # Re-exports build_db, run_pipeline
+        build_db.py                # Seed TSVs -> SQLite lookup_tables.db
+        pipeline.py                # Full fetch+build orchestrator
+        fetch_gene_coords.py       # HGNC + Ensembl API -> gene coordinates
+        fetch_cpic_data.py         # CPIC API -> pgx_drugs + pgx_variants
+        fetch_prs_data.py          # PGS Catalog FTP -> prs_weights
       parsers/
         __init__.py
         snpeff.py                  # Parse SnpEff ANN field
@@ -232,13 +240,13 @@ genechat-mcp/
 
 All seed data is fetched from external APIs at build time. No hand-curated files.
 
-| Source | What it provides | Script |
+| Source | What it provides | Module |
 |--------|-----------------|--------|
-| HGNC + Ensembl | All ~19,000 protein-coding gene coordinates | `fetch_gene_coords.py` |
-| CPIC (ClinPGx API) | PGx drug-gene guidelines + star-allele variants | `fetch_cpic_data.py` |
-| PGS Catalog FTP | Polygenic risk score weights | `fetch_prs_data.py` |
+| HGNC + Ensembl | All ~19,000 protein-coding gene coordinates | `genechat.seeds.fetch_gene_coords` |
+| CPIC (ClinPGx API) | PGx drug-gene guidelines + star-allele variants | `genechat.seeds.fetch_cpic_data` |
+| PGS Catalog FTP | Polygenic risk score weights | `genechat.seeds.fetch_prs_data` |
 
-**Rebuild everything:** `uv run python scripts/build_seed_data.py`
+**Rebuild everything:** `uv run python scripts/build_seed_data.py` (source checkout) or `genechat install --seeds` (pip install)
 
 The `genes` table includes ALL ~19,000 human protein-coding genes. The LLM can query any protein-coding gene without manual additions.
 
