@@ -287,6 +287,9 @@ def main(argv: list[str] | None = None):
     except KeyboardInterrupt:
         print("\nInterrupted.", file=sys.stderr)
         sys.exit(130)
+    except BrokenPipeError:
+        # Piped to head/less — exit quietly
+        sys.exit(0)
     except SystemExit:
         raise
     except Exception as exc:
