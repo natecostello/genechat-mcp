@@ -43,6 +43,8 @@ class TestRouting:
     def test_no_subcommand_shows_help_when_tty(self, monkeypatch, capsys):
         """No subcommand in interactive terminal shows help, not server."""
         monkeypatch.setattr("sys.stdin", _FakeStdin(tty=True))
+        # main() returns normally here: standalone_mode=False makes Click catch
+        # typer.Exit(code=0) internally and return 0, which skips sys.exit().
         main([])
         out = capsys.readouterr().out
         assert "genechat init" in out
