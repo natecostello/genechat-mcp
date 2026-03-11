@@ -7,8 +7,9 @@ data/seed/prs_weights.tsv.
 Source: PGS Catalog (https://www.pgscatalog.org/)
 Data license: CC BY 4.0 (https://www.pgscatalog.org/about/#terms_of_use)
 
-For large scores (>200 variants), keeps top N variants by |weight| to keep
-the database manageable.
+Supports optional per-score variant trimming: set max_variants in PGS_SCORES
+to keep only the top N variants by |weight| for large scores. Currently all
+curated scores use None (no trimming) as the selected scores are small enough.
 """
 
 import csv
