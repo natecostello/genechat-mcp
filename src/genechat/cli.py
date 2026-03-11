@@ -538,6 +538,7 @@ def _resolve_stale_layers(
 
     latest = check_all_versions()
     stale_layers = []
+    any_checked = False
 
     for source, latest_ver in latest.items():
         if latest_ver is None:
@@ -546,6 +547,7 @@ def _resolve_stale_layers(
         installed_ver = info.get("version")
         if not installed_ver:
             continue
+        any_checked = True
         if _is_newer(latest_ver, installed_ver):
             stale_layers.append(source)
 
@@ -560,8 +562,10 @@ def _resolve_stale_layers(
                 snpeff = True
             elif layer == "dbsnp":
                 dbsnp = True
-    else:
+    elif any_checked:
         print("All checkable layers are up to date.")
+    else:
+        print("Could not check for updates (version checks returned no data).")
 
     return clinvar, gnomad, snpeff, dbsnp
 
