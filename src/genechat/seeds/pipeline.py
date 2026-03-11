@@ -45,8 +45,10 @@ def _count_tsv_rows(path: Path) -> int:
 def run_pipeline() -> int:
     """Run the full seed data pipeline. Returns 0 on success, 1 on failure.
 
-    In a source checkout, uses scripts/ and writes TSVs to data/seed/.
-    In a pip install, uses the packaged fetch modules via subprocess.
+    In a source checkout, runs the genechat.seeds.fetch_* modules (via ``python -m``),
+    writes TSVs to ``data/seed/``, and builds ``lookup_tables.db`` in ``src/genechat/data/``.
+    In a pip install, runs the same fetch modules via subprocess in a temp dir and builds
+    ``lookup_tables.db`` at the package data path.
     """
     project_root = _find_project_root()
 
@@ -104,7 +106,11 @@ def run_pipeline() -> int:
             print(f"\n{'=' * 60}")
             print("Building lookup_tables.db...")
             print(f"{'=' * 60}")
-            build_db(seed_dir=seed_dir, db_path=db_path)
+            try:
+                build_db(seed_dir=seed_dir, db_path=db_path)
+            except Exception as exc:
+                print(f"\nERROR: Failed to build lookup_tables.db: {exc}")
+                return 1
 
             _print_summary(seed_dir)
             return 0
@@ -113,7 +119,11 @@ def run_pipeline() -> int:
     print(f"\n{'=' * 60}")
     print("Building lookup_tables.db...")
     print(f"{'=' * 60}")
-    build_db(seed_dir=seed_dir, db_path=db_path)
+    try:
+        build_db(seed_dir=seed_dir, db_path=db_path)
+    except Exception as exc:
+        print(f"\nERROR: Failed to build lookup_tables.db: {exc}")
+        return 1
 
     _print_summary(seed_dir)
     return 0
