@@ -31,21 +31,6 @@ def _default_db_path() -> Path:
         return Path(p)
 
 
-def _run_fetch_script(script_path: Path, cwd: Path) -> bool:
-    """Run a fetch script and return True on success."""
-    print(f"\n{'=' * 60}")
-    print(f"Running {script_path.name}...")
-    print(f"{'=' * 60}")
-    result = subprocess.run(
-        [sys.executable, str(script_path)],
-        cwd=str(cwd),
-    )
-    if result.returncode != 0:
-        print(f"ERROR: {script_path.name} failed with exit code {result.returncode}")
-        return False
-    return True
-
-
 def _count_tsv_rows(path: Path) -> int:
     """Count non-comment, non-header data rows in a TSV file."""
     if not path.exists():
@@ -66,8 +51,7 @@ def run_pipeline() -> int:
     project_root = _find_project_root()
 
     if project_root:
-        # Source checkout: use scripts/ directory and data/seed/
-        scripts_dir = project_root / "scripts"
+        # Source checkout: write TSVs to data/seed/, DB to src/genechat/data/
         seed_dir = project_root / "data" / "seed"
         db_path = project_root / "src" / "genechat" / "data" / "lookup_tables.db"
         seed_dir.mkdir(parents=True, exist_ok=True)
@@ -75,16 +59,19 @@ def run_pipeline() -> int:
         print("GeneChat Seed Data Build Pipeline (source checkout)")
         print("=" * 60)
 
-        for script_name, step_desc in [
-            ("fetch_gene_coords.py", "gene coordinates"),
-            ("fetch_cpic_data.py", "CPIC PGx data"),
-            ("fetch_prs_data.py", "PRS data"),
+        # Use the same genechat.seeds modules as pip-install mode
+        for module_name, step_desc in [
+            ("genechat.seeds.fetch_gene_coords", "gene coordinates"),
+            ("genechat.seeds.fetch_cpic_data", "CPIC PGx data"),
+            ("genechat.seeds.fetch_prs_data", "PRS data"),
         ]:
-            script_path = scripts_dir / script_name
-            if not script_path.exists():
-                print(f"\nERROR: {script_path} not found")
-                return 1
-            if not _run_fetch_script(script_path, project_root):
+            print(f"\n{'=' * 60}")
+            print(f"Running {module_name}...")
+            print(f"{'=' * 60}")
+            result = subprocess.run(
+                [sys.executable, "-m", module_name, str(seed_dir)],
+            )
+            if result.returncode != 0:
                 print(f"\nPipeline failed at {step_desc}")
                 return 1
     else:
