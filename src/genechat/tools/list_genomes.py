@@ -24,7 +24,7 @@ def register(mcp, engines: dict[str, VCFEngine], db, config: AppConfig):
 
         lines = [f"**{len(engines)} genome(s) registered:**\n"]
 
-        for label, engine in engines.items():
+        for label in engines:
             genome_cfg = config.genomes.get(label)
             if not genome_cfg:
                 continue
