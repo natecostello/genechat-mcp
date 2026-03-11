@@ -34,11 +34,21 @@ def register(mcp, engines: dict[str, VCFEngine], db, config: AppConfig):
             lines.append(f"- **Build:** {genome_cfg.genome_build}")
 
             # Annotation state from patch.db
-            if genome_cfg.patch_db and Path(genome_cfg.patch_db).exists():
+            # Derive effective patch_db path: config field, or convention
+            patch_db_path = Path(genome_cfg.patch_db) if genome_cfg.patch_db else None
+            if not patch_db_path or not patch_db_path.exists():
+                # Fallback: <vcf_stem>.patch.db convention
+                vcf_p = Path(genome_cfg.vcf_path)
+                conventional = (
+                    vcf_p.parent / f"{vcf_p.stem.replace('.vcf', '')}.patch.db"
+                )
+                if conventional.exists():
+                    patch_db_path = conventional
+            if patch_db_path and patch_db_path.exists():
                 try:
                     from genechat.patch import PatchDB
 
-                    patch = PatchDB(Path(genome_cfg.patch_db), readonly=True)
+                    patch = PatchDB(patch_db_path, readonly=True)
                     try:
                         meta = patch.get_metadata()
                     finally:
