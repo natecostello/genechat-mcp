@@ -60,7 +60,12 @@ def _download_file(url: str, dest: Path, label: str = "") -> None:
         req = Request(url, headers={"User-Agent": "genechat/0.1"})
         with urlopen(req, timeout=300) as resp:
             total = resp.headers.get("Content-Length")
-            total_bytes = int(total) if total else None
+            total_bytes = None
+            if total:
+                try:
+                    total_bytes = int(total)
+                except (TypeError, ValueError):
+                    total_bytes = None
             total_mb = f" ({total_bytes / 1024 / 1024:.0f} MB)" if total_bytes else ""
             print(f"  Downloading {display}{total_mb}...")
             show_progress = (
