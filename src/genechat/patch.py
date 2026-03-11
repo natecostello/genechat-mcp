@@ -157,21 +157,21 @@ class PatchDB:
 
         Probes the annotations table to estimate what fraction of variants
         already have rsIDs. Used to decide whether dbSNP download is needed.
+        Both counts are computed from the same sampled subset to avoid bias.
         """
         row = self._conn.execute(
-            "SELECT COUNT(*) AS n FROM (SELECT 1 FROM annotations LIMIT ?)",
+            "SELECT "
+            "  COUNT(*) AS total, "
+            "  SUM(CASE WHEN rsid IS NOT NULL THEN 1 ELSE 0 END) AS has_rsid "
+            "FROM (SELECT rsid FROM annotations LIMIT ?)",
             (sample_size,),
         ).fetchone()
-        total = row["n"] if row else 0
+        if not row:
+            return (0, 0)
+        total = row["total"] or 0
         if total == 0:
             return (0, 0)
-        row2 = self._conn.execute(
-            "SELECT COUNT(*) AS n FROM ("
-            "  SELECT rsid FROM annotations WHERE rsid IS NOT NULL LIMIT ?"
-            ")",
-            (sample_size,),
-        ).fetchone()
-        has_rsid = row2["n"] if row2 else 0
+        has_rsid = row["has_rsid"] or 0
         return (total, has_rsid)
 
     def get_metadata(self) -> dict[str, dict]:
