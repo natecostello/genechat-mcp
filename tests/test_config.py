@@ -30,7 +30,8 @@ class TestAppConfig:
             default_genome="something",
         )
         # Legacy fields are ignored via model_config extra="ignore"
-        assert not hasattr(config, "default_genome") or config.genomes == {}
+        assert not hasattr(config, "default_genome")
+        assert config.genomes == {}
 
     def test_no_default_genome_field(self):
         """AppConfig no longer has a default_genome field."""
