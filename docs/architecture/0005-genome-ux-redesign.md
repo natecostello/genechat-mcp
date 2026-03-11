@@ -42,6 +42,35 @@ users register more than one genome:
 2. **Remove `default_genome`, require explicit genome selection** -- this ADR
 3. **Auto-select most recently used genome** -- implicit but less surprising
 
+## Pros and Cons of the Options
+
+- **Option 1 — Keep `default_genome` with stricter messaging**
+  - Pros:
+    - Minimal change for existing users and configs.
+    - Clearer messaging reduces some confusion about which genome is in use.
+  - Cons:
+    - Still relies on hidden implicit state (`default_genome`), which is easy to forget.
+    - Behavior remains state-dependent: commands act differently when multiple genomes exist.
+
+- **Option 2 — Remove `default_genome`, require explicit genome selection** (chosen)
+  - Pros:
+    - Makes the active genome explicit in every multi-genome command, avoiding surprises.
+    - Same CLI / MCP behavior regardless of whether 1 or N genomes are registered.
+    - Aligns with CLI guidelines where commands are verbs (actions) or queries, not both.
+    - Simplifies mental model for LLM tools by forcing explicit genome selection.
+  - Cons:
+    - Breaking change for configs and scripts relying on `default_genome`.
+    - Slightly more verbose for users who previously depended on implicit defaults.
+
+- **Option 3 — Auto-select most recently used genome**
+  - Pros:
+    - Reduces friction for single-user workflows that primarily operate on one genome.
+    - Avoids some explicit flags while still reacting to recent user intent.
+  - Cons:
+    - Reintroduces implicit, time-dependent state that is hard for users (and LLMs) to reason about.
+    - Makes behavior sensitive to history, which can be surprising after idle periods or shared machines.
+    - Still does not give the LLM a clear, explicit way to discover or specify genomes.
+
 ## Decision Outcome
 
 Chosen option: **2. Remove `default_genome`, require explicit genome selection**
@@ -64,7 +93,7 @@ plan file is removed post-merge).
 |---------|------|---------------|
 | `init <vcf>` | First-time setup | Creates one genome |
 | `add <vcf>` | Register a VCF | Creates one genome |
-| `annotate` | Add/refresh annotation layers | Yes (`--genome` required) |
+| `annotate` | Add/refresh annotation layers | Yes (`--genome` required when multiple genomes) |
 | `install` | Genome-independent databases (GWAS, seeds) | No |
 | `status` | Show everything | No (shows all) |
 | `serve` | Start MCP server | No |
