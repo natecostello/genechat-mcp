@@ -5,15 +5,23 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
+import typer
+from typer.testing import CliRunner
 
 from genechat.cli import (
     ExitCode,
     _ensure_lookup_db,
     _patch_db_path_for,
     _validate_vcf,
+    app,
     main,
 )
 from genechat.config import AppConfig, GenomeConfig
+
+
+@pytest.fixture
+def cli():
+    return CliRunner()
 
 
 # ---------------------------------------------------------------------------
@@ -35,23 +43,26 @@ class TestRouting:
     def test_no_subcommand_shows_help_when_tty(self, monkeypatch, capsys):
         """No subcommand in interactive terminal shows help, not server."""
         monkeypatch.setattr("sys.stdin", _FakeStdin(tty=True))
+        # main() returns normally here: standalone_mode=False makes Click catch
+        # typer.Exit(code=0) internally and return 0, which skips sys.exit().
         main([])
         out = capsys.readouterr().out
         assert "genechat init" in out
         assert "Quick start" in out
 
-    def test_no_subcommand_invokes_serve_when_piped(self, monkeypatch):
+    def test_no_subcommand_invokes_serve_when_piped(self, cli, monkeypatch):
         """No subcommand with piped stdin starts the server."""
         called = []
         monkeypatch.setattr("genechat.cli._run_serve", lambda: called.append(True))
-        monkeypatch.setattr("sys.stdin", _FakeStdin(tty=False))
-        main([])
+        result = cli.invoke(app, [])
+        assert result.exit_code == 0
         assert called == [True]
 
-    def test_serve_subcommand_invokes_serve(self, monkeypatch):
+    def test_serve_subcommand_invokes_serve(self, cli, monkeypatch):
         called = []
         monkeypatch.setattr("genechat.cli._run_serve", lambda: called.append(True))
-        main(["serve"])
+        result = cli.invoke(app, ["serve"])
+        assert result.exit_code == 0
         assert called == [True]
 
 
@@ -125,14 +136,10 @@ class TestValidateVcf:
 
 class TestPatchDbPathFor:
     def test_convention_from_vcf(self):
-        from genechat.config import GenomeConfig
-
         result = _patch_db_path_for(Path("/data/sample.vcf.gz"), GenomeConfig())
         assert result == Path("/data/sample.patch.db")
 
     def test_from_genome_config(self):
-        from genechat.config import GenomeConfig
-
         genome_cfg = GenomeConfig(patch_db="/custom/path.db")
         result = _patch_db_path_for(Path("/data/sample.vcf.gz"), genome_cfg)
         assert result == Path("/custom/path.db")
@@ -150,13 +157,12 @@ class TestPatchDbPathFor:
 
 
 class TestAdd:
-    def test_add_missing_vcf(self, capsys):
-        with pytest.raises(SystemExit) as exc_info:
-            main(["add", "/nonexistent/file.vcf.gz"])
-        assert exc_info.value.code == ExitCode.VCF_ERROR
-        assert "not found" in capsys.readouterr().err
+    def test_add_missing_vcf(self, cli):
+        result = cli.invoke(app, ["add", "/nonexistent/file.vcf.gz"])
+        assert result.exit_code == ExitCode.VCF_ERROR
+        assert "not found" in result.output
 
-    def test_add_writes_config(self, tmp_path, capsys, monkeypatch):
+    def test_add_writes_config(self, cli, tmp_path, monkeypatch):
         vcf = tmp_path / "test.vcf.gz"
         vcf.write_bytes(b"fake")
         (tmp_path / "test.vcf.gz.tbi").write_bytes(b"fake")
@@ -167,21 +173,20 @@ class TestAdd:
         )
         _mock_pysam_ok(monkeypatch)
 
-        main(["add", str(vcf)])
+        result = cli.invoke(app, ["add", str(vcf)])
 
         config_path = config_dir / "config.toml"
         assert config_path.exists()
         content = config_path.read_text()
         assert str(vcf.resolve()) in content
-        out = capsys.readouterr().out
-        assert "VCF registered" in out
-        assert "'default'" in out
+        assert "VCF registered" in result.output
+        assert "'default'" in result.output
 
         # Check permissions (owner read/write only)
         mode = config_path.stat().st_mode & 0o777
         assert mode == 0o600
 
-    def test_add_with_label(self, tmp_path, capsys, monkeypatch):
+    def test_add_with_label(self, cli, tmp_path, monkeypatch):
         vcf = tmp_path / "test.vcf.gz"
         vcf.write_bytes(b"fake")
         (tmp_path / "test.vcf.gz.tbi").write_bytes(b"fake")
@@ -192,13 +197,12 @@ class TestAdd:
         )
         _mock_pysam_ok(monkeypatch)
 
-        main(["add", str(vcf), "--label", "nate"])
+        result = cli.invoke(app, ["add", str(vcf), "--label", "nate"])
 
         config_path = config_dir / "config.toml"
         content = config_path.read_text()
         assert "[genomes.nate]" in content
-        out = capsys.readouterr().out
-        assert "'nate'" in out
+        assert "'nate'" in result.output
 
 
 # ---------------------------------------------------------------------------
@@ -207,13 +211,12 @@ class TestAdd:
 
 
 class TestInit:
-    def test_init_missing_vcf(self, capsys):
-        with pytest.raises(SystemExit) as exc_info:
-            main(["init", "/nonexistent/file.vcf.gz"])
-        assert exc_info.value.code == ExitCode.VCF_ERROR
-        assert "not found" in capsys.readouterr().err
+    def test_init_missing_vcf(self, cli):
+        result = cli.invoke(app, ["init", "/nonexistent/file.vcf.gz"])
+        assert result.exit_code == ExitCode.VCF_ERROR
+        assert "not found" in result.output
 
-    def test_init_full_pipeline(self, tmp_path, capsys, monkeypatch):
+    def test_init_full_pipeline(self, cli, tmp_path, monkeypatch):
         """init runs: validate -> config -> lookup_db -> annotate -> print MCP config."""
         vcf = tmp_path / "test.vcf.gz"
         vcf.write_bytes(b"fake")
@@ -228,18 +231,18 @@ class TestInit:
         monkeypatch.setattr("genechat.cli._ensure_lookup_db", lambda: True)
         annotate_calls = []
         monkeypatch.setattr(
-            "genechat.cli._run_annotate", lambda args: annotate_calls.append(args)
+            "genechat.cli._run_annotate", lambda **kw: annotate_calls.append(kw)
         )
 
-        main(["init", str(vcf)])
+        result = cli.invoke(app, ["init", str(vcf)])
 
-        out = capsys.readouterr().out
-        assert "GeneChat Setup" in out
-        assert "mcpServers" in out
+        assert result.exit_code == 0
+        assert "GeneChat Setup" in result.output
+        assert "mcpServers" in result.output
         assert (config_dir / "config.toml").exists()
         assert len(annotate_calls) == 1, "init must delegate to _run_annotate"
 
-    def test_init_gwas_flag(self, tmp_path, capsys, monkeypatch):
+    def test_init_gwas_flag(self, cli, tmp_path, monkeypatch):
         """--gwas calls _run_install and suppresses the hint."""
         vcf = tmp_path / "test.vcf.gz"
         vcf.write_bytes(b"fake")
@@ -251,22 +254,22 @@ class TestInit:
         )
         _mock_pysam_ok(monkeypatch)
         monkeypatch.setattr("genechat.cli._ensure_lookup_db", lambda: True)
-        monkeypatch.setattr("genechat.cli._run_annotate", lambda args: None)
+        monkeypatch.setattr("genechat.cli._run_annotate", lambda **kw: None)
 
         install_calls = []
         monkeypatch.setattr(
             "genechat.cli._run_install",
-            lambda args: install_calls.append(args),
+            lambda **kw: install_calls.append(kw),
         )
 
-        main(["init", str(vcf), "--gwas"])
+        result = cli.invoke(app, ["init", str(vcf), "--gwas"])
 
-        out = capsys.readouterr().out
+        assert result.exit_code == 0
         assert install_calls, "_run_install was not called"
-        assert install_calls[0].gwas is True
-        assert "Optional: Enable GWAS" not in out
+        assert install_calls[0]["gwas"] is True
+        assert "Optional: Enable GWAS" not in result.output
 
-    def test_init_gnomad_passes_flag_to_annotate(self, tmp_path, capsys, monkeypatch):
+    def test_init_gnomad_passes_flag_to_annotate(self, cli, tmp_path, monkeypatch):
         """--gnomad passes through to _run_annotate (no special init handling)."""
         vcf = tmp_path / "test.vcf.gz"
         vcf.write_bytes(b"fake")
@@ -279,18 +282,19 @@ class TestInit:
         _mock_pysam_ok(monkeypatch)
         monkeypatch.setattr("genechat.cli._ensure_lookup_db", lambda: True)
 
-        annotate_args = []
+        annotate_calls = []
         monkeypatch.setattr(
             "genechat.cli._run_annotate",
-            lambda args: annotate_args.append(args),
+            lambda **kw: annotate_calls.append(kw),
         )
 
-        main(["init", str(vcf), "--gnomad"])
+        result = cli.invoke(app, ["init", str(vcf), "--gnomad"])
 
-        assert len(annotate_args) == 1
-        assert annotate_args[0].gnomad is True
+        assert result.exit_code == 0
+        assert len(annotate_calls) == 1
+        assert annotate_calls[0]["gnomad"] is True
 
-    def test_init_missing_lookup_db(self, tmp_path, capsys, monkeypatch):
+    def test_init_missing_lookup_db(self, cli, tmp_path, monkeypatch):
         """init exits when _ensure_lookup_db fails."""
         vcf = tmp_path / "test.vcf.gz"
         vcf.write_bytes(b"fake")
@@ -303,9 +307,8 @@ class TestInit:
         _mock_pysam_ok(monkeypatch)
         monkeypatch.setattr("genechat.cli._ensure_lookup_db", lambda: False)
 
-        with pytest.raises(SystemExit) as exc_info:
-            main(["init", str(vcf)])
-        assert exc_info.value.code == ExitCode.CONFIG_ERROR
+        result = cli.invoke(app, ["init", str(vcf)])
+        assert result.exit_code == ExitCode.CONFIG_ERROR
 
 
 # ---------------------------------------------------------------------------
@@ -314,18 +317,18 @@ class TestInit:
 
 
 class TestInstall:
-    def test_no_flags_shows_available(self, monkeypatch, capsys):
+    def test_no_flags_shows_available(self, cli, monkeypatch):
         """install with no flags lists available databases."""
         monkeypatch.setattr(
             "genechat.gwas.gwas_db_path", lambda: Path("/tmp/data/gwas.db")
         )
-        main(["install"])
-        out = capsys.readouterr().out
-        assert "--gwas" in out
-        assert "--seeds" in out
-        assert "Available databases" in out
+        result = cli.invoke(app, ["install"])
+        assert result.exit_code == 0
+        assert "--gwas" in result.output
+        assert "--seeds" in result.output
+        assert "Available databases" in result.output
 
-    def test_gwas_flag(self, monkeypatch, capsys):
+    def test_gwas_flag(self, cli, monkeypatch):
         """--gwas installs the GWAS Catalog."""
         calls = []
         monkeypatch.setattr(
@@ -336,20 +339,21 @@ class TestInstall:
             "genechat.cli._download_and_build_gwas",
             lambda **kw: calls.append("gwas"),
         )
-        main(["install", "--gwas"])
+        result = cli.invoke(app, ["install", "--gwas"])
+        assert result.exit_code == 0
         assert "gwas" in calls
 
-    def test_gwas_skips_when_installed(self, monkeypatch, capsys):
+    def test_gwas_skips_when_installed(self, cli, monkeypatch):
         """--gwas without --force skips when already installed."""
         monkeypatch.setattr(
             "genechat.gwas.gwas_db_path", lambda: Path("/tmp/data/gwas.db")
         )
         monkeypatch.setattr("genechat.gwas.gwas_installed", lambda: True)
-        main(["install", "--gwas"])
-        out = capsys.readouterr().out
-        assert "already installed" in out
+        result = cli.invoke(app, ["install", "--gwas"])
+        assert result.exit_code == 0
+        assert "already installed" in result.output
 
-    def test_gwas_force_rebuilds(self, monkeypatch, capsys):
+    def test_gwas_force_rebuilds(self, cli, monkeypatch):
         """--gwas --force rebuilds even when already installed."""
         calls = []
         monkeypatch.setattr(
@@ -360,7 +364,8 @@ class TestInstall:
             "genechat.cli._download_and_build_gwas",
             lambda **kw: calls.append(kw),
         )
-        main(["install", "--gwas", "--force"])
+        result = cli.invoke(app, ["install", "--gwas", "--force"])
+        assert result.exit_code == 0
         assert len(calls) == 1
         assert calls[0].get("force") is True
 
@@ -371,14 +376,13 @@ class TestInstall:
 
 
 class TestAnnotate:
-    def test_no_vcf_registered(self, monkeypatch, capsys):
+    def test_no_vcf_registered(self, cli, monkeypatch):
         monkeypatch.setattr("genechat.cli.load_config", lambda: AppConfig())
-        with pytest.raises(SystemExit) as exc_info:
-            main(["annotate"])
-        assert exc_info.value.code == ExitCode.CONFIG_ERROR
-        assert "No VCF registered" in capsys.readouterr().err
+        result = cli.invoke(app, ["annotate"])
+        assert result.exit_code == ExitCode.CONFIG_ERROR
+        assert "No VCF registered" in result.output
 
-    def test_shows_usage_no_action_flags(self, tmp_path, monkeypatch, capsys):
+    def test_shows_usage_no_action_flags(self, cli, tmp_path, monkeypatch):
         """annotate with no action flags (clinvar/snpeff/etc) shows usage guidance."""
         # Create a fake patch.db so it's not a first run
         vcf = tmp_path / "test.vcf.gz"
@@ -395,12 +399,12 @@ class TestAnnotate:
             }
         )
         monkeypatch.setattr("genechat.cli.load_config", lambda: config)
-        main(["annotate", "--genome", "personal"])
+        result = cli.invoke(app, ["annotate", "--genome", "personal"])
 
-        out = capsys.readouterr().out
-        assert "Usage:" in out
-        assert "personal" in out
-        assert "status" in out.lower()
+        assert result.exit_code == 0
+        assert "Usage:" in result.output
+        assert "personal" in result.output
+        assert "status" in result.output.lower()
 
     def test_annotate_dbsnp_calls_bcftools(self, tmp_path, monkeypatch, capsys):
         """_annotate_dbsnp invokes bcftools with correct args and updates metadata."""
@@ -531,7 +535,7 @@ class TestAnnotate:
         patch.close()
 
     def test_annotate_gnomad_incremental_when_not_installed(
-        self, tmp_path, monkeypatch, capsys
+        self, cli, tmp_path, monkeypatch
     ):
         """annotate --gnomad uses incremental mode when gnomAD files aren't present."""
         from genechat.patch import PatchDB
@@ -564,13 +568,14 @@ class TestAnnotate:
         monkeypatch.setattr("genechat.cli._annotate_snpeff", lambda *a, **kw: None)
         monkeypatch.setattr("genechat.cli._annotate_clinvar", lambda *a, **kw: None)
 
-        main(["annotate", "--gnomad"])
+        result = cli.invoke(app, ["annotate", "--gnomad"])
 
+        assert result.exit_code == 0
         assert len(annotate_calls) == 1
         assert annotate_calls[0]["incremental"] is True
 
     def test_annotate_gnomad_not_incremental_when_installed(
-        self, tmp_path, monkeypatch, capsys
+        self, cli, tmp_path, monkeypatch
     ):
         """annotate --gnomad uses normal mode when gnomAD files are present."""
         from genechat.patch import PatchDB
@@ -602,8 +607,9 @@ class TestAnnotate:
         monkeypatch.setattr("genechat.cli._annotate_snpeff", lambda *a, **kw: None)
         monkeypatch.setattr("genechat.cli._annotate_clinvar", lambda *a, **kw: None)
 
-        main(["annotate", "--gnomad"])
+        result = cli.invoke(app, ["annotate", "--gnomad"])
 
+        assert result.exit_code == 0
         assert len(annotate_calls) == 1
         assert annotate_calls[0]["incremental"] is False
 
@@ -614,12 +620,13 @@ class TestAnnotate:
 
 
 class TestStatus:
-    def test_no_genome(self, monkeypatch, capsys):
+    def test_no_genome(self, cli, monkeypatch):
         monkeypatch.setattr("genechat.cli.load_config", lambda: AppConfig())
-        main(["status"])
-        assert "No genome registered" in capsys.readouterr().out
+        result = cli.invoke(app, ["status"])
+        assert result.exit_code == 0
+        assert "No genome registered" in result.output
 
-    def test_with_genome(self, tmp_path, monkeypatch, capsys):
+    def test_with_genome(self, cli, tmp_path, monkeypatch):
         vcf = tmp_path / "test.vcf.gz"
         vcf.write_bytes(b"fake")
 
@@ -633,16 +640,17 @@ class TestStatus:
         monkeypatch.setattr("genechat.download.gnomad_installed", lambda: False)
         monkeypatch.setattr("genechat.download.dbsnp_installed", lambda: False)
 
-        main(["status"])
+        result = cli.invoke(app, ["status"])
 
-        out = capsys.readouterr().out
+        assert result.exit_code == 0
+        out = result.output
         assert "default:" in out
         assert "exists" in out
         assert "Patch DB: not built" in out
         assert "Installed databases" in out
         assert "Annotation caches" in out
 
-    def test_multi_genome_status(self, tmp_path, monkeypatch, capsys):
+    def test_multi_genome_status(self, cli, tmp_path, monkeypatch):
         vcf1 = tmp_path / "nate.vcf.gz"
         vcf2 = tmp_path / "partner.vcf.gz"
         vcf1.write_bytes(b"fake")
@@ -663,9 +671,10 @@ class TestStatus:
         monkeypatch.setattr("genechat.download.gnomad_installed", lambda: False)
         monkeypatch.setattr("genechat.download.dbsnp_installed", lambda: False)
 
-        main(["status"])
+        result = cli.invoke(app, ["status"])
 
-        out = capsys.readouterr().out
+        assert result.exit_code == 0
+        out = result.output
         assert "nate:" in out
         assert "partner:" in out
 
@@ -676,11 +685,10 @@ class TestStatus:
 
 
 class TestUpdateRemoved:
-    def test_update_not_recognized(self):
+    def test_update_not_recognized(self, cli):
         """'update' subcommand was removed in the UX redesign."""
-        with pytest.raises(SystemExit) as exc_info:
-            main(["update"])
-        assert exc_info.value.code == 2  # argparse usage error
+        result = cli.invoke(app, ["update"])
+        assert result.exit_code == 2  # Typer/Click usage error
 
 
 # ---------------------------------------------------------------------------
@@ -830,7 +838,7 @@ class TestResolveGenomeLabel:
         from genechat.cli import _resolve_genome_label
 
         config = AppConfig()
-        with pytest.raises(SystemExit):
+        with pytest.raises(typer.Exit):
             _resolve_genome_label(config, None)
 
     def test_default_genome(self):
@@ -858,7 +866,7 @@ class TestResolveGenomeLabel:
         from genechat.cli import _resolve_genome_label
 
         config = AppConfig(genomes={"default": {"vcf_path": "/test.vcf.gz"}})
-        with pytest.raises(SystemExit):
+        with pytest.raises(typer.Exit):
             _resolve_genome_label(config, "nonexistent")
 
 
@@ -868,12 +876,10 @@ class TestResolveGenomeLabel:
 
 
 class TestVersion:
-    def test_version_flag(self, capsys):
-        with pytest.raises(SystemExit) as exc_info:
-            main(["--version"])
-        assert exc_info.value.code == 0
-        out = capsys.readouterr().out
-        assert "genechat" in out
+    def test_version_flag(self, cli):
+        result = cli.invoke(app, ["--version"])
+        assert result.exit_code == 0
+        assert "genechat" in result.output
 
 
 # ---------------------------------------------------------------------------
@@ -882,7 +888,7 @@ class TestVersion:
 
 
 class TestStatusJson:
-    def test_json_output(self, tmp_path, monkeypatch, capsys):
+    def test_json_output(self, cli, tmp_path, monkeypatch):
         import json as _json
 
         vcf = tmp_path / "test.vcf.gz"
@@ -898,16 +904,16 @@ class TestStatusJson:
         monkeypatch.setattr("genechat.download.gnomad_installed", lambda: False)
         monkeypatch.setattr("genechat.download.dbsnp_installed", lambda: False)
 
-        main(["status", "--json"])
+        result = cli.invoke(app, ["status", "--json"])
 
-        out = capsys.readouterr().out
-        data = _json.loads(out)
+        assert result.exit_code == 0
+        data = _json.loads(result.output)
         assert "genomes" in data
         assert "references" in data
         assert "default" in data["genomes"]
         assert data["genomes"]["default"]["vcf_exists"] is True
 
-    def test_json_no_genome(self, monkeypatch, capsys):
+    def test_json_no_genome(self, cli, monkeypatch):
         import json as _json
 
         monkeypatch.setattr("genechat.cli.load_config", lambda: AppConfig())
@@ -919,10 +925,10 @@ class TestStatusJson:
         monkeypatch.setattr("genechat.download.gnomad_installed", lambda: False)
         monkeypatch.setattr("genechat.download.dbsnp_installed", lambda: False)
 
-        main(["status", "--json"])
+        result = cli.invoke(app, ["status", "--json"])
 
-        out = capsys.readouterr().out
-        data = _json.loads(out)
+        assert result.exit_code == 0
+        data = _json.loads(result.output)
         assert data["genomes"] == {}
 
 
@@ -932,16 +938,7 @@ class TestStatusJson:
 
 
 class TestColor:
-    def test_no_color_env_disables_color(self, monkeypatch):
-        from genechat.cli import _red
-
-        import genechat.cli
-
-        genechat.cli._COLOR_ENABLED = None
-        monkeypatch.setenv("NO_COLOR", "1")
-        assert _red("text") == "text"
-
-    def test_no_color_flag(self, monkeypatch, capsys):
+    def test_no_color_flag(self, cli, monkeypatch):
         """--no-color flag disables color in output."""
         monkeypatch.setattr("genechat.cli.load_config", lambda: AppConfig())
         monkeypatch.setattr(
@@ -951,9 +948,9 @@ class TestColor:
         monkeypatch.setattr("genechat.download.snpeff_installed", lambda: False)
         monkeypatch.setattr("genechat.download.gnomad_installed", lambda: False)
         monkeypatch.setattr("genechat.download.dbsnp_installed", lambda: False)
-        main(["--no-color", "status"])
-        out = capsys.readouterr().out
-        assert "\033[" not in out
+        result = cli.invoke(app, ["--no-color", "status"])
+        assert result.exit_code == 0
+        assert "\033[" not in result.output
 
 
 # ---------------------------------------------------------------------------
