@@ -30,12 +30,12 @@ The current CLI and MCP tool UX around genome selection has several issues:
 - Keep backward-compat migration in `model_post_init` for old configs (migrate `[genome]` → `[genomes.default]`), but don't set a default
 
 **CLI changes:**
-- `--genome <label>` is always required on per-genome commands (`annotate`)
+- `--genome <label>` is required on per-genome commands (`annotate`) when more than one genome is registered; when exactly one genome is registered, that genome is used by default but can still be specified explicitly with `--genome`
 - `--genome` accepts one or more labels, plus the keyword `all` as shorthand for all registered genomes (useful for `annotate --stale --genome all`)
 - `genechat init` still assigns a label via `--label` or filename, but doesn't mark it as primary
 - `genechat status` shows all genomes (no change needed — it already does)
 
-**Behavior:** Whether you have 1 or 5 genomes, `genechat annotate --clinvar` without `--genome` always prints usage help with available labels. No state-dependent branching.
+**Behavior:** In a single-genome setup, `genechat annotate --clinvar` without `--genome` runs against the only registered genome. When multiple genomes are registered, omitting `--genome` prints usage help with the available labels so the user can choose explicitly.
 
 ### 2. Redesign `genechat annotate` (no flags) + add `--stale`
 
