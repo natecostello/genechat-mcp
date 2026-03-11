@@ -539,12 +539,25 @@ def _run_annotate(args):
 
     if not any_flag and not first_run:
         # No action flags and patch.db already exists → show usage guidance
-        available = "\n".join(f"  {k}" for k in config.genomes)
-        print(
-            "Usage: genechat annotate --genome <label> "
-            "[--clinvar | --snpeff | --gnomad | --dbsnp | --all]"
-        )
-        print(f"\nAvailable genomes:\n{available}")
+        genome_labels = list(config.genomes)
+        if len(genome_labels) == 1:
+            # Single-genome config: --genome is optional
+            print(
+                "Usage: genechat annotate "
+                "[--clinvar | --snpeff | --gnomad | --dbsnp | --all]"
+            )
+            print(
+                f"\nOnly one genome is registered (no --genome needed):"
+                f"\n  {genome_labels[0]}"
+            )
+        else:
+            # Multi-genome config: require explicit --genome <label>
+            available = "\n".join(f"  {k}" for k in genome_labels)
+            print(
+                "Usage: genechat annotate --genome <label> "
+                "[--clinvar | --snpeff | --gnomad | --dbsnp | --all]"
+            )
+            print(f"\nAvailable genomes:\n{available}")
         print("\nRun 'genechat status' to see current annotation state.")
         return
 
