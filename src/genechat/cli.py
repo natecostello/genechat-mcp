@@ -496,9 +496,11 @@ def _resolve_genome_label(config, genome_arg: str | None) -> tuple[str, object]:
         else:
             available = "\n".join(f"  {k}" for k in config.genomes)
             print(
-                f"Multiple genomes registered. Use --genome <label>:\n\n{available}",
-                file=sys.stderr,
+                "Usage: genechat annotate --genome <label> "
+                "[--clinvar | --snpeff | --gnomad | --dbsnp | --all]"
             )
+            print(f"\nAvailable genomes:\n{available}")
+            print("\nRun 'genechat status' to see current annotation state.")
             sys.exit(ExitCode.USAGE_ERROR)
     else:
         label = genome_arg
@@ -1429,10 +1431,9 @@ def _run_status(json_output: bool = False):
         vcf_status = _green("exists") if vcf_exists else _red("NOT FOUND")
         print(f"    VCF:      {_dim(str(vcf_path))} ({vcf_status})")
 
-        # Patch DB status
-        patch_db_str = genome_cfg.patch_db
-        if patch_db_str and Path(patch_db_str).exists():
-            patch_db_path = Path(patch_db_str)
+        # Patch DB status — use same resolution as annotate
+        patch_db_path = _patch_db_path_for(vcf_path, genome_cfg)
+        if patch_db_path.exists():
             size_mb = patch_db_path.stat().st_size / 1024 / 1024
             print(f"    Patch DB: {_dim(str(patch_db_path))} ({size_mb:.0f} MB)")
 
