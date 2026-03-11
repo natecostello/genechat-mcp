@@ -280,7 +280,7 @@ def main(argv: list[str] | None = None):
             _run_status(json_output=getattr(args, "json_output", False))
         else:
             # No subcommand or "serve"
-            if args.command is None and sys.stdin.isatty():
+            if args.command is None and getattr(sys.stdin, "isatty", lambda: False)():
                 print(_INTERACTIVE_HELP, end="")
             else:
                 _run_serve()
