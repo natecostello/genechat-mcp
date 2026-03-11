@@ -257,9 +257,11 @@ def main(argv: list[str] | None = None):
     try:
         rv = app(argv, standalone_mode=False)
         # standalone_mode=False returns exit codes instead of calling sys.exit().
-        # A non-zero return from Click means an error/abort (e.g. KeyboardInterrupt
-        # becomes Abort which returns 1).
+        # Typer's __call__ catches click.Abort (from KeyboardInterrupt) internally
+        # and returns 130 before our except handlers can fire.
         if rv:
+            if rv == 130:
+                print("\nInterrupted.", file=sys.stderr)
             sys.exit(rv)
     except click.exceptions.Exit as e:
         sys.exit(e.exit_code)

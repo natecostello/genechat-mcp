@@ -959,7 +959,7 @@ class TestColor:
 
 
 class TestExceptionHandling:
-    def test_keyboard_interrupt_exits_130(self, monkeypatch):
+    def test_keyboard_interrupt_exits_130(self, monkeypatch, capsys):
         monkeypatch.setattr(
             "genechat.cli._run_serve",
             lambda: (_ for _ in ()).throw(KeyboardInterrupt),
@@ -967,6 +967,7 @@ class TestExceptionHandling:
         with pytest.raises(SystemExit) as exc_info:
             main(["serve"])
         assert exc_info.value.code == 130
+        assert "Interrupted" in capsys.readouterr().err
 
     def test_unexpected_exception_exits_1(self, monkeypatch, capsys):
         def raise_runtime():
