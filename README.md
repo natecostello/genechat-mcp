@@ -148,7 +148,7 @@ Running with `--gwas` will:
 **Optional extras** (combine any flags in a single init):
 
 ```bash
-# Also include gnomAD population frequencies for smarter gene filtering
+# Also include gnomAD population frequencies and GWAS Catalog traits
 uv run genechat init /path/to/your/raw.vcf.gz --gnomad --gwas
 ```
 
