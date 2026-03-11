@@ -35,24 +35,32 @@ def register(mcp, engines: dict[str, VCFEngine], db, config: AppConfig):
 
             # Annotation state from patch.db
             if genome_cfg.patch_db and Path(genome_cfg.patch_db).exists():
-                from genechat.patch import PatchDB
-
-                patch = PatchDB(Path(genome_cfg.patch_db), readonly=True)
                 try:
-                    meta = patch.get_metadata()
-                finally:
-                    patch.close()
+                    from genechat.patch import PatchDB
 
-                layers = []
-                for source in ["snpeff", "clinvar", "gnomad", "dbsnp"]:
-                    info = meta.get(source, {})
-                    if info and info.get("status") == "complete":
-                        version = info.get("version", "")
-                        layers.append(f"{source} ({version})" if version else source)
-                if layers:
-                    lines.append(f"- **Annotations:** {', '.join(layers)}")
+                    patch = PatchDB(Path(genome_cfg.patch_db), readonly=True)
+                    try:
+                        meta = patch.get_metadata()
+                    finally:
+                        patch.close()
+                except Exception as exc:
+                    lines.append(
+                        "- **Annotations:** unavailable "
+                        f"(error reading patch.db: {exc})"
+                    )
                 else:
-                    lines.append("- **Annotations:** none")
+                    layers = []
+                    for source in ["snpeff", "clinvar", "gnomad", "dbsnp"]:
+                        info = meta.get(source, {})
+                        if info and info.get("status") == "complete":
+                            version = info.get("version", "")
+                            layers.append(
+                                f"{source} ({version})" if version else source
+                            )
+                    if layers:
+                        lines.append(f"- **Annotations:** {', '.join(layers)}")
+                    else:
+                        lines.append("- **Annotations:** none")
             else:
                 lines.append("- **Annotations:** not built (no patch.db)")
 
