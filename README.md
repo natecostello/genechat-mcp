@@ -131,21 +131,28 @@ uv run genechat init /path/to/your/raw.vcf.gz --label personal
 genechat init /path/to/your/raw.vcf.gz --label personal
 ```
 
+**For best results**, add `--gwas` to enable trait association queries (only ~58 MB):
+
+```bash
+uv run genechat init /path/to/your/raw.vcf.gz --label personal --gwas
+```
+
 This will:
 1. Detect and fix bare contig names (e.g. GIAB VCFs use `1`, `2` instead of `chr1`, `chr2`)
 2. Download ClinVar and SnpEff databases
 3. Build a patch database with functional annotations and clinical significance
-4. Write a `config.toml` to your OS config directory (`~/Library/Application Support/genechat/` on macOS, `~/.config/genechat/` on Linux)
-5. Print the MCP JSON to paste into Claude Desktop or Claude Code
+4. Install the GWAS Catalog for trait/disease association lookups
+5. Write a `config.toml` to your OS config directory (`~/Library/Application Support/genechat/` on macOS, `~/.config/genechat/` on Linux)
+6. Print the MCP JSON to paste into Claude Desktop or Claude Code
 
 **Optional extras** (combine any flags in a single init):
 
 ```bash
-# Include gnomAD population frequencies and/or GWAS trait search (~58 MB download)
+# Also include gnomAD population frequencies for smarter gene filtering
 uv run genechat init /path/to/your/raw.vcf.gz --gnomad --gwas
 ```
 
-gnomAD is optional; without it, `query_gene` falls back to ClinVar-only filtering. GWAS enables `query_gwas` for trait association lookups. Both can be added after init via `genechat annotate --gnomad` / `genechat install --gwas`.
+gnomAD is optional; without it, `query_gene` falls back to ClinVar-only filtering. Both gnomAD and GWAS can be added after init via `genechat annotate --gnomad` / `genechat install --gwas`.
 
 > **Disk usage:** `--gnomad` downloads each gnomAD chromosome, annotates from it, then deletes the file — peak disk usage is ~17 GB (one chromosome) rather than ~150 GB for all files at once.
 
@@ -160,7 +167,7 @@ You can explore GeneChat using the [GIAB NA12878](https://www.nist.gov/programs-
 curl -L -O https://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/NA12878_HG001/NISTv4.2.1/GRCh38/HG001_GRCh38_1_22_v4.2.1_benchmark.vcf.gz
 
 # Initialize (auto-fixes contig names, downloads references, annotates)
-uv run genechat init HG001_GRCh38_1_22_v4.2.1_benchmark.vcf.gz --label giab
+uv run genechat init HG001_GRCh38_1_22_v4.2.1_benchmark.vcf.gz --label giab --gwas
 ```
 
 Then ask Claude questions just like you would with your own genome.

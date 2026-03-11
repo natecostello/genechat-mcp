@@ -105,13 +105,13 @@ Commands:
   genechat init <vcf>       Full first-time setup (register + annotate)
   genechat add <vcf>        Register a VCF file
   genechat annotate         Build/update annotation database
-  genechat install --gwas   Install GWAS Catalog
+  genechat install          Install reference databases (e.g. --gwas)
   genechat update           Check for newer references
   genechat status           Show genome info and annotation state
   genechat serve            Start the MCP server
 
 Quick start:
-  genechat init /path/to/your/raw.vcf.gz
+  genechat init /path/to/your/raw.vcf.gz --gwas
 
 Run 'genechat <command> --help' for details on each command.
 
@@ -156,8 +156,8 @@ def main(argv: list[str] | None = None):
         description=(
             "Full first-time setup for a VCF file.\n\n"
             "Examples:\n"
-            "  genechat init /path/to/raw.vcf.gz\n"
-            "  genechat init /path/to/raw.vcf.gz --label personal --gnomad"
+            "  genechat init /path/to/raw.vcf.gz --gwas\n"
+            "  genechat init /path/to/raw.vcf.gz --label personal --gwas --gnomad"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -538,7 +538,7 @@ def _run_annotate(args):
 
     if not any_flag and not first_run:
         # No flags and patch.db exists -> show status
-        _print_annotation_status(patch_db_path)
+        _print_annotation_status(patch_db_path, vcf_path)
         return
 
     # On first run or --all, run everything available
@@ -1021,7 +1021,7 @@ def _dbsnp_version(dbsnp_vcf: Path) -> str | None:
     return None
 
 
-def _print_annotation_status(patch_db_path: Path):
+def _print_annotation_status(patch_db_path: Path, vcf_path: Path | None = None):
     """Print current annotation status for an existing patch.db."""
     from genechat.patch import PatchDB
 
@@ -1031,6 +1031,8 @@ def _print_annotation_status(patch_db_path: Path):
     finally:
         patch.close()
 
+    if vcf_path:
+        print(f"VCF: {vcf_path}")
     size_mb = patch_db_path.stat().st_size / 1024 / 1024
     print(f"Patch database: {patch_db_path} ({size_mb:.0f} MB)")
     for source in ["snpeff", "clinvar", "gnomad", "dbsnp"]:
