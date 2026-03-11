@@ -134,7 +134,11 @@ genechat init /path/to/your/raw.vcf.gz --label personal
 **For best results**, add `--gwas` to enable trait association queries (~58 MB download, ~300 MB on disk after building):
 
 ```bash
+# If installed from source:
 uv run genechat init /path/to/your/raw.vcf.gz --label personal --gwas
+
+# If installed as a tool:
+genechat init /path/to/your/raw.vcf.gz --label personal --gwas
 ```
 
 Running with `--gwas` will:
