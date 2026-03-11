@@ -597,6 +597,24 @@ def _run_annotate(args):
         print("  Install: brew install htslib (macOS)", file=sys.stderr)
         sys.exit(ExitCode.TOOL_ERROR)
 
+    # rsID probe guard: skip dbSNP download if VCF already has rsIDs
+    # (only when patch.db exists — first_run has no annotations to probe)
+    if run_dbsnp and not first_run:
+        force = getattr(args, "force", False)
+        probe_patch = PatchDB(patch_db_path, readonly=True)
+        try:
+            total_ann, has_rsid = probe_patch.rsid_coverage()
+        finally:
+            probe_patch.close()
+        if total_ann > 0 and not force:
+            coverage = has_rsid / total_ann
+            if coverage > 0.9:
+                print(
+                    f"  Skipping dbSNP: {coverage:.0%} of variants already have "
+                    f"rsIDs ({has_rsid:,}/{total_ann:,}). Use --force to override."
+                )
+                run_dbsnp = False
+
     # Auto-download references if not present
     if run_clinvar and not clinvar_installed():
         print("  Downloading ClinVar reference...")
@@ -646,20 +664,6 @@ def _run_annotate(args):
                 not first_run,
                 incremental=gnomad_incremental,
             )
-
-        if run_dbsnp:
-            # rsID probe guard: skip dbSNP if VCF already has rsIDs
-            force = getattr(args, "force", False)
-            total_ann, has_rsid = patch.rsid_coverage()
-            if total_ann > 0 and not force:
-                coverage = has_rsid / total_ann
-                if coverage > 0.9:
-                    print(
-                        f"  Skipping dbSNP: {coverage:.0%} of variants already have "
-                        f"rsIDs ({has_rsid:,}/{total_ann:,}). Use --force to override."
-                    )
-                    run_dbsnp = False
-                    total_steps -= 1
 
         if run_dbsnp:
             step += 1
