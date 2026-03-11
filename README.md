@@ -52,8 +52,25 @@ Your genome data stays on your machine. GeneChat only reads from local files. No
 | `genechat annotate [--clinvar] [--gnomad] [--snpeff] [--dbsnp] [--all] [--genome]` | Build or update patch.db (auto-downloads references) |
 | `genechat install [--gwas] [--force]` | Install genome-independent reference databases |
 | `genechat update [--apply] [--genome] [--seeds]` | Check for newer reference versions |
-| `genechat status` | Show all registered genomes and annotation state |
+| `genechat status [--json]` | Show all registered genomes and annotation state |
 | `genechat serve` / `genechat` | Start the MCP server |
+
+**Global flags:** `--version` (print version), `--no-color` (disable colored output). Color output respects the `NO_COLOR` environment variable and is automatically disabled when stdout or stderr is not a TTY.
+
+Running `genechat` with no subcommand in an interactive terminal shows a help summary. When stdin is piped (e.g. from an MCP client), it starts the server — so existing MCP configurations are unaffected.
+
+### Exit Codes
+
+| Code | Meaning |
+|------|---------|
+| 0 | Success |
+| 1 | General/unexpected error |
+| 2 | Invalid usage (bad arguments) |
+| 3 | Configuration error (missing config, no VCF registered) |
+| 4 | VCF error (file not found, invalid, missing index) |
+| 5 | External tool error (bcftools/snpEff not found) |
+| 6 | Network error (download failed) |
+| 130 | Interrupted (Ctrl-C) |
 
 > **Note:** `bcftools` and `tabix` are required for annotation (ClinVar contig rename, gnomAD, and dbSNP). References are auto-downloaded when needed. gnomAD (`--gnomad`) downloads ~150 GB of per-chromosome exome VCFs. dbSNP (`--dbsnp`) downloads ~20 GB from NCBI. Neither is included in the default `genechat init` — pass the flags explicitly to enable them.
 
