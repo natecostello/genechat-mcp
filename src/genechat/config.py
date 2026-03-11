@@ -219,10 +219,17 @@ def load_config(path: str | None = None) -> AppConfig:
         with open(config_path, "rb") as f:
             data = tomllib.load(f)
         # Migrate legacy [genome] section → [genomes.default]
-        if "genome" in data and "genomes" not in data:
-            data["genomes"] = {"default": data.pop("genome")}
-        elif "genome" in data:
-            data.pop("genome")  # Drop legacy field if genomes already exists
+        if "genome" in data:
+            legacy_genome = data.pop("genome")
+            genomes = data.get("genomes")
+            # If genomes is missing or empty, treat legacy genome as default
+            if not isinstance(genomes, dict) or not genomes:
+                if not isinstance(genomes, dict):
+                    genomes = {}
+                if "default" not in genomes:
+                    genomes["default"] = legacy_genome
+                data["genomes"] = genomes
+            # If genomes already has one or more configured entries, ignore legacy
         # Drop legacy fields that no longer exist on AppConfig
         data.pop("default_genome", None)
         config = AppConfig(**data)
