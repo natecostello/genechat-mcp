@@ -10,8 +10,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-from platformdirs import user_data_dir
-
+from genechat.config import _user_db_path
 from genechat.seeds.build_db import build_db
 
 
@@ -23,11 +22,6 @@ def _find_project_root() -> Path | None:
             return current
         current = current.parent
     return None
-
-
-def _user_db_path() -> Path:
-    """User-writable lookup_tables.db path for pip-install mode."""
-    return Path(user_data_dir("genechat")) / "lookup_tables.db"
 
 
 def _count_tsv_rows(path: Path) -> int:
@@ -47,7 +41,7 @@ def run_pipeline() -> int:
     In a source checkout, runs the genechat.seeds.fetch_* modules (via ``python -m``),
     writes TSVs to ``data/seed/``, and builds ``lookup_tables.db`` in ``src/genechat/data/``.
     In a pip install, runs the same fetch modules via subprocess in a temp dir and builds
-    ``lookup_tables.db`` at the package data path.
+    ``lookup_tables.db`` in the user data directory (``~/.local/share/genechat/``).
     """
     project_root = _find_project_root()
 
