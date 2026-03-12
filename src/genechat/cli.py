@@ -312,10 +312,18 @@ def _find_project_root() -> Path | None:
 def _ensure_lookup_db() -> bool:
     """Ensure lookup_tables.db exists. Auto-build if in a source checkout.
 
+    Checks user data dir first (rebuilt DB), then package-bundled copy.
     Returns True if DB is available, False if not.
     """
     from importlib import resources
 
+    from genechat.config import _user_db_path
+
+    # Check user-rebuilt copy first
+    if _user_db_path().exists():
+        return True
+
+    # Check package-bundled copy
     data_dir_ref = resources.files("genechat") / "data"
     with resources.as_file(data_dir_ref) as data_dir:
         db_path = data_dir / "lookup_tables.db"

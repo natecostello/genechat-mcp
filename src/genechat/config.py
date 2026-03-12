@@ -5,7 +5,7 @@ import tomllib
 from importlib import resources
 from pathlib import Path
 
-from platformdirs import user_config_dir
+from platformdirs import user_config_dir, user_data_dir
 from pydantic import BaseModel
 
 
@@ -58,10 +58,17 @@ class AppConfig(BaseModel):
         return str(gwas_db_path())
 
 
+def _user_db_path() -> Path:
+    """User-writable lookup_tables.db location (rebuilt by genechat install --seeds)."""
+    return Path(user_data_dir("genechat")) / "lookup_tables.db"
+
+
 def _default_db_path() -> Path:
-    """Locate the built-in lookup_tables.db from package data."""
+    """Locate lookup_tables.db: user-rebuilt copy first, then package-bundled."""
+    user_path = _user_db_path()
+    if user_path.exists():
+        return user_path
     ref = resources.files("genechat") / "data" / "lookup_tables.db"
-    # For installed packages, this may be a traversable; resolve to a real path
     with resources.as_file(ref) as p:
         return Path(p)
 

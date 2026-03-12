@@ -947,11 +947,24 @@ class TestUpdateRemoved:
 
 
 class TestEnsureLookupDb:
+    def test_returns_true_when_user_rebuilt_db_exists(self, tmp_path, monkeypatch):
+        """User-rebuilt DB in user_data_dir is found without checking package data."""
+        user_db = tmp_path / "user" / "lookup_tables.db"
+        user_db.parent.mkdir(parents=True)
+        user_db.write_bytes(b"user-rebuilt")
+
+        monkeypatch.setattr("genechat.config._user_db_path", lambda: user_db)
+        assert _ensure_lookup_db() is True
+
     def test_returns_true_when_db_exists(self, tmp_path, monkeypatch):
         pkg_data = tmp_path / "pkg" / "data"
         pkg_data.mkdir(parents=True)
         (pkg_data / "lookup_tables.db").write_bytes(b"fake")
 
+        # No user-rebuilt DB
+        monkeypatch.setattr(
+            "genechat.config._user_db_path", lambda: tmp_path / "no" / "db"
+        )
         monkeypatch.setattr(_real_resources, "files", lambda _pkg: tmp_path / "pkg")
         assert _ensure_lookup_db() is True
 
@@ -960,6 +973,9 @@ class TestEnsureLookupDb:
         pkg_data.mkdir(parents=True)
         # No lookup_tables.db
 
+        monkeypatch.setattr(
+            "genechat.config._user_db_path", lambda: tmp_path / "no" / "db"
+        )
         monkeypatch.setattr(_real_resources, "files", lambda _pkg: tmp_path / "pkg")
         monkeypatch.setattr("genechat.cli._find_project_root", lambda: None)
 
@@ -985,6 +1001,9 @@ class TestEnsureLookupDb:
         def fake_build(seed_dir, db_path):
             db_path.write_bytes(b"built")
 
+        monkeypatch.setattr(
+            "genechat.config._user_db_path", lambda: tmp_path / "no" / "db"
+        )
         monkeypatch.setattr(_real_resources, "files", lambda _pkg: tmp_path / "pkg")
         monkeypatch.setattr("genechat.cli._find_project_root", lambda: project_root)
         monkeypatch.setattr(_build_db_mod, "build_db", fake_build)
@@ -1011,6 +1030,9 @@ class TestEnsureLookupDb:
         def failing_build(seed_dir, db_path):
             raise RuntimeError("build failed")
 
+        monkeypatch.setattr(
+            "genechat.config._user_db_path", lambda: tmp_path / "no" / "db"
+        )
         monkeypatch.setattr(_real_resources, "files", lambda _pkg: tmp_path / "pkg")
         monkeypatch.setattr("genechat.cli._find_project_root", lambda: project_root)
         monkeypatch.setattr(_build_db_mod, "build_db", failing_build)
@@ -1025,6 +1047,9 @@ class TestEnsureLookupDb:
         pkg_data = tmp_path / "pkg" / "data"
         pkg_data.mkdir(parents=True)
 
+        monkeypatch.setattr(
+            "genechat.config._user_db_path", lambda: tmp_path / "no" / "db"
+        )
         monkeypatch.setattr(_real_resources, "files", lambda _pkg: tmp_path / "pkg")
         monkeypatch.setattr("genechat.cli._find_project_root", lambda: None)
 
