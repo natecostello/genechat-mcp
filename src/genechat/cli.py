@@ -320,7 +320,7 @@ def _ensure_lookup_db() -> bool:
     from genechat.config import _user_db_path
 
     # Check user-rebuilt copy first
-    if _user_db_path().exists():
+    if _user_db_path().is_file():
         return True
 
     # Check package-bundled copy

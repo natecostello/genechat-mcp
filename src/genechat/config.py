@@ -66,7 +66,7 @@ def _user_db_path() -> Path:
 def _default_db_path() -> Path:
     """Locate lookup_tables.db: user-rebuilt copy first, then package-bundled."""
     user_path = _user_db_path()
-    if user_path.exists():
+    if user_path.is_file():
         return user_path
     ref = resources.files("genechat") / "data" / "lookup_tables.db"
     with resources.as_file(ref) as p:
