@@ -954,6 +954,14 @@ class TestEnsureLookupDb:
         user_db.write_bytes(b"user-rebuilt")
 
         monkeypatch.setattr("genechat.config._user_db_path", lambda: user_db)
+
+        # Ensure we do not fall back to package data when a user DB exists.
+        def _forbid_files(_pkg: object) -> Path:
+            raise AssertionError(
+                "importlib.resources.files should not be called when user DB exists"
+            )
+
+        monkeypatch.setattr(_real_resources, "files", _forbid_files)
         assert _ensure_lookup_db() is True
 
     def test_returns_true_when_db_exists(self, tmp_path, monkeypatch):
