@@ -193,6 +193,13 @@ def annotate(
     all_layers: Annotated[
         bool, typer.Option("--all", help="Re-annotate all layers")
     ] = False,
+    stale: Annotated[
+        bool,
+        typer.Option(
+            "--stale",
+            help="Re-annotate layers with newer references available (requires network)",
+        ),
+    ] = False,
     force: Annotated[
         bool,
         typer.Option(
@@ -211,6 +218,7 @@ def annotate(
         snpeff=snpeff,
         dbsnp=dbsnp,
         all_layers=all_layers,
+        stale=stale,
         force=force,
         genome=genome,
     )
@@ -221,9 +229,16 @@ def status(
     json_output: Annotated[
         bool, typer.Option("--json", help="Output status as JSON")
     ] = False,
+    check_updates: Annotated[
+        bool,
+        typer.Option(
+            "--check-updates",
+            help="Check for newer reference versions (requires network)",
+        ),
+    ] = False,
 ):
     """Show genome info and annotation state."""
-    _run_status(json_output=json_output)
+    _run_status(json_output=json_output, check_updates=check_updates)
 
 
 @app.command()
@@ -308,28 +323,19 @@ def _ensure_lookup_db() -> bool:
             return True
 
         project_root = _find_project_root()
-        build_script = (
-            project_root / "scripts" / "build_lookup_db.py" if project_root else None
-        )
         seed_dir = project_root / "data" / "seed" if project_root else None
 
-        if build_script and build_script.exists() and seed_dir and seed_dir.exists():
-            import importlib.util
+        if seed_dir and seed_dir.exists():
+            try:
+                from genechat.seeds.build_db import build_db
 
-            spec = importlib.util.spec_from_file_location(
-                "genechat_build_lookup_db", str(build_script)
-            )
-            if spec is not None and spec.loader is not None:
-                try:
-                    build_mod = importlib.util.module_from_spec(spec)
-                    spec.loader.exec_module(build_mod)
-                    print("Building lookup_tables.db from seed data...")
-                    build_mod.build_db(seed_dir=seed_dir, db_path=db_path)
-                    print(f"  Built: {db_path}")
-                    return True
-                except Exception as exc:
-                    print(f"Error building lookup_tables.db: {exc}", file=sys.stderr)
-                    return False
+                print("Building lookup_tables.db from seed data...")
+                build_db(seed_dir=seed_dir, db_path=db_path)
+                print(f"  Built: {db_path}")
+                return True
+            except Exception as exc:
+                print(f"Error building lookup_tables.db: {exc}", file=sys.stderr)
+                return False
 
         print(
             "Error: lookup_tables.db not found.",
@@ -505,18 +511,84 @@ def _resolve_genome_label(config, genome_arg: str | None) -> tuple[str, object]:
     return label, config.genomes[label]
 
 
+def _resolve_stale_layers(
+    genome_cfg, clinvar: bool, gnomad: bool, snpeff: bool, dbsnp: bool
+) -> tuple[bool, bool, bool, bool]:
+    """Check for newer reference versions and enable stale layers.
+
+    Returns updated (clinvar, gnomad, snpeff, dbsnp) flags with stale
+    layers set to True.
+    """
+    from genechat.patch import PatchDB
+    from genechat.update import _is_newer, check_all_versions
+
+    vcf_path = Path(genome_cfg.vcf_path) if genome_cfg.vcf_path else None
+    if not vcf_path:
+        return clinvar, gnomad, snpeff, dbsnp
+
+    patch_db_path = _patch_db_path_for(vcf_path, genome_cfg)
+    if not patch_db_path.exists():
+        return clinvar, gnomad, snpeff, dbsnp
+
+    patch = PatchDB(patch_db_path, readonly=True)
+    try:
+        meta = patch.get_metadata()
+    finally:
+        patch.close()
+
+    latest = check_all_versions()
+    stale_layers = []
+    any_checked = False
+
+    for source, latest_ver in latest.items():
+        if latest_ver is None:
+            continue
+        info = meta.get(source, {})
+        installed_ver = info.get("version")
+        if not installed_ver:
+            continue
+        any_checked = True
+        if _is_newer(latest_ver, installed_ver):
+            stale_layers.append(source)
+
+    if stale_layers:
+        print(f"Stale layers detected: {', '.join(stale_layers)}")
+        for layer in stale_layers:
+            if layer == "clinvar":
+                clinvar = True
+            elif layer == "gnomad":
+                gnomad = True
+            elif layer == "snpeff":
+                snpeff = True
+            elif layer == "dbsnp":
+                dbsnp = True
+    elif any_checked:
+        print("All checkable layers are up to date.")
+    else:
+        print("Could not check for updates (version checks returned no data).")
+
+    return clinvar, gnomad, snpeff, dbsnp
+
+
 def _run_annotate(
     clinvar: bool = False,
     gnomad: bool = False,
     snpeff: bool = False,
     dbsnp: bool = False,
     all_layers: bool = False,
+    stale: bool = False,
     force: bool = False,
     genome: str | None = None,
 ):
     """Build or update patch.db for the registered VCF."""
     config = load_config()
     label, genome_cfg = _resolve_genome_label(config, genome)
+
+    # --stale: check for newer versions and enable stale layers
+    if stale:
+        clinvar, gnomad, snpeff, dbsnp = _resolve_stale_layers(
+            genome_cfg, clinvar, gnomad, snpeff, dbsnp
+        )
 
     # Check for action flags early — before VCF validation
     any_flag = clinvar or gnomad or snpeff or dbsnp or all_layers
@@ -1338,26 +1410,6 @@ def _run_init(
 
 
 # ---------------------------------------------------------------------------
-# Version freshness helpers (used by status and future annotate --stale)
-# ---------------------------------------------------------------------------
-
-
-def _is_version_stale(installed: str, latest: str) -> bool:
-    """Check if installed version is older than latest.
-
-    Only compares lexicographically when both look like ISO dates (YYYY-MM-DD).
-    Non-date strings like 'unknown' or 'GRCh38.p14' are always treated as stale.
-    """
-    import re
-
-    date_re = re.compile(r"^\d{4}-\d{2}-\d{2}$")
-    if date_re.match(latest) and date_re.match(installed):
-        return latest > installed
-    # Non-date installed version — treat as stale
-    return True
-
-
-# ---------------------------------------------------------------------------
 # genechat status
 # ---------------------------------------------------------------------------
 
@@ -1379,7 +1431,23 @@ def _gwas_installed(gwas_db_path: str) -> bool:
         return False
 
 
-def _run_status(json_output: bool = False):
+def _freshness_indicator(
+    source: str, installed_version: str, latest_versions: dict[str, str | None]
+) -> str:
+    """Return a freshness suffix for a layer, or empty string if not checking."""
+    if not latest_versions:
+        return ""
+    latest = latest_versions.get(source)
+    if latest is None:
+        return ""
+    from genechat.update import _is_newer
+
+    if _is_newer(latest, installed_version):
+        return f", [yellow]newer: {latest}[/yellow]"
+    return ", [green]up to date[/green]"
+
+
+def _run_status(json_output: bool = False, check_updates: bool = False):
     """Show genome info, annotation state, reference versions."""
     config = load_config()
 
@@ -1398,6 +1466,13 @@ def _run_status(json_output: bool = False):
         references_dir,
         snpeff_installed,
     )
+
+    # Fetch latest versions upfront if --check-updates
+    latest_versions: dict[str, str | None] = {}
+    if check_updates:
+        from genechat.update import check_all_versions
+
+        latest_versions = check_all_versions()
 
     # Section 1: Installed databases (genome-independent)
     gwas_ok = _gwas_installed(config.gwas_db_path)
@@ -1448,7 +1523,10 @@ def _run_status(json_output: bool = False):
                     status = info.get("status", "unknown")
                     version = info.get("version", "?")
                     if status == "complete":
-                        layers.append(f"{source} ({version})")
+                        freshness = _freshness_indicator(
+                            source, version, latest_versions
+                        )
+                        layers.append(f"{source} ({version}{freshness})")
                     elif status == "pending":
                         layers.append(f"{source} ([yellow]in progress[/yellow])")
                     elif status == "failed":
@@ -1543,28 +1621,11 @@ def _run_status_json(config):
 
 def _run_update_seeds():
     """Fetch latest seed data from APIs and rebuild lookup_tables.db."""
-    project_root = _find_project_root()
-    if not project_root:
-        rprint(
-            "[red]Error:[/red] --seeds requires a source checkout (pyproject.toml not found).",
-            file=sys.stderr,
-        )
-        raise typer.Exit(code=ExitCode.CONFIG_ERROR)
-
-    build_script = project_root / "scripts" / "build_seed_data.py"
-    if not build_script.exists():
-        rprint(
-            f"[red]Error:[/red] build_seed_data.py not found at {build_script}",
-            file=sys.stderr,
-        )
-        raise typer.Exit(code=ExitCode.CONFIG_ERROR)
+    from genechat.seeds.pipeline import run_pipeline
 
     print("Updating seed data from upstream APIs...")
-    result = subprocess.run(
-        [sys.executable, str(build_script)],
-        cwd=str(project_root),
-    )
-    if result.returncode != 0:
+    rc = run_pipeline()
+    if rc != 0:
         rprint("[red]Error:[/red] Seed data update failed.", file=sys.stderr)
         raise typer.Exit(code=ExitCode.GENERAL_ERROR)
 
