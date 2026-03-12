@@ -41,7 +41,8 @@ def run_pipeline() -> int:
     In a source checkout, runs the genechat.seeds.fetch_* modules (via ``python -m``),
     writes TSVs to ``data/seed/``, and builds ``lookup_tables.db`` in ``src/genechat/data/``.
     In a pip install, runs the same fetch modules via subprocess in a temp dir and builds
-    ``lookup_tables.db`` in the user data directory (``~/.local/share/genechat/``).
+    ``lookup_tables.db`` in the platform-specific user data directory
+    (e.g. via ``platformdirs.user_data_dir('genechat')``).
     """
     project_root = _find_project_root()
 
