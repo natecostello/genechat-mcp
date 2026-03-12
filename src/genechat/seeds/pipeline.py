@@ -2,15 +2,15 @@
 
 Works from both source checkouts and pip installs:
 - Source checkout: TSVs in data/seed/, DB in src/genechat/data/
-- Pip install: TSVs in a temp directory, DB at the package data path
+- Pip install: TSVs in a temp directory, DB in user data dir
 """
 
 import subprocess
 import sys
 import tempfile
-from importlib import resources
 from pathlib import Path
 
+from genechat.config import _user_db_path
 from genechat.seeds.build_db import build_db
 
 
@@ -22,13 +22,6 @@ def _find_project_root() -> Path | None:
             return current
         current = current.parent
     return None
-
-
-def _default_db_path() -> Path:
-    """Resolve the package lookup_tables.db path."""
-    ref = resources.files("genechat") / "data" / "lookup_tables.db"
-    with resources.as_file(ref) as p:
-        return Path(p)
 
 
 def _count_tsv_rows(path: Path) -> int:
@@ -48,7 +41,8 @@ def run_pipeline() -> int:
     In a source checkout, runs the genechat.seeds.fetch_* modules (via ``python -m``),
     writes TSVs to ``data/seed/``, and builds ``lookup_tables.db`` in ``src/genechat/data/``.
     In a pip install, runs the same fetch modules via subprocess in a temp dir and builds
-    ``lookup_tables.db`` at the package data path.
+    ``lookup_tables.db`` in the platform-specific user data directory
+    (e.g. via ``platformdirs.user_data_dir('genechat')``).
     """
     project_root = _find_project_root()
 
@@ -78,7 +72,7 @@ def run_pipeline() -> int:
                 return 1
     else:
         # Pip install: use packaged modules, write TSVs to temp dir
-        db_path = _default_db_path()
+        db_path = _user_db_path()
 
         print("GeneChat Seed Data Build Pipeline (pip install)")
         print("=" * 60)

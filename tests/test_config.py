@@ -1,8 +1,9 @@
 """Tests for config parsing, especially multi-genome support."""
 
+import importlib.resources as _real_resources
 from pathlib import Path
 
-from genechat.config import AppConfig, load_config, write_config
+from genechat.config import AppConfig, _default_db_path, load_config, write_config
 
 
 class TestAppConfig:
@@ -77,6 +78,35 @@ class TestWriteConfig:
             content.count("[genome]") == 0
             or "[genome]" not in content.split("[genomes")[0]
         )
+
+
+class TestDefaultDbPath:
+    """Two-tier resolution: user-rebuilt DB takes priority over package-bundled."""
+
+    def test_prefers_user_rebuilt_db(self, tmp_path, monkeypatch):
+        user_db = tmp_path / "user" / "lookup_tables.db"
+        user_db.parent.mkdir(parents=True)
+        user_db.write_bytes(b"user-rebuilt")
+
+        monkeypatch.setattr("genechat.config._user_db_path", lambda: user_db)
+
+        result = _default_db_path()
+        assert result == user_db
+
+    def test_falls_back_to_package_bundled(self, tmp_path, monkeypatch):
+        user_db = tmp_path / "user" / "lookup_tables.db"
+        # user_db does not exist
+
+        pkg_data = tmp_path / "pkg" / "data"
+        pkg_data.mkdir(parents=True)
+        pkg_db = pkg_data / "lookup_tables.db"
+        pkg_db.write_bytes(b"package-bundled")
+
+        monkeypatch.setattr("genechat.config._user_db_path", lambda: user_db)
+        monkeypatch.setattr(_real_resources, "files", lambda _pkg: tmp_path / "pkg")
+
+        result = _default_db_path()
+        assert result == pkg_db
 
 
 class TestLoadConfig:
