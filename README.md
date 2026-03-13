@@ -241,7 +241,7 @@ Default `genechat init` downloads ClinVar + SnpEff (~2 GB). Optional annotation 
 
 ### Seed Data Pipeline
 
-Gene coordinates, PGx guidelines, and PRS weights are pre-built from external APIs and shipped as TSVs in `data/seed/`. The SQLite lookup database is built automatically during `genechat init` — no manual steps needed.
+Gene coordinates, PGx guidelines, and PRS weights are pre-built from external APIs. The source repo contains the raw TSVs in `data/seed/`; pip-installed users get the prebuilt SQLite `lookup_tables.db` directly. Either way, `genechat init` ensures the database is ready — no manual steps needed.
 
 To refresh seed data from upstream APIs (fetches latest from HGNC, Ensembl, CPIC, and PGS Catalog):
 
