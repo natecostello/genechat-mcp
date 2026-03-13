@@ -32,7 +32,7 @@ ADRs live in `docs/architecture/` using [MADR 4.0](https://adr.github.io/madr/) 
 ### When to write an ADR
 
 Write an ADR when a decision:
-- Changes how data flows between components (VCF, patch.db, lookup.db, GWAS db)
+- Changes how data flows between components (VCF, patch.db, lookup_tables.db, GWAS db)
 - Affects the MCP tool interface (new tools, changed parameters, changed output format)
 - Changes the annotation pipeline architecture (new sources, different processing)
 - Affects module boundaries or adds/removes significant components
@@ -72,7 +72,7 @@ Active implementation plans live in `docs/plans/` while work is in progress. Whe
 
 ## Project Overview
 
-GeneChat is an open-source MCP (Model Context Protocol) server that enables conversational AI assistants to query a user's whole-genome sequencing (WGS) data stored locally. It wraps pysam and vendored reference databases (ClinVar, gnomAD, CPIC, PGS Catalog, GWAS Catalog) behind MCP tools, enabling natural-language questions about pharmacogenomics, disease risk, polygenic risk scores, and more -- with genomic data never leaving the user's machine.
+GeneChat is an open-source MCP (Model Context Protocol) server that enables conversational AI assistants to query a user's whole-genome sequencing (WGS) data stored locally. It wraps pysam and vendored reference databases (ClinVar, gnomAD, CPIC, PGS Catalog, GWAS Catalog) behind MCP tools, enabling natural-language questions about pharmacogenomics, disease risk, polygenic risk scores, and more. The raw VCF file never leaves the user's machine, though tool responses (genotypes, clinical findings) are sent to the LLM provider as part of the conversation.
 
 ## Target User
 
@@ -246,4 +246,4 @@ All seed data is fetched from external APIs at build time. No hand-curated files
 
 The `genes` table includes ALL ~19,000 human protein-coding genes. The LLM can query any protein-coding gene without manual additions.
 
-To add a new PRS trait, add the PGS ID to `PGS_SCORES` in `scripts/fetch_prs_data.py`. The `calculate_prs` tool dynamically lists available traits.
+To add a new PRS trait, add the PGS ID to `PGS_SCORES` in `src/genechat/seeds/fetch_prs_data.py`. The `calculate_prs` tool dynamically lists available traits.

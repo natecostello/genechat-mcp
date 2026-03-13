@@ -66,7 +66,7 @@ Replace `[genome]` with `[genomes.<label>]` config sections, load all genomes at
 * Good, because all genomes are available simultaneously
 * Good, because paired queries work natively (pass `genome` and `genome2`)
 * Good, because backward compatible — legacy `[genome]` auto-migrates to `[genomes.default]`
-* Neutral, because env var `GENECHAT_GENOME` can still override the default label
+* ~~Neutral, because env var `GENECHAT_GENOME` can still override the default label~~ (removed in ADR-0005)
 * Bad, because every tool signature gains optional genome parameters
 * Bad, because startup memory scales with number of configured genomes
 

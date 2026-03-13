@@ -4,7 +4,7 @@ Annotations are stored in a SQLite patch database (`patch.db`), separate from th
 
 > **Invocation:** Commands below assume `genechat` is on your PATH. In a clone-based setup, prefix with `uv run` (e.g., `uv run genechat annotate --clinvar`). All `genechat annotate` commands assume a VCF has been registered via `genechat init <vcf>` (recommended) or `genechat add <vcf>`.
 >
-> **Multiple genomes:** If you have multiple genomes registered, `genechat annotate` operates on the primary (default) genome. Use `--genome <label>` to target a specific genome (e.g., `genechat annotate --clinvar --genome partner`).
+> **Multiple genomes:** If you have multiple genomes registered, `genechat annotate` requires `--genome <label>` to specify which genome to annotate (e.g., `genechat annotate --clinvar --genome partner`). With a single registered genome, `--genome` is optional.
 
 ## Background
 
@@ -15,7 +15,7 @@ Annotations are stored in a SQLite patch database (`patch.db`), separate from th
 | SnpEff | Gene models, transcript definitions | Tied to Ensembl (~2/year) | `genechat annotate --snpeff` |
 | dbSNP | rsID identifiers for variants | Major releases | `genechat annotate --dbsnp` |
 | GWAS Catalog | New association study results | Weekly | `genechat install --gwas` |
-| Seed data | PGx (CPIC) + PRS (PGS Catalog) | When APIs update | `genechat update --seeds` |
+| Seed data | PGx (CPIC) + PRS (PGS Catalog) | When APIs update | `genechat install --seeds` |
 
 ## How It Works
 
@@ -66,11 +66,11 @@ genechat annotate --all
 
 ## Checking for Updates
 
-`genechat update` shows installed reference versions and automatically checks ClinVar against the latest available release. For other sources (gnomAD, SnpEff, dbSNP), it reports the installed state but may show "check unavailable" when no programmatic version check exists:
+`genechat status --check-updates` shows installed reference versions and checks ClinVar against the latest available release. For other sources (gnomAD, SnpEff, dbSNP), it reports the installed state but may show "check unavailable" when no programmatic version check exists:
 
 ```bash
-genechat update           # Check ClinVar for newer versions; report other layer status
-genechat update --apply   # Download newer ClinVar and re-annotate (other layers unchanged)
+genechat status --check-updates   # Check ClinVar for newer versions; report other layer status
+genechat annotate --stale         # Re-annotate layers with newer references (currently ClinVar only)
 ```
 
 ## Viewing Current State
@@ -84,7 +84,7 @@ genechat status           # Shows VCF info, patch.db layers, reference versions
 | What | How often | Command | Time |
 |------|-----------|---------|------|
 | ClinVar | Every 3-6 months | `genechat annotate --clinvar` | ~3 min |
-| Seed data | When CPIC/PGS sources update | `genechat update --seeds` | ~5 min |
+| Seed data | When CPIC/PGS sources update | `genechat install --seeds` | ~5 min |
 | GWAS Catalog | Every 6-12 months | `genechat install --gwas` | ~2 min |
 | gnomAD | On major releases only | `genechat annotate --gnomad` | ~15 min |
 | SnpEff | Annually | `genechat annotate --snpeff` | ~20 min |

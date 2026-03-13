@@ -121,4 +121,4 @@ Dropped: `update` (absorbed into `status`, `annotate --stale`, `install --seeds`
 
 ## More Information
 
-- PR that implemented this decision: (to be filled after PR is created)
+- PR that implemented this decision: #37

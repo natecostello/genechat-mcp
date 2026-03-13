@@ -1,6 +1,6 @@
 # GeneChat MCP Server
 
-A local-first MCP server that lets you have detailed conversations with AI about your genome. Query your whole-genome sequencing data through Claude (or any MCP-compatible LLM) for pharmacogenomics, disease risk, nutrition, exercise genetics, carrier screening, and more — with your data never leaving your machine.
+A local-first MCP server that lets you have detailed conversations with AI about your genome. Query your whole-genome sequencing data through Claude (or any MCP-compatible LLM) for pharmacogenomics, disease risk, nutrition, exercise genetics, carrier screening, and more — with your raw VCF file never leaving your machine.
 
 > **Privacy Notice:** GeneChat reads your VCF locally, but tool responses — containing your genotypes, rsIDs, and clinical interpretations — are sent to your LLM provider (e.g. Anthropic, OpenAI) as part of the conversation. Your raw VCF file is never uploaded, but the LLM does see the specific variants and findings returned by each tool call. See [Security Recommendations](#security-recommendations) below.
 
@@ -27,7 +27,7 @@ You ask a question in Claude
     → Claude interprets the results for you
 ```
 
-Your genome data stays on your machine. GeneChat only reads from local files. No network calls at runtime.
+GeneChat reads only local files and makes no network calls at runtime. However, tool responses — containing your genotypes and clinical findings — are sent to your LLM provider as part of the conversation. See [Security Recommendations](#security-recommendations) for details on cloud vs local LLM options.
 
 ## Tools
 
@@ -181,42 +181,11 @@ uv run genechat init /path/to/partner.vcf.gz --label partner
 uv run genechat status
 ```
 
-The LLM can then query both genomes using the `genome` and `genome2` parameters on any tool.
+The LLM can then query both genomes using the `genome` parameter on any tool and the `genome2` parameter on most tools for side-by-side comparison.
 
 ## Architecture
 
-```mermaid
-flowchart TD
-    subgraph remote["DOWNLOADED ONCE"]
-        clinvar_dl["ClinVar VCF"]
-        snpeff_dl["SnpEff DB"]
-        gnomad_dl["gnomAD exomes"]
-        dbsnp_dl["dbSNP VCF"]
-    end
-
-    subgraph local["YOUR MACHINE -- Local Only"]
-        vcf["Raw VCF(s) from\nSequencing Provider"]
-        init["genechat init --label\n(one-time per genome)"]
-        patch[("patch.db per genome\nSQLite")]
-        subgraph runtime["RUNTIME -- no network"]
-            engine["pysam reads raw VCF +\npatch.db + lookup_tables.db\n(one engine per genome)"]
-        end
-        server["MCP Server"]
-    end
-
-    claude["Claude / LLM Client"]
-
-    clinvar_dl --> init
-    snpeff_dl --> init
-    gnomad_dl -.-> init
-    dbsnp_dl -.-> init
-    vcf --> init
-    init --> patch
-    patch --> engine --> server
-    claude -- "MCP protocol" --> server
-```
-
-Your raw VCF is never modified. Annotations are stored in a separate SQLite patch database (`patch.db`), making updates fast and non-destructive.
+Your raw VCF is never modified. `genechat init` downloads reference databases (ClinVar, SnpEff, optionally gnomAD/dbSNP) once, annotates your VCF, and stores the results in a separate SQLite patch database (`patch.db`). At runtime, the MCP server reads your raw VCF and patch.db locally — no network calls, no external tools. Tool responses flow back to the LLM client via the MCP protocol.
 
 ### Annotation Pipeline (one-time, handled by `genechat init`)
 
@@ -251,14 +220,16 @@ genechat install --seeds
 
 ### Runtime Dependencies
 
-At runtime, GeneChat uses **only** local files — no external tools, no network calls.
+At runtime, GeneChat uses **only** local files — no external tools, no network calls. (Tool responses are returned to the LLM client, which forwards them to the LLM provider — see [Security Recommendations](#security-recommendations).)
 
 | Library | What it does |
 |---------|-------------|
 | [pysam](https://pysam.readthedocs.io/) | Reads your raw VCF via tabix index |
-| [mcp](https://github.com/anthropics/python-sdk) | Implements the MCP server protocol |
+| [mcp](https://github.com/modelcontextprotocol/python-sdk) | Implements the MCP server protocol |
 | SQLite (stdlib) | Queries lookup tables for gene coordinates, drug info, PRS weights |
 | [pydantic](https://docs.pydantic.dev/) | Validates tool inputs and config |
+| [typer](https://typer.tiangolo.com/) | CLI framework (subcommands, flags, shell completion) |
+| [platformdirs](https://platformdirs.readthedocs.io/) | OS-standard config and data directories |
 
 ## Security Recommendations
 
@@ -268,11 +239,15 @@ At runtime, GeneChat uses **only** local files — no external tools, no network
 | Tool responses (genotypes, rsIDs, findings) | Sent to LLM provider per tool call | Yes |
 | Conversation history | MCP client logs (local) | Depends on client settings |
 
-GeneChat makes **zero network calls** at runtime. However, every tool response is returned to the LLM, which runs on the provider's servers.
+GeneChat makes **zero network calls** at runtime. However, every tool response — containing your genotypes, rsIDs, and clinical interpretations — is returned to the LLM as part of the conversation.
+
+**With a cloud LLM** (Claude, ChatGPT, etc.): your raw VCF stays local, but tool responses are sent to the provider's servers. The provider's data policies apply to this content.
+
+**With a local/self-hosted model** (Ollama, llama.cpp, etc.): everything stays on your machine. If you want maximum privacy, use an MCP client configured to run a local model so tool responses never leave your machine.
 
 Store your VCF on an encrypted volume and `chmod 600` your VCF and config files. `genechat init` sets restrictive permissions on the config automatically. MCP clients may log conversation history locally — be aware of cloud sync on those directories. See [docs/security.md](docs/security.md) for platform-specific encryption instructions (APFS, LUKS).
 
-**Privacy summary:** No telemetry, no analytics, no data collection. Your VCF never leaves your machine. Tool responses are sent to your LLM provider as part of the conversation.
+**Privacy summary:** No telemetry, no analytics, no data collection. Your raw VCF file never leaves your machine. Tool responses containing your genetic findings are sent to your LLM provider as part of the conversation — use a local LLM if this is a concern.
 
 ## Development / Testing
 

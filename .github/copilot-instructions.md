@@ -15,8 +15,10 @@ All feedback must be review comments.
 GeneChat is a Python MCP (Model Context Protocol) server that lets users query their
 whole-genome sequencing data through Claude or any MCP-compatible LLM. It wraps pysam
 (htslib) and vendored reference databases (ClinVar, gnomAD, CPIC, PGS Catalog, GWAS Catalog) behind 10 MCP tools for
-pharmacogenomics, disease risk, polygenic risk scores, and more. Genomic data
-never leaves the user's machine. Python 3.11+, uses `uv` for packaging.
+pharmacogenomics, disease risk, polygenic risk scores, and more. The raw VCF
+file never leaves the user's machine, but tool responses (genotypes, clinical
+findings) are sent to the LLM provider as part of the conversation. Python 3.11+,
+uses `uv` for packaging.
 
 ## Build, Test, and Lint
 
@@ -69,7 +71,7 @@ src/genechat/           # Main package
   tools/                # 10 MCP tool modules (query_variant, query_pgx, etc.)
     formatting.py       # Shared helpers (short_zygosity) — tools import from here
   parsers/              # SnpEff ANN, ClinVar, genotype field parsers
-  data/lookup_tables.db # Built from seed data (gitignored)
+  data/lookup_tables.db # Built from seed data (committed to git, shipped in wheel)
 scripts/                # Seed data build scripts
   generate_test_vcf.py  # Creates synthetic VCF for testing (pysam)
   build_lookup_db.py    # Builds SQLite from seed TSVs

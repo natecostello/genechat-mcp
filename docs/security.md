@@ -1,6 +1,37 @@
 # Security: Protecting Your Genomic Data
 
-Genomic data is uniquely sensitive -- it is immutable, identifies you and your relatives, and can reveal health predispositions. This document covers platform-specific storage recommendations.
+Genomic data is uniquely sensitive -- it is immutable, identifies you and your relatives, and can reveal health predispositions. This document covers data flow, LLM provider considerations, and platform-specific storage recommendations.
+
+## Understanding the data flow
+
+GeneChat's MCP server makes **zero network calls** during tool execution. It reads your raw VCF from disk and queries local SQLite databases. However, GeneChat is an MCP server — it returns tool responses to the MCP client (e.g. Claude Desktop), which forwards them to the LLM. Some CLI commands (`genechat status --check-updates`, `genechat annotate --stale`) do make network requests to check for newer reference databases — these are opt-in and clearly labeled.
+
+**What stays local:**
+- Your raw VCF file (never read by the LLM, never uploaded)
+- Your patch.db and lookup databases
+- Your config.toml (contains VCF paths)
+
+**What is sent to the LLM provider (per tool call):**
+- Genotypes (e.g. "rs4149056: TC, heterozygous")
+- Clinical annotations (e.g. "Pathogenic — Hereditary breast cancer")
+- Gene names, rsIDs, risk scores, drug interaction findings
+- Any other content in tool responses
+
+This means your specific genetic findings are processed by the LLM provider. The raw VCF (millions of variants) is never sent — only the specific variants returned by each tool call.
+
+### Cloud LLMs (Claude, ChatGPT, Gemini, etc.)
+
+When using a cloud-hosted LLM, tool responses are transmitted to the provider's servers. Review your provider's data retention and privacy policies:
+- [Anthropic Privacy Policy](https://www.anthropic.com/privacy)
+- [OpenAI Privacy Policy](https://openai.com/policies/privacy-policy)
+
+### Local / self-hosted LLMs (Ollama, llama.cpp, vLLM, etc.)
+
+For maximum privacy, use an MCP client configured to run a local/self-hosted model. With a local model, all data — including tool responses — stays on your machine. No genetic information is transmitted over the network.
+
+Local options include:
+- [Ollama](https://ollama.com/) with an MCP-compatible client
+- Any local inference server paired with a client that supports the MCP protocol
 
 ## Store your VCF on an encrypted volume
 
@@ -37,6 +68,7 @@ sudo cryptsetup open ~/genome_vault.img genome_vault
 sudo mkfs.ext4 /dev/mapper/genome_vault
 sudo mkdir -p /mnt/genome_vault
 sudo mount /dev/mapper/genome_vault /mnt/genome_vault
+sudo chown "$(whoami)" /mnt/genome_vault
 
 # Copy VCF and unmount when done
 sudo umount /mnt/genome_vault
