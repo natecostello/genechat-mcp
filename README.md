@@ -274,7 +274,7 @@ GeneChat makes **zero network calls** at runtime. However, every tool response â
 
 **With a cloud LLM** (Claude, ChatGPT, etc.): your raw VCF stays local, but tool responses are sent to the provider's servers. The provider's data policies apply to this content.
 
-**With a local/self-hosted LLM** (Ollama, llama.cpp, etc.): everything stays on your machine. If you want maximum privacy, use a local MCP-compatible LLM.
+**With a local/self-hosted model** (Ollama, llama.cpp, etc.): everything stays on your machine. If you want maximum privacy, use an MCP client configured to run a local model so tool responses never leave your machine.
 
 Store your VCF on an encrypted volume and `chmod 600` your VCF and config files. `genechat init` sets restrictive permissions on the config automatically. MCP clients may log conversation history locally â€” be aware of cloud sync on those directories. See [docs/security.md](docs/security.md) for platform-specific encryption instructions (APFS, LUKS).
 
