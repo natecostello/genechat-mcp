@@ -12,6 +12,6 @@ You should receive a response within 72 hours.
 
 ## Data Privacy
 
-GeneChat processes sensitive genomic data locally. Your raw VCF file never leaves your machine. However, tool responses — containing genotypes, rsIDs, and clinical interpretations — are sent to your LLM provider as part of the conversation. With a cloud LLM (Claude, ChatGPT, etc.), this data reaches the provider's servers. For maximum privacy, use a local/self-hosted MCP-compatible LLM.
+GeneChat processes sensitive genomic data locally. Your raw VCF file never leaves your machine. However, tool responses — containing genotypes, rsIDs, and clinical interpretations — are sent to your LLM provider as part of the conversation. With a cloud LLM (Claude, ChatGPT, etc.), this data reaches the provider's servers. For maximum privacy, use an MCP client configured to run a local/self-hosted model.
 
 For a detailed breakdown of what data flows where and platform-specific encryption guidance, see [docs/security.md](docs/security.md).
