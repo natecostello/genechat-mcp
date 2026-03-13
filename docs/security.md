@@ -4,7 +4,7 @@ Genomic data is uniquely sensitive -- it is immutable, identifies you and your r
 
 ## Understanding the data flow
 
-GeneChat itself makes **zero network calls** at runtime. It reads your raw VCF from disk and queries local SQLite databases. However, GeneChat is an MCP server — it returns tool responses to the LLM client, which forwards them to the LLM.
+GeneChat's MCP server makes **zero network calls** during tool execution. It reads your raw VCF from disk and queries local SQLite databases. However, GeneChat is an MCP server — it returns tool responses to the MCP client (e.g. Claude Desktop), which forwards them to the LLM. Some CLI commands (`genechat status --check-updates`, `genechat annotate --stale`) do make network requests to check for newer reference databases — these are opt-in and clearly labeled.
 
 **What stays local:**
 - Your raw VCF file (never read by the LLM, never uploaded)
@@ -27,11 +27,11 @@ When using a cloud-hosted LLM, tool responses are transmitted to the provider's 
 
 ### Local / self-hosted LLMs (Ollama, llama.cpp, vLLM, etc.)
 
-For maximum privacy, use a local MCP-compatible LLM. With a local model, all data — including tool responses — stays on your machine. No genetic information is transmitted over the network.
+For maximum privacy, use an MCP client configured to run a local/self-hosted model. With a local model, all data — including tool responses — stays on your machine. No genetic information is transmitted over the network.
 
-MCP-compatible local options include:
-- [Ollama](https://ollama.com/) with MCP support
-- Any local inference server that supports the MCP protocol
+Local options include:
+- [Ollama](https://ollama.com/) with an MCP-compatible client
+- Any local inference server paired with a client that supports the MCP protocol
 
 ## Store your VCF on an encrypted volume
 
