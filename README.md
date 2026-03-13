@@ -213,7 +213,7 @@ flowchart TD
     vcf --> init
     init --> patch
     patch --> engine --> server
-    claude <-- "MCP protocol\n(tool calls + responses)" --> server
+    claude <--> |"MCP protocol\n(tool calls + responses)"| server
 ```
 
 Your raw VCF is never modified. Annotations are stored in a separate SQLite patch database (`patch.db`), making updates fast and non-destructive.
