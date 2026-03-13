@@ -39,4 +39,9 @@ Significant design decisions are recorded as [Architecture Decision Records (ADR
 
 ## Seed Data
 
-Don't hand-edit TSVs in `data/seed/`. Run `uv run python scripts/build_seed_data.py` to fetch from upstream APIs and rebuild.
+Don't hand-edit TSVs in `data/seed/`. They are auto-generated from upstream APIs (HGNC, Ensembl, CPIC, PGS Catalog). To refresh:
+
+```bash
+genechat install --seeds        # pip-installed
+uv run python scripts/build_seed_data.py  # source checkout
+```

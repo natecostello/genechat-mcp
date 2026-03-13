@@ -37,7 +37,7 @@ uv run ruff format .  # Format
 LLM Client (Claude Desktop / Claude Code)
     | MCP Protocol (stdio or SSE)
     v
-FastMCP Server (server.py)
+MCP Server (server.py)
     |-- 9 Tools (src/genechat/tools/*.py)
     |-- engines: dict[str, VCFEngine]  (one per registered genome)
     |-- LookupDB (lookup.py) -- SQLite for gene coords, PGx, PRS
@@ -62,7 +62,7 @@ High-risk areas:
 
 ```
 src/genechat/           # Main package
-  server.py             # FastMCP entry point
+  server.py             # MCP entry point
   config.py             # TOML config loader (Pydantic models)
   vcf_engine.py         # pysam VCF query engine
   lookup.py             # SQLite query layer
@@ -92,7 +92,7 @@ Configuration files:
 - **`VCFEngine`** (`vcf_engine.py`) — pysam-based read-only VCF query engine with region, rsID, ClinVar, and stats methods
 - **`LookupDB`** (`lookup.py`) — SQLite wrapper for gene coords, PGx drugs/variants, PRS weights, GWAS associations
 - **`AppConfig`** (`config.py`) — Pydantic model for TOML config with genomes dict, databases, server, and display sections
-- **`FastMCP`** (`server.py`) — Anthropic's MCP server framework; tools registered via `@mcp.tool()` decorator
+- **`MCP`** (`server.py`) — Anthropic's MCP server framework; tools registered via `@mcp.tool()` decorator
 - **Tool modules** (`tools/*.py`) — each exports `register(mcp, engines, db, config)` to register one MCP tool; `engines` is a `dict[str, VCFEngine]`
 - **`resolve_engine`** (`tools/common.py`) — maps genome label to VCFEngine; all tools call this
 - **Parsers** (`parsers/`) — `parse_ann_field`, `parse_clinvar_fields`, `parse_genotype` for VCF INFO/FORMAT fields
