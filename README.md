@@ -185,38 +185,7 @@ The LLM can then query both genomes using the `genome` parameter on any tool and
 
 ## Architecture
 
-```mermaid
-flowchart TD
-    subgraph remote["DOWNLOADED ONCE"]
-        clinvar_dl["ClinVar VCF"]
-        snpeff_dl["SnpEff DB"]
-        gnomad_dl["gnomAD exomes"]
-        dbsnp_dl["dbSNP VCF"]
-    end
-
-    subgraph local["YOUR MACHINE -- Local Only"]
-        vcf["Raw VCF(s) from\nSequencing Provider"]
-        init["genechat init --label\n(one-time per genome)"]
-        patch[("patch.db per genome\nSQLite")]
-        subgraph runtime["RUNTIME -- no network"]
-            engine["pysam reads raw VCF +\npatch.db + lookup_tables.db\n(one engine per genome)"]
-        end
-        server["MCP Server"]
-    end
-
-    claude["Claude / LLM Client\n(cloud or local)"]
-
-    clinvar_dl --> init
-    snpeff_dl --> init
-    gnomad_dl -.-> init
-    dbsnp_dl -.-> init
-    vcf --> init
-    init --> patch
-    patch --> engine --> server
-    claude <--> |"MCP protocol\n(tool calls + responses)"| server
-```
-
-Your raw VCF is never modified. Annotations are stored in a separate SQLite patch database (`patch.db`), making updates fast and non-destructive.
+Your raw VCF is never modified. `genechat init` downloads reference databases (ClinVar, SnpEff, optionally gnomAD/dbSNP) once, annotates your VCF, and stores the results in a separate SQLite patch database (`patch.db`). At runtime, the MCP server reads your raw VCF and patch.db locally — no network calls, no external tools. Tool responses flow back to the LLM client via the MCP protocol.
 
 ### Annotation Pipeline (one-time, handled by `genechat init`)
 
