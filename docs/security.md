@@ -68,6 +68,7 @@ sudo cryptsetup open ~/genome_vault.img genome_vault
 sudo mkfs.ext4 /dev/mapper/genome_vault
 sudo mkdir -p /mnt/genome_vault
 sudo mount /dev/mapper/genome_vault /mnt/genome_vault
+sudo chown "$(whoami)" /mnt/genome_vault
 
 # Copy VCF and unmount when done
 sudo umount /mnt/genome_vault

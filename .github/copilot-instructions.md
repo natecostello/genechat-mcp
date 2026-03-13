@@ -71,7 +71,7 @@ src/genechat/           # Main package
   tools/                # 10 MCP tool modules (query_variant, query_pgx, etc.)
     formatting.py       # Shared helpers (short_zygosity) — tools import from here
   parsers/              # SnpEff ANN, ClinVar, genotype field parsers
-  data/lookup_tables.db # Built from seed data (gitignored)
+  data/lookup_tables.db # Built from seed data (committed to git, shipped in wheel)
 scripts/                # Seed data build scripts
   generate_test_vcf.py  # Creates synthetic VCF for testing (pysam)
   build_lookup_db.py    # Builds SQLite from seed TSVs

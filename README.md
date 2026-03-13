@@ -181,7 +181,7 @@ uv run genechat init /path/to/partner.vcf.gz --label partner
 uv run genechat status
 ```
 
-The LLM can then query both genomes using the `genome` and `genome2` parameters on any tool.
+The LLM can then query both genomes using the `genome` parameter on any tool and the `genome2` parameter on most tools for side-by-side comparison.
 
 ## Architecture
 
@@ -256,9 +256,11 @@ At runtime, GeneChat uses **only** local files — no external tools, no network
 | Library | What it does |
 |---------|-------------|
 | [pysam](https://pysam.readthedocs.io/) | Reads your raw VCF via tabix index |
-| [mcp](https://github.com/anthropics/python-sdk) | Implements the MCP server protocol |
+| [mcp](https://github.com/modelcontextprotocol/python-sdk) | Implements the MCP server protocol |
 | SQLite (stdlib) | Queries lookup tables for gene coordinates, drug info, PRS weights |
 | [pydantic](https://docs.pydantic.dev/) | Validates tool inputs and config |
+| [typer](https://typer.tiangolo.com/) | CLI framework (subcommands, flags, shell completion) |
+| [platformdirs](https://platformdirs.readthedocs.io/) | OS-standard config and data directories |
 
 ## Security Recommendations
 

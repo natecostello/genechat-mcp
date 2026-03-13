@@ -32,7 +32,7 @@ ADRs live in `docs/architecture/` using [MADR 4.0](https://adr.github.io/madr/) 
 ### When to write an ADR
 
 Write an ADR when a decision:
-- Changes how data flows between components (VCF, patch.db, lookup.db, GWAS db)
+- Changes how data flows between components (VCF, patch.db, lookup_tables.db, GWAS db)
 - Affects the MCP tool interface (new tools, changed parameters, changed output format)
 - Changes the annotation pipeline architecture (new sources, different processing)
 - Affects module boundaries or adds/removes significant components
@@ -246,4 +246,4 @@ All seed data is fetched from external APIs at build time. No hand-curated files
 
 The `genes` table includes ALL ~19,000 human protein-coding genes. The LLM can query any protein-coding gene without manual additions.
 
-To add a new PRS trait, add the PGS ID to `PGS_SCORES` in `scripts/fetch_prs_data.py`. The `calculate_prs` tool dynamically lists available traits.
+To add a new PRS trait, add the PGS ID to `PGS_SCORES` in `src/genechat/seeds/fetch_prs_data.py`. The `calculate_prs` tool dynamically lists available traits.
