@@ -1,6 +1,37 @@
 # Security: Protecting Your Genomic Data
 
-Genomic data is uniquely sensitive -- it is immutable, identifies you and your relatives, and can reveal health predispositions. This document covers platform-specific storage recommendations.
+Genomic data is uniquely sensitive -- it is immutable, identifies you and your relatives, and can reveal health predispositions. This document covers data flow, LLM provider considerations, and platform-specific storage recommendations.
+
+## Understanding the data flow
+
+GeneChat itself makes **zero network calls** at runtime. It reads your raw VCF from disk and queries local SQLite databases. However, GeneChat is an MCP server — it returns tool responses to the LLM client, which forwards them to the LLM.
+
+**What stays local:**
+- Your raw VCF file (never read by the LLM, never uploaded)
+- Your patch.db and lookup databases
+- Your config.toml (contains VCF paths)
+
+**What is sent to the LLM provider (per tool call):**
+- Genotypes (e.g. "rs4149056: TC, heterozygous")
+- Clinical annotations (e.g. "Pathogenic — Hereditary breast cancer")
+- Gene names, rsIDs, risk scores, drug interaction findings
+- Any other content in tool responses
+
+This means your specific genetic findings are processed by the LLM provider. The raw VCF (millions of variants) is never sent — only the specific variants returned by each tool call.
+
+### Cloud LLMs (Claude, ChatGPT, Gemini, etc.)
+
+When using a cloud-hosted LLM, tool responses are transmitted to the provider's servers. Review your provider's data retention and privacy policies:
+- [Anthropic Privacy Policy](https://www.anthropic.com/privacy)
+- [OpenAI Privacy Policy](https://openai.com/policies/privacy-policy)
+
+### Local / self-hosted LLMs (Ollama, llama.cpp, vLLM, etc.)
+
+For maximum privacy, use a local MCP-compatible LLM. With a local model, all data — including tool responses — stays on your machine. No genetic information is transmitted over the network.
+
+MCP-compatible local options include:
+- [Ollama](https://ollama.com/) with MCP support
+- Any local inference server that supports the MCP protocol
 
 ## Store your VCF on an encrypted volume
 

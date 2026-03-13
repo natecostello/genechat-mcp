@@ -72,7 +72,7 @@ Active implementation plans live in `docs/plans/` while work is in progress. Whe
 
 ## Project Overview
 
-GeneChat is an open-source MCP (Model Context Protocol) server that enables conversational AI assistants to query a user's whole-genome sequencing (WGS) data stored locally. It wraps pysam and vendored reference databases (ClinVar, gnomAD, CPIC, PGS Catalog, GWAS Catalog) behind MCP tools, enabling natural-language questions about pharmacogenomics, disease risk, polygenic risk scores, and more -- with genomic data never leaving the user's machine.
+GeneChat is an open-source MCP (Model Context Protocol) server that enables conversational AI assistants to query a user's whole-genome sequencing (WGS) data stored locally. It wraps pysam and vendored reference databases (ClinVar, gnomAD, CPIC, PGS Catalog, GWAS Catalog) behind MCP tools, enabling natural-language questions about pharmacogenomics, disease risk, polygenic risk scores, and more. The raw VCF file never leaves the user's machine, though tool responses (genotypes, clinical findings) are sent to the LLM provider as part of the conversation.
 
 ## Target User
 
