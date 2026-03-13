@@ -84,8 +84,7 @@ Key changes:
 - Add rsID probe guard to avoid unnecessary 20 GB dbSNP downloads
 - Redesign `status` output: installed databases, per-genome layers, annotation caches
 
-**Implementation plan:** `docs/plans/genome-ux-redesign.md` (see git history after
-plan file is removed post-merge).
+**Implementation plan:** `git show 9df0728:docs/plans/genome-ux-redesign.md`
 
 ### CLI Command Model After Redesign
 

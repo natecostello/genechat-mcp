@@ -94,5 +94,5 @@ compliant on ~25. The remaining ~15 were evaluated and prioritized:
 ## More Information
 
 - [clig.dev guidelines](https://clig.dev/#guidelines)
-- Implementation plan: `docs/plans/cli-guidelines-alignment.md`
+- Implementation plan: `git show cfcdd08:docs/plans/cli-guidelines-alignment.md`
 - Implemented in PR #35

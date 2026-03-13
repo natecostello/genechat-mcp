@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "MCP server for conversational personal genomics"
 requires-python = ">=3.11"
 license = {text = "MIT"}
+readme = "README.md"
 authors = [{name = "Nate Costello"}]
 keywords = ["genomics", "mcp", "vcf", "pharmacogenomics", "personal-genomics"]
 classifiers = [
@@ -41,6 +42,9 @@ packages = ["src/genechat"]
 
 [tool.hatch.build.targets.wheel.force-include]
 "src/genechat/data/lookup_tables.db" = "genechat/data/lookup_tables.db"
+
+[tool.ruff]
+target-version = "py311"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

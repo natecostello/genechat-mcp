@@ -67,6 +67,8 @@ Enable tab completion for your shell:
 genechat --install-completion
 ```
 
+If auto-detection fails (e.g. running via `uv run`), specify the shell explicitly: `genechat --install-completion zsh`
+
 This enables completion for subcommands, flags, and `--genome` labels.
 
 ### Exit Codes
@@ -82,15 +84,13 @@ This enables completion for subcommands, flags, and `--genome` labels.
 | 6 | Network error (download failed) |
 | 130 | Interrupted (Ctrl-C) |
 
-> **Note:** `bcftools` and `tabix` are required for annotation (ClinVar contig rename, gnomAD, and dbSNP). References are auto-downloaded when needed. gnomAD (`--gnomad`) downloads ~150 GB of per-chromosome exome VCFs. dbSNP (`--dbsnp`) downloads ~20 GB from NCBI. Neither is included in the default `genechat init` — pass the flags explicitly to enable them.
-
 ## Prerequisites
 
 - Python 3.11+
 - A consumer WGS VCF file (from Nucleus Genomics, Nebula, Sequencing.com, etc.)
 - Disk for reference databases (see table below), ~2 GB for your raw VCF + patch.db
 
-**For annotation** (one-time setup):
+**For annotation** (used by `genechat init` and `genechat annotate`):
 
 ```bash
 # macOS (Homebrew)
@@ -117,16 +117,6 @@ uv sync
 ```bash
 uv tool install git+https://github.com/natecostello/genechat-mcp.git
 # or: pip install git+https://github.com/natecostello/genechat-mcp.git
-```
-
-### Install annotation tools
-
-```bash
-# macOS
-brew install bcftools brewsci/bio/snpeff
-
-# Linux
-conda install -c bioconda bcftools snpeff
 ```
 
 ### Initialize GeneChat
@@ -159,7 +149,7 @@ gnomAD is optional; without it, `query_gene` falls back to ClinVar-only filterin
 
 > **Disk usage:** `--gnomad` downloads each gnomAD chromosome, annotates from it, then deletes the file — peak disk usage is ~17 GB (one chromosome) rather than ~150 GB for all files at once.
 
-> **Time estimate:** Default init takes ~10–15 minutes (SnpEff annotation + ClinVar). With `--gnomad`, allow additional time for the per-chromosome downloads (~150 GB total). Total annotation time depends on VCF size and machine specs.
+> **Time estimate:** Default init takes ~10–15 minutes (SnpEff + ClinVar). With `--gnomad`, expect several hours — it downloads and processes ~150 GB of per-chromosome data. Consider running `genechat init --gnomad` overnight.
 
 ### Don't have your genome sequenced?
 
@@ -181,7 +171,7 @@ Open Claude and ask about your genetics. GeneChat's tools will appear automatica
 
 ### Multiple genomes
 
-GeneChat supports named genomes for side-by-side comparison (e.g. carrier screening for couples):
+GeneChat supports named genomes for side-by-side comparison:
 
 ```bash
 # Register a second genome
@@ -226,7 +216,7 @@ flowchart TD
     claude -- "MCP protocol" --> server
 ```
 
-Your raw VCF is never modified. Annotations are stored in a separate SQLite patch database (`patch.db`), making updates fast and non-destructive. Architecture decisions are documented as [ADRs](docs/architecture/).
+Your raw VCF is never modified. Annotations are stored in a separate SQLite patch database (`patch.db`), making updates fast and non-destructive.
 
 ### Annotation Pipeline (one-time, handled by `genechat init`)
 
@@ -251,17 +241,13 @@ Default `genechat init` downloads ClinVar + SnpEff (~2 GB). Optional annotation 
 
 ### Seed Data Pipeline
 
-Gene coordinates, PGx guidelines, and PRS weights are pre-built from external APIs and committed as TSVs in `data/seed/`. `genechat init` automatically builds the SQLite lookup database from these — no manual steps needed.
+Gene coordinates, PGx guidelines, and PRS weights are pre-built from external APIs. The source repo contains the raw TSVs in `data/seed/`; pip-installed users get the prebuilt SQLite `lookup_tables.db` directly. Either way, `genechat init` ensures the database is ready — no manual steps needed.
 
-For developers updating seed data from upstream APIs:
+To refresh seed data from upstream APIs (fetches latest from HGNC, Ensembl, CPIC, and PGS Catalog):
 
-| Source | What it provides | Script |
-|--------|-----------------|--------|
-| [HGNC](https://www.genenames.org/) + [Ensembl](https://rest.ensembl.org/) | All ~19,000 protein-coding gene coordinates | `fetch_gene_coords.py` |
-| [CPIC](https://cpicpgx.org/) via [ClinPGx API](https://api.cpicpgx.org/v1/) | PGx drug-gene guidelines, star-allele definitions | `fetch_cpic_data.py` |
-| [PGS Catalog](https://www.pgscatalog.org/) | Polygenic risk score weights (GRCh38) | `fetch_prs_data.py` |
-
-Rebuild everything: `uv run genechat install --seeds`
+```bash
+genechat install --seeds
+```
 
 ### Runtime Dependencies
 
@@ -323,7 +309,7 @@ E2e tests are automatically skipped when `GENECHAT_GIAB_VCF` is not set.
 
 **Wrong genome build:** GeneChat expects GRCh38 with `chr` prefixed chromosomes. GRCh37/hg19 VCFs need liftover first.
 
-**Missing lookup_tables.db:** The lookup database ships with the package and is built automatically by `genechat init` in source checkouts. If somehow missing, rebuild with `uv run python scripts/build_lookup_db.py` (source) or reinstall the package.
+**Missing lookup_tables.db:** The lookup database ships with the package and is built automatically by `genechat init`. If somehow missing, rebuild with `genechat install --seeds`.
 
 **pysam installation issues on macOS:** `xcode-select --install`
 

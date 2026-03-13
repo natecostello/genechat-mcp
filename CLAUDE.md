@@ -68,10 +68,6 @@ If in doubt, write the ADR — a short record is better than an undocumented dec
 
 Active implementation plans live in `docs/plans/` while work is in progress. When the plan is fully implemented and the PR merges, the plan file is deleted from the tree. The ADR's "Decision Outcome" section preserves a reference to the plan's git commit hash so it remains discoverable via `git show <hash>:docs/plans/<file>`.
 
-## TODO
-
-- [ ] Verify README quickstart instructions work end-to-end with a fresh VCF
-
 ---
 
 ## Project Overview
