@@ -70,7 +70,7 @@ genechat annotate --all
 
 ```bash
 genechat status --check-updates   # Check ClinVar for newer versions; report other layer status
-genechat annotate --stale         # Re-annotate only layers with newer references available
+genechat annotate --stale         # Re-annotate layers with newer references (currently ClinVar only)
 ```
 
 ## Viewing Current State
