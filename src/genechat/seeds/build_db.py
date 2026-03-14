@@ -59,6 +59,11 @@ SCHEMAS = {
         );
         CREATE INDEX idx_prs_id ON prs_weights(prs_id);
     """,
+    "enhanced_warning_genes": """
+        CREATE TABLE enhanced_warning_genes (
+            symbol TEXT PRIMARY KEY
+        );
+    """,
 }
 
 TSV_FILES = {
@@ -66,6 +71,7 @@ TSV_FILES = {
     "pgx_drugs": "pgx_drugs.tsv",
     "pgx_variants": "pgx_variants.tsv",
     "prs_weights": "prs_weights.tsv",
+    "enhanced_warning_genes": "enhanced_warning_genes.tsv",
 }
 
 EXPECTED_COLUMNS = {
@@ -99,6 +105,7 @@ EXPECTED_COLUMNS = {
         "effect_allele",
         "weight",
     ],
+    "enhanced_warning_genes": ["symbol"],
 }
 
 INT_COLUMNS = {"start", "end", "pos"}

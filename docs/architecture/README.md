@@ -12,3 +12,4 @@ significant decisions.
 | [0005](0005-genome-ux-redesign.md) | Genome UX redesign: explicit selection, drop update | Accepted |
 | [0006](0006-typer-cli-framework.md) | Migrate CLI from argparse to Typer | Accepted |
 | [0007](0007-per-chromosome-dbsnp-download.md) | Per-chromosome dbSNP download via remote region queries | Proposed |
+| [0008](0008-enhanced-warning-genes.md) | Enhanced warnings for high-impact gene results | Accepted |

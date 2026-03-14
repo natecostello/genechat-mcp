@@ -1,6 +1,7 @@
 """Batch lookup of multiple variants by rsID."""
 
 from genechat.tools.common import resolve_engine
+from genechat.tools.formatting import enhanced_warning_for_genes
 from genechat.vcf_engine import VCFEngineError
 
 DISCLAIMER = (
@@ -44,6 +45,16 @@ def register(mcp, engines, db, config):
         except (ValueError, VCFEngineError) as e:
             return f"Error querying variants: {e}"
 
+        # Collect genes from results for warning check
+        all_genes = set()
+        for rsid_key, variants in results.items():
+            if rsid_key == "_truncated":
+                continue
+            for v in variants:
+                g = v.get("annotation", {}).get("gene")
+                if g:
+                    all_genes.add(g)
+
         show_label = len(engines) > 1
 
         output = _format_batch_results(
@@ -56,18 +67,29 @@ def register(mcp, engines, db, config):
                 label2, engine2 = resolve_engine(engines, genome2, config)
             except ValueError as e:
                 output.append(f"\n---\n\n**Genome '{genome2}': {e}**")
-                return "\n".join(output) + DISCLAIMER
+                warning = enhanced_warning_for_genes(db, all_genes)
+                return warning + "\n".join(output) + DISCLAIMER
 
             try:
                 results2 = engine2.query_rsids(raw_ids)
             except (ValueError, VCFEngineError) as e:
                 output.append(f"\n---\n\n**Genome '{label2}' error: {e}**")
-                return "\n".join(output) + DISCLAIMER
+                warning = enhanced_warning_for_genes(db, all_genes)
+                return warning + "\n".join(output) + DISCLAIMER
+
+            for rsid_key, variants in results2.items():
+                if rsid_key == "_truncated":
+                    continue
+                for v in variants:
+                    g = v.get("annotation", {}).get("gene")
+                    if g:
+                        all_genes.add(g)
 
             output.append("\n---\n")
             output.extend(_format_batch_results(results2, raw_ids, config, label2))
 
-        return "\n".join(output) + DISCLAIMER
+        warning = enhanced_warning_for_genes(db, all_genes)
+        return warning + "\n".join(output) + DISCLAIMER
 
 
 def _format_batch_results(

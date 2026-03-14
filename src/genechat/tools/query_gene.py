@@ -1,6 +1,7 @@
 """Query all variants in a gene region."""
 
 from genechat.tools.common import resolve_engine
+from genechat.tools.formatting import enhanced_warning_for_genes
 from genechat.vcf_engine import VCFEngineError
 
 DISCLAIMER = (
@@ -161,6 +162,8 @@ def register(mcp, engines, db, config):
         truncated = len(variants) > max_results
         variants = variants[:max_results]
 
+        warning = enhanced_warning_for_genes(db, {gene.upper()})
+
         show_label = len(engines) > 1
         header = f"## Variants in {gene} ({gene_info['name']})"
         if show_label:
@@ -220,13 +223,13 @@ def register(mcp, engines, db, config):
                 label2, engine2 = resolve_engine(engines, genome2, config)
             except ValueError as e:
                 lines.append(f"\n---\n\n**Genome '{genome2}': {e}**")
-                return "\n".join(lines) + DISCLAIMER
+                return warning + "\n".join(lines) + DISCLAIMER
 
             try:
                 variants2 = engine2.query_region(region)
             except (ValueError, VCFEngineError) as e:
                 lines.append(f"\n---\n\n**Genome '{label2}' error: {e}**")
-                return "\n".join(lines) + DISCLAIMER
+                return warning + "\n".join(lines) + DISCLAIMER
 
             # Apply same filters
             if impact_filter:
@@ -275,4 +278,4 @@ def register(mcp, engines, db, config):
             else:
                 lines.append("No notable variants found.")
 
-        return "\n".join(lines) + DISCLAIMER
+        return warning + "\n".join(lines) + DISCLAIMER

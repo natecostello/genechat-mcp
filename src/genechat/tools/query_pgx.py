@@ -1,7 +1,7 @@
 """Pharmacogenomics query — look up drug-gene interactions and your genotypes."""
 
 from genechat.tools.common import resolve_engine
-from genechat.tools.formatting import short_zygosity
+from genechat.tools.formatting import enhanced_warning_for_genes, short_zygosity
 from genechat.vcf_engine import VCFEngineError
 
 DISCLAIMER = (
@@ -52,6 +52,9 @@ def register(mcp, engines, db, config):
                     "This gene may not have CPIC guidelines."
                 )
 
+        pgx_genes = {e["gene"].upper() for e in entries if e.get("gene")}
+        warning = enhanced_warning_for_genes(db, pgx_genes)
+
         show_label = len(engines) > 1
         sections = []
         for entry in entries:
@@ -71,7 +74,7 @@ def register(mcp, engines, db, config):
                 label2, engine2 = resolve_engine(engines, genome2, config)
             except ValueError as e:
                 sections.append(f"**Genome '{genome2}': {e}**")
-                return "\n\n---\n\n".join(sections) + DISCLAIMER
+                return warning + "\n\n---\n\n".join(sections) + DISCLAIMER
 
             for entry in entries:
                 section = _format_pgx_entry(
@@ -84,7 +87,7 @@ def register(mcp, engines, db, config):
                 )
                 sections.append(section)
 
-        return "\n\n---\n\n".join(sections) + DISCLAIMER
+        return warning + "\n\n---\n\n".join(sections) + DISCLAIMER
 
 
 def _format_pgx_entry(entry, engine, db, config, include_all_variants, *, label=None):
