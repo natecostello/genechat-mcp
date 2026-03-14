@@ -244,7 +244,9 @@ def write_tsv(genes: list[str], output_path: Path) -> None:
         f.write(
             "# Sources: ClinVar variant_summary, HPO genes_to_phenotype, ACMG SF v3.3\n"
         )
-        writer = csv.DictWriter(f, fieldnames=["symbol"], delimiter="\t")
+        writer = csv.DictWriter(
+            f, fieldnames=["symbol"], delimiter="\t", lineterminator="\n"
+        )
         writer.writeheader()
         for gene in genes:
             writer.writerow({"symbol": gene})
