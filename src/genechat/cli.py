@@ -694,15 +694,6 @@ def _run_annotate(
     run_clinvar = first_run or clinvar or all_layers
     # gnomAD/dbSNP: run when explicitly requested, or on first run if already available
     run_gnomad = gnomad or all_layers or (first_run and gnomad_installed())
-
-    # Fast mode: pre-download all gnomAD chromosomes so annotation is non-incremental
-    if fast and run_gnomad and not gnomad_installed():
-        from genechat.download import download_gnomad
-
-        print("  Pre-downloading all gnomAD chromosomes (fast mode)...")
-        download_gnomad()
-
-    gnomad_incremental = run_gnomad and not gnomad_installed()
     run_dbsnp = dbsnp or all_layers or (first_run and dbsnp_installed())
 
     # Check tool prerequisites (can't auto-install system packages)
@@ -744,6 +735,15 @@ def _run_annotate(
                     f"rsIDs ({has_rsid:,}/{total_ann:,}). Use --force to override."
                 )
                 run_dbsnp = False
+
+    # Fast mode: pre-download all gnomAD chromosomes so annotation is non-incremental
+    if fast and run_gnomad and not gnomad_installed():
+        from genechat.download import download_gnomad
+
+        print("  Pre-downloading all gnomAD chromosomes (fast mode)...")
+        download_gnomad()
+
+    gnomad_incremental = run_gnomad and not gnomad_installed()
 
     # Auto-download references if not present
     if run_clinvar and not clinvar_installed():

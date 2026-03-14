@@ -38,9 +38,9 @@ workflow needs a matching "fast" annotation mode in genechat.
 - **20x wall-clock penalty** on shared-cpu machines for the disk-safe default
 - **Fly.io supports temporary scaling**: `--vm-size` and `--rootfs-size` flags
   allow ephemeral large machines for annotation
-- **Piped download avoids raw file on disk**: `curl | bcftools annotate
-  --rename-chrs` writes only the output (~28 GB peak), not raw + output
-  (~56 GB peak)
+- **Bulk download + file-based rename**: Downloads the full dbSNP VCF
+  (~28 GB) then renames contigs locally via `_file_based_dbsnp_rename()`.
+  Peak ~48 GB (raw + renamed), then raw is deleted automatically
 - **Backward compatibility**: disk-constrained users (laptops, small VMs) must
   keep the current default behavior
 - **Simplicity**: one flag, not a matrix of per-source mode options

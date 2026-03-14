@@ -413,15 +413,19 @@ def download_dbsnp(force: bool = False, fast: bool = False) -> Path | None:
 
     # Fast mode: bulk-download the full file, then file-based rename
     if fast:
-        print("  Downloading full dbSNP file (fast mode)...")
         raw_vcf = dbsnp_raw_path()
-        download_file(f"{DBSNP_BASE}/{DBSNP_VCF_NAME}", raw_vcf, "dbSNP VCF")
-        download_file(
-            f"{DBSNP_BASE}/{DBSNP_TBI_NAME}",
-            raw_vcf.with_suffix(".gz.tbi"),
-            "dbSNP index",
-        )
-        return _file_based_dbsnp_rename(raw_vcf, chr_map, chrfixed)
+        raw_tbi = raw_vcf.with_suffix(".gz.tbi")
+        try:
+            if not raw_vcf.exists() or not raw_tbi.exists() or force:
+                print("  Downloading full dbSNP file (fast mode)...")
+                download_file(f"{DBSNP_BASE}/{DBSNP_VCF_NAME}", raw_vcf, "dbSNP VCF")
+                download_file(f"{DBSNP_BASE}/{DBSNP_TBI_NAME}", raw_tbi, "dbSNP index")
+            else:
+                print("  Using existing raw dbSNP file (fast mode)...")
+            return _file_based_dbsnp_rename(raw_vcf, chr_map, chrfixed)
+        except Exception:
+            chr_map.unlink(missing_ok=True)
+            raise
 
     # Legacy path: if raw dbSNP file already exists on disk, use file-based
     # rename then delete the raw file. This avoids re-downloading ~28 GB.
