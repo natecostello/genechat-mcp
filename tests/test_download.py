@@ -236,7 +236,7 @@ class TestDbsnpDownload:
 
         monkeypatch.setattr("subprocess.run", mock_run)
 
-        # Mock _download_file to avoid network
+        # Mock download_file to avoid network
         monkeypatch.setattr(
             "genechat.download.download_file", lambda url, dest, label="": None
         )
