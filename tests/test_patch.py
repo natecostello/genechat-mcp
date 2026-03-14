@@ -449,7 +449,9 @@ class TestProgressCallback:
             for i in range(3)
         ]
         calls = []
-        db.update_clinvar_from_stream(iter(clinvar_lines), progress_callback=calls.append)
+        db.update_clinvar_from_stream(
+            iter(clinvar_lines), progress_callback=calls.append
+        )
         assert len(calls) >= 1
         assert calls[-1] == 3
         db.close()

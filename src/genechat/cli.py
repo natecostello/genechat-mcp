@@ -777,7 +777,9 @@ def _run_annotate(
 
     elapsed = format_elapsed(time.monotonic() - overall_start)
     db_size = format_size(patch_db_path.stat().st_size)
-    print(f"\nAnnotation complete ({elapsed}). Patch database: {patch_db_path} ({db_size})")
+    print(
+        f"\nAnnotation complete ({elapsed}). Patch database: {patch_db_path} ({db_size})"
+    )
 
 
 def _patch_db_path_for(vcf_path: Path, genome_cfg) -> Path:
