@@ -86,15 +86,16 @@ class TestProgressLine:
         output = buf.getvalue()
         assert "50%" in output or "100%" in output
 
-    def test_update_without_total_uses_interval(self):
+    def test_update_without_total_uses_interval(self, monkeypatch):
         buf = io.StringIO()
         buf.isatty = lambda: False  # type: ignore[attr-defined]
-        # Very short interval for testing
-        p = ProgressLine("test", file=buf, report_interval=0.001)
-        import time
-
+        clock = [0.0]
+        monkeypatch.setattr("genechat.progress.time.monotonic", lambda: clock[0])
+        p = ProgressLine("test", file=buf, report_interval=30.0)
         p.update(1000)
-        time.sleep(0.01)
+        # Advance clock past the interval
+        clock[0] = 31.0
         p.update(2000)
         output = buf.getvalue()
         assert "test" in output
+        assert "2,000" in output
