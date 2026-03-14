@@ -1743,7 +1743,7 @@ def _run_licenses():
 
     # Enhanced-warning gene list (HPO + ClinVar + ACMG SF)
     if _lookup_db_has_table(config, "enhanced_warning_genes"):
-        print("Enhanced-warning gene list (installed via seed data):")
+        print("Enhanced-warning gene list (bundled in lookup_tables.db):")
         print("  Sources:         ClinVar (public domain) + HPO + ACMG SF v3.3")
         print(
             "  HPO license:     Custom — must cite, show version, do not modify HPO data"
@@ -1755,7 +1755,7 @@ def _run_licenses():
         print()
     else:
         print(
-            "Enhanced-warning gene list: not installed — run genechat install --seeds"
+            "Enhanced-warning gene list: not found in lookup DB — run genechat install --seeds"
         )
         print()
 
@@ -1806,7 +1806,7 @@ def _run_licenses():
 
     # PGS Catalog scores
     if _lookup_db_has_table(config, "prs_weights"):
-        print("PGS Catalog (installed via seed data):")
+        print("PGS Catalog (bundled in lookup_tables.db):")
         print(
             "  Catalog cite:    Lambert SA et al., Nat Genet 2024. DOI: 10.1038/s41588-024-01937-x"
         )
@@ -1826,7 +1826,9 @@ def _run_licenses():
         print("                           CC BY 4.0")
         print()
     else:
-        print("PGS Catalog:       not installed — run genechat install --seeds")
+        print(
+            "PGS Catalog:       not found in lookup DB — run genechat install --seeds"
+        )
         print()
 
     print("Full details: docs/licenses.md")

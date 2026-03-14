@@ -854,7 +854,7 @@ class TestLicenses:
         assert "CPIC" in out
         assert "HGNC" in out
         assert "Ensembl" in out
-        assert "Enhanced-warning gene list" in out
+        assert "Enhanced-warning gene list (bundled" in out
         assert "HPO" in out
         assert "ACMG SF" in out
         assert "PGS Catalog" in out

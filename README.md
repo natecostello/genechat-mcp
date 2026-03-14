@@ -234,7 +234,7 @@ At runtime, GeneChat uses **only** local files — no external tools, no network
 
 ## Data Source Licenses
 
-License obligations depend on which annotation layers you install. The base install (`genechat init` without extra flags) uses public-domain and permissively licensed data — citations are appreciated but not legally required.
+License obligations depend on which annotation layers you install. The base install includes bundled seed data (PGx, PRS, warning genes) using public-domain, CC0, CC BY 4.0, and HPO-licensed data — citations are appreciated. `genechat install --seeds` refreshes this data from upstream APIs.
 
 | Install path | Sources | License | Key obligation |
 |---|---|---|---|
@@ -242,8 +242,8 @@ License obligations depend on which annotation layers you install. The base inst
 | `--gnomad` | gnomAD | ODbL 1.0 | Attribution required; share-alike on derivative databases |
 | `--dbsnp` | dbSNP | Public domain | None |
 | `--gwas` | GWAS Catalog | CC0 | None |
-| `--seeds` (PRS) | PGS Catalog | EBI ToU + per-score | Cite catalog paper + individual score publications |
-| `--seeds` (warnings) | HPO, ACMG SF | Custom / academic | HPO: cite, show version, do not modify; ACMG: cite |
+| Bundled (PRS) | PGS Catalog | EBI ToU + per-score | Cite catalog paper + individual score publications |
+| Bundled (warnings) | HPO, ACMG SF | Custom / academic | HPO: cite, show version, do not modify; ACMG: cite |
 
 Run `genechat licenses` to see which licenses apply to your specific installation. See [docs/licenses.md](docs/licenses.md) for full attribution text, citation DOIs, and the gnomAD ODbL produced-works distinction.
 

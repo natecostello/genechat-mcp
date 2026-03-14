@@ -1,10 +1,15 @@
 # Data Source Licenses
 
 GeneChat uses data from multiple public databases. License obligations depend on
-which annotation layers the user installs. The base install (`genechat init`
-without extra flags) uses public-domain and permissively licensed data —
-citations are appreciated but not legally required. SnpEff is MIT-licensed,
-which requires preserving the copyright notice when redistributing the software.
+which annotation layers the user installs.
+
+The base install includes a bundled `lookup_tables.db` containing gene
+coordinates, PGx data, PRS weights, and the enhanced-warning gene list. These
+use public-domain, CC0, permissive (CC BY 4.0), and custom (HPO) licensed data.
+Citations are appreciated but — except for HPO — not legally required. SnpEff is
+MIT-licensed, which requires preserving the copyright notice when redistributing
+the software. `genechat install --seeds` refreshes (not first-installs) this
+bundled data from upstream APIs.
 
 Run `genechat licenses` to see which licenses apply to your specific installation.
 
