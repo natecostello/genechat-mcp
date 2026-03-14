@@ -414,7 +414,7 @@ def download_dbsnp(force: bool = False, fast: bool = False) -> Path | None:
     # Fast mode: bulk-download the full file, then file-based rename
     if fast:
         raw_vcf = dbsnp_raw_path()
-        raw_tbi = raw_vcf.with_suffix(".gz.tbi")
+        raw_tbi = raw_vcf.with_suffix(raw_vcf.suffix + ".tbi")
         try:
             if not raw_vcf.exists() or not raw_tbi.exists() or force:
                 print("  Downloading full dbSNP file (fast mode)...")
