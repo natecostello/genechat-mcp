@@ -807,6 +807,7 @@ class TestLicenses:
     def test_always_shows_base_licenses(self, cli, monkeypatch):
         monkeypatch.setattr("genechat.cli.load_config", lambda: AppConfig())
         monkeypatch.setattr("genechat.download.gnomad_installed", lambda: False)
+        monkeypatch.setattr("genechat.download.dbsnp_installed", lambda: False)
 
         result = cli.invoke(app, ["licenses"])
 
@@ -818,13 +819,18 @@ class TestLicenses:
         assert "CPIC" in out
         assert "HGNC" in out
         assert "Ensembl" in out
+        assert "Enhanced-warning gene list" in out
+        assert "HPO" in out
+        assert "ACMG SF" in out
         assert "PGS Catalog" in out
         assert "PGS000349" in out
         assert "PGS002251" in out
+        assert "docs/licenses.md" in out
 
     def test_gnomad_not_installed(self, cli, monkeypatch):
         monkeypatch.setattr("genechat.cli.load_config", lambda: AppConfig())
         monkeypatch.setattr("genechat.download.gnomad_installed", lambda: False)
+        monkeypatch.setattr("genechat.download.dbsnp_installed", lambda: False)
 
         result = cli.invoke(app, ["licenses"])
 
@@ -846,6 +852,7 @@ class TestLicenses:
         )
         monkeypatch.setattr("genechat.cli.load_config", lambda: config)
         monkeypatch.setattr("genechat.download.gnomad_installed", lambda: False)
+        monkeypatch.setattr("genechat.download.dbsnp_installed", lambda: False)
 
         result = cli.invoke(app, ["licenses"])
 
@@ -868,6 +875,7 @@ class TestLicenses:
         config = AppConfig(databases=DatabasesConfig(gwas_db=str(gwas_db)))
         monkeypatch.setattr("genechat.cli.load_config", lambda: config)
         monkeypatch.setattr("genechat.download.gnomad_installed", lambda: False)
+        monkeypatch.setattr("genechat.download.dbsnp_installed", lambda: False)
 
         result = cli.invoke(app, ["licenses"])
 

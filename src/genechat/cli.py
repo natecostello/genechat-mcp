@@ -1685,11 +1685,30 @@ _LICENSE_TAGS: dict[str, str] = {
 # ---------------------------------------------------------------------------
 
 
+def _has_annotation_layer(config, layer: str) -> bool:
+    """Check if any genome has the given annotation layer completed."""
+    for _label, genome_cfg in config.genomes.items():
+        if not genome_cfg.vcf_path:
+            continue
+        patch_db_path = _patch_db_path_for(Path(genome_cfg.vcf_path), genome_cfg)
+        if patch_db_path.exists():
+            from genechat.patch import PatchDB
+
+            patch = PatchDB(patch_db_path, readonly=True)
+            try:
+                meta = patch.get_metadata()
+            finally:
+                patch.close()
+            if meta.get(layer, {}).get("status") == "complete":
+                return True
+    return False
+
+
 def _run_licenses():
     """Print data source licenses for the current installation."""
     config = load_config()
 
-    from genechat.download import gnomad_installed
+    from genechat.download import dbsnp_installed, gnomad_installed
 
     print("Data source licenses for your GeneChat installation")
     print("=" * 52)
@@ -1704,26 +1723,16 @@ def _run_licenses():
     print("  Ensembl          No restrictions (cite: PMID:39656687)")
     print()
 
-    # gnomAD — check if any genome has gnomAD annotations
-    any_gnomad = False
-    for _label, genome_cfg in config.genomes.items():
-        patch_db_path = _patch_db_path_for(
-            Path(genome_cfg.vcf_path) if genome_cfg.vcf_path else Path("."),
-            genome_cfg,
-        )
-        if patch_db_path.exists():
-            from genechat.patch import PatchDB
+    # Enhanced-warning gene list (HPO + ClinVar + ACMG SF)
+    print("Enhanced-warning gene list (installed via seed data):")
+    print("  Sources:         ClinVar (public domain) + HPO + ACMG SF v3.3")
+    print("  HPO license:     Custom — must cite, show version, do not modify HPO data")
+    print("  HPO cite:        Kohler S et al., Nucleic Acids Res 2021. PMID: 33264411")
+    print("  ACMG SF cite:    Miller DT et al., Genet Med 2023. PMID: 37347242")
+    print()
 
-            patch = PatchDB(patch_db_path, readonly=True)
-            try:
-                meta = patch.get_metadata()
-            finally:
-                patch.close()
-            if meta.get("gnomad", {}).get("status") == "complete":
-                any_gnomad = True
-                break
-
-    if any_gnomad or gnomad_installed():
+    # gnomAD
+    if _has_annotation_layer(config, "gnomad") or gnomad_installed():
         print("gnomAD (installed):")
         print("  License:         Open Database License (ODbL) v1.0")
         print('  Attribution:     "Contains information from the Genome Aggregation')
@@ -1742,26 +1751,8 @@ def _run_licenses():
         print("gnomAD:            not installed")
         print()
 
-    # dbSNP — check if any genome has dbSNP annotations
-    any_dbsnp = False
-    for _label, genome_cfg in config.genomes.items():
-        patch_db_path = _patch_db_path_for(
-            Path(genome_cfg.vcf_path) if genome_cfg.vcf_path else Path("."),
-            genome_cfg,
-        )
-        if patch_db_path.exists():
-            from genechat.patch import PatchDB
-
-            patch = PatchDB(patch_db_path, readonly=True)
-            try:
-                meta = patch.get_metadata()
-            finally:
-                patch.close()
-            if meta.get("dbsnp", {}).get("status") == "complete":
-                any_dbsnp = True
-                break
-
-    if any_dbsnp:
+    # dbSNP
+    if _has_annotation_layer(config, "dbsnp") or dbsnp_installed():
         print("dbSNP (installed):")
         print("  License:         Public domain (NCBI)")
         print(
@@ -1801,9 +1792,7 @@ def _run_licenses():
     print("    PGS002251 (BMI)        Dashti HS et al., BMC Med 2022. PMID: 35016652")
     print("                           CC BY 4.0")
     print()
-    print(
-        "Full details: docs/licenses.md or https://github.com/natecostello/genechat-mcp/blob/main/docs/licenses.md"
-    )
+    print("Full details: docs/licenses.md")
 
 
 # ---------------------------------------------------------------------------
