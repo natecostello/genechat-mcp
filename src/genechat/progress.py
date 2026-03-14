@@ -66,6 +66,7 @@ class ProgressLine:
     ):
         self._label = label
         self._total = total
+        report_pct = max(1, report_pct)
         self._file = file or sys.stderr
         self._is_tty = hasattr(self._file, "isatty") and self._file.isatty()
         self._start = time.monotonic()
@@ -111,7 +112,11 @@ class ProgressLine:
     def done(self, message: str = "") -> None:
         """Print final line with total elapsed time."""
         elapsed = format_elapsed(time.monotonic() - self._start)
-        line = f"  {self._label}: {message} ({elapsed})" if message else f"  {self._label}: done ({elapsed})"
+        line = (
+            f"  {self._label}: {message} ({elapsed})"
+            if message
+            else f"  {self._label}: done ({elapsed})"
+        )
         if self._is_tty:
             print(f"\r{line}", file=self._file)
         else:
