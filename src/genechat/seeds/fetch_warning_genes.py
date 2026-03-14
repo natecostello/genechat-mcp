@@ -82,14 +82,6 @@ ACMG_SF_V3_3 = {
     "ATP7B", "BTD", "GAA", "OTC", "RYR1",
 }
 
-# Warning text prepended to tool output for matched genes.
-ENHANCED_WARNING_TEXT = (
-    "\u26a0\ufe0f **SENSITIVE RESULT**: This gene is associated with a serious "
-    "condition that may have limited treatment options. Consider consulting a "
-    "genetic counselor before interpreting these findings. Results like these "
-    "are typically delivered in a clinical setting with professional support."
-)
-
 
 def fetch_clinvar_genes() -> set[str]:
     """Download ClinVar variant_summary and extract genes with Pathogenic variants.
@@ -99,31 +91,28 @@ def fetch_clinvar_genes() -> set[str]:
     - ClinicalSignificance contains "Pathogenic" (not just "Likely_pathogenic")
     - ReviewStatus != "no assertion criteria provided"
     """
-    print("  Downloading ClinVar variant_summary.txt.gz...")
+    print("  Downloading ClinVar variant_summary.txt.gz (streaming)...")
     req = urllib.request.Request(CLINVAR_URL, headers={"User-Agent": "genechat/1.0"})
-    with urllib.request.urlopen(req, timeout=120) as resp:
-        raw = resp.read()
-
-    print(f"  Downloaded {len(raw) / 1_048_576:.1f} MB, decompressing...")
-    text = gzip.decompress(raw).decode("utf-8", errors="replace")
-
     genes: set[str] = set()
-    reader = csv.DictReader(io.StringIO(text), delimiter="\t")
-    for row in reader:
-        assembly = row.get("Assembly", "")
-        if assembly != "GRCh38":
-            continue
-        sig = row.get("ClinicalSignificance", "")
-        # Must contain "Pathogenic" as a standalone term (not just "Likely_pathogenic")
-        sig_terms = [t.strip().lower() for t in sig.replace("/", ",").split(",")]
-        if "pathogenic" not in sig_terms:
-            continue
-        review = row.get("ReviewStatus", "")
-        if review == "no assertion criteria provided":
-            continue
-        gene_symbol = row.get("GeneSymbol", "").strip()
-        if gene_symbol and gene_symbol != "-":
-            genes.add(gene_symbol)
+    with urllib.request.urlopen(req, timeout=120) as resp:
+        gz_stream = gzip.GzipFile(fileobj=resp)
+        text_stream = io.TextIOWrapper(gz_stream, encoding="utf-8", errors="replace")
+        reader = csv.DictReader(text_stream, delimiter="\t")
+        for row in reader:
+            assembly = row.get("Assembly", "")
+            if assembly != "GRCh38":
+                continue
+            sig = row.get("ClinicalSignificance", "")
+            # Must contain "Pathogenic" as a standalone term (not just "Likely_pathogenic")
+            sig_terms = [t.strip().lower() for t in sig.replace("/", ",").split(",")]
+            if "pathogenic" not in sig_terms:
+                continue
+            review = row.get("ReviewStatus", "")
+            if review == "no assertion criteria provided":
+                continue
+            gene_symbol = row.get("GeneSymbol", "").strip()
+            if gene_symbol and gene_symbol != "-":
+                genes.add(gene_symbol)
 
     print(f"  ClinVar: {len(genes)} genes with Pathogenic variants on GRCh38")
     return genes
