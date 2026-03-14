@@ -279,12 +279,15 @@ def _download_dbsnp_chromosome(
     requested region. Pipes through bcftools annotate for contig rename.
     """
     tmp = output.with_suffix(".tmp.vcf.gz")
+    rename = None
     try:
         # bcftools view -r <contig> <remote_url> | bcftools annotate --rename-chrs
+        # Redirect view stderr to DEVNULL to avoid pipe buffer deadlock —
+        # bcftools view can emit warnings that fill the OS pipe buffer.
         view = subprocess.Popen(
             ["bcftools", "view", "-r", refseq, remote_url],
             stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
         )
         rename = subprocess.Popen(
             [
@@ -308,9 +311,8 @@ def _download_dbsnp_chromosome(
         rename_rc = rename.returncode
 
         if view_rc != 0:
-            view_stderr = view.stderr.read().decode(errors="replace")[:500]
             raise subprocess.CalledProcessError(
-                view_rc, "bcftools view", stderr=view_stderr
+                view_rc, "bcftools view", stderr="view failed"
             )
         if rename_rc != 0:
             raise subprocess.CalledProcessError(
@@ -325,9 +327,8 @@ def _download_dbsnp_chromosome(
         tmp.unlink(missing_ok=True)
         raise
     finally:
-        # Ensure stderr pipes are closed
-        if view.stderr:
-            view.stderr.close()
+        if rename is not None and rename.stderr:
+            rename.stderr.close()
 
 
 def _concat_dbsnp_chromosomes(chr_files: list[Path], output: Path) -> None:
@@ -401,7 +402,7 @@ def download_dbsnp(force: bool = False) -> Path | None:
     # rename then delete the raw file. This avoids re-downloading ~28 GB.
     raw_vcf = dbsnp_raw_path()
     if raw_vcf.exists() and not force:
-        return _file_based_dbsnp_rename(raw_vcf, chr_map, chrfixed, ddir)
+        return _file_based_dbsnp_rename(raw_vcf, chr_map, chrfixed)
 
     # Per-chromosome remote region queries
     remote_url = f"{DBSNP_BASE}/{DBSNP_VCF_NAME}"
@@ -462,7 +463,7 @@ def download_dbsnp(force: bool = False) -> Path | None:
 
 
 def _file_based_dbsnp_rename(
-    raw_vcf: Path, chr_map: Path, chrfixed: Path, ddir: Path
+    raw_vcf: Path, chr_map: Path, chrfixed: Path
 ) -> Path | None:
     """Rename contigs in a local raw dbSNP file, then delete the raw file."""
     print("  Renaming dbSNP contigs from existing raw file...")

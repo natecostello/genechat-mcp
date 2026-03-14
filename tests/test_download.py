@@ -441,7 +441,8 @@ class TestDownloadDbsnpChromosome:
 
                 if "view" in cmd:
                     self.stdout = io.BytesIO(b"fake-vcf-data")
-                    self.stderr = io.BytesIO(b"")
+                    # stderr=DEVNULL in real code, so no stderr pipe
+                    self.stderr = None
                 elif "annotate" in cmd:
                     if "-o" in cmd:
                         out_idx = cmd.index("-o") + 1
@@ -485,7 +486,8 @@ class TestDownloadDbsnpChromosome:
             def __init__(self, cmd, **kwargs):
                 self.cmd = cmd
                 self.returncode = 1 if "view" in cmd else 0
-                self.stderr = io.BytesIO(b"error")
+                # view uses DEVNULL (no stderr pipe), rename has PIPE
+                self.stderr = None if "view" in cmd else io.BytesIO(b"error")
                 self.stdout = io.BytesIO(b"") if "view" in cmd else None
 
             def communicate(self):
