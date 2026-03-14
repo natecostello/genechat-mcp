@@ -693,6 +693,123 @@ class TestAnnotate:
         assert result.exit_code == 0
         assert "up to date" in result.output
 
+    def test_init_fast_passes_flag(self, cli, tmp_path, monkeypatch):
+        """init --fast passes fast=True to _run_annotate."""
+        vcf = tmp_path / "test.vcf.gz"
+        vcf.write_bytes(b"fake")
+        (tmp_path / "test.vcf.gz.tbi").write_bytes(b"fake")
+
+        config_dir = tmp_path / "config"
+        monkeypatch.setattr(
+            "genechat.cli.user_config_dir", lambda _app: str(config_dir)
+        )
+        _mock_pysam_ok(monkeypatch)
+        monkeypatch.setattr("genechat.cli._ensure_lookup_db", lambda: True)
+
+        annotate_calls = []
+        monkeypatch.setattr(
+            "genechat.cli._run_annotate",
+            lambda **kw: annotate_calls.append(kw),
+        )
+
+        result = cli.invoke(app, ["init", str(vcf), "--fast"])
+
+        assert result.exit_code == 0
+        assert len(annotate_calls) == 1
+        assert annotate_calls[0]["fast"] is True
+
+    def test_annotate_fast_predownloads_gnomad(self, cli, tmp_path, monkeypatch):
+        """annotate --gnomad --fast pre-downloads all gnomAD then uses non-incremental."""
+        from genechat.patch import PatchDB
+
+        patch_path = tmp_path / "test.patch.db"
+        patch = PatchDB.create(patch_path)
+        patch.close()
+
+        vcf = tmp_path / "test.vcf.gz"
+        vcf.write_bytes(b"fake")
+
+        config = AppConfig(
+            genomes={"default": {"vcf_path": str(vcf), "patch_db": str(patch_path)}}
+        )
+        monkeypatch.setattr("genechat.cli.load_config", lambda: config)
+        monkeypatch.setattr("genechat.download.snpeff_installed", lambda: True)
+        monkeypatch.setattr("genechat.download.clinvar_installed", lambda: True)
+        monkeypatch.setattr("shutil.which", lambda name: f"/usr/bin/{name}")
+
+        # gnomad_installed: False initially, then True after download_gnomad
+        gnomad_state = {"installed": False}
+
+        def mock_gnomad_installed():
+            return gnomad_state["installed"]
+
+        monkeypatch.setattr("genechat.download.gnomad_installed", mock_gnomad_installed)
+
+        download_gnomad_calls = []
+
+        def mock_download_gnomad(**kw):
+            gnomad_state["installed"] = True
+            download_gnomad_calls.append(True)
+            return tmp_path / "gnomad"
+
+        monkeypatch.setattr("genechat.download.download_gnomad", mock_download_gnomad)
+
+        annotate_gnomad_calls = []
+
+        def mock_annotate_gnomad(
+            patch, vcf_path, step, total, is_update, incremental=False
+        ):
+            annotate_gnomad_calls.append({"incremental": incremental})
+
+        monkeypatch.setattr("genechat.cli._annotate_gnomad", mock_annotate_gnomad)
+        monkeypatch.setattr("genechat.cli._annotate_snpeff", lambda *a, **kw: None)
+        monkeypatch.setattr("genechat.cli._annotate_clinvar", lambda *a, **kw: None)
+
+        result = cli.invoke(app, ["annotate", "--gnomad", "--fast"])
+
+        assert result.exit_code == 0
+        assert len(download_gnomad_calls) == 1, "download_gnomad should be called"
+        assert len(annotate_gnomad_calls) == 1
+        assert annotate_gnomad_calls[0]["incremental"] is False
+
+    def test_annotate_fast_dbsnp(self, cli, tmp_path, monkeypatch):
+        """annotate --dbsnp --fast passes fast=True to download_dbsnp."""
+        from genechat.patch import PatchDB
+
+        patch_path = tmp_path / "test.patch.db"
+        patch = PatchDB.create(patch_path)
+        patch.close()
+
+        vcf = tmp_path / "test.vcf.gz"
+        vcf.write_bytes(b"fake")
+
+        config = AppConfig(
+            genomes={"default": {"vcf_path": str(vcf), "patch_db": str(patch_path)}}
+        )
+        monkeypatch.setattr("genechat.cli.load_config", lambda: config)
+        monkeypatch.setattr("genechat.download.snpeff_installed", lambda: True)
+        monkeypatch.setattr("genechat.download.clinvar_installed", lambda: True)
+        monkeypatch.setattr("genechat.download.gnomad_installed", lambda: False)
+        monkeypatch.setattr("genechat.download.dbsnp_installed", lambda: False)
+        monkeypatch.setattr("shutil.which", lambda name: f"/usr/bin/{name}")
+
+        download_dbsnp_calls = []
+
+        def mock_download_dbsnp(**kw):
+            download_dbsnp_calls.append(kw)
+            return tmp_path / "dbsnp_chrfixed.vcf.gz"
+
+        monkeypatch.setattr("genechat.download.download_dbsnp", mock_download_dbsnp)
+        monkeypatch.setattr("genechat.cli._annotate_snpeff", lambda *a, **kw: None)
+        monkeypatch.setattr("genechat.cli._annotate_clinvar", lambda *a, **kw: None)
+        monkeypatch.setattr("genechat.cli._annotate_dbsnp", lambda *a, **kw: None)
+
+        result = cli.invoke(app, ["annotate", "--dbsnp", "--fast"])
+
+        assert result.exit_code == 0
+        assert len(download_dbsnp_calls) == 1
+        assert download_dbsnp_calls[0]["fast"] is True
+
 
 # ---------------------------------------------------------------------------
 # genechat status

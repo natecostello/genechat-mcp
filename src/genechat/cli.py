@@ -208,6 +208,12 @@ def annotate(
             "--force", help="Override guards (e.g. skip rsID probe for dbSNP)"
         ),
     ] = False,
+    fast: Annotated[
+        bool,
+        typer.Option(
+            "--fast", help="Bulk-download mode: ~20x faster, ~180 GB peak disk"
+        ),
+    ] = False,
     genome: Annotated[
         str | None,
         typer.Option(help="Which genome to annotate", autocompletion=_genome_completer),
@@ -222,6 +228,7 @@ def annotate(
         all_layers=all_layers,
         stale=stale,
         force=force,
+        fast=fast,
         genome=genome,
     )
 
@@ -257,18 +264,34 @@ def init(
         bool,
         typer.Option(
             "--gnomad",
-            help="Also annotate gnomAD population frequencies (~17 GB peak disk)",
+            help="Also annotate gnomAD population frequencies (~17 GB peak disk, ~150 GB with --fast)",
         ),
     ] = False,
     dbsnp: Annotated[
-        bool, typer.Option("--dbsnp", help="Also download dbSNP (~20 GB)")
+        bool,
+        typer.Option(
+            "--dbsnp", help="Also download dbSNP (~20 GB, ~48 GB with --fast)"
+        ),
     ] = False,
     gwas: Annotated[
         bool, typer.Option("--gwas", help="Also download GWAS Catalog (~58 MB)")
     ] = False,
+    fast: Annotated[
+        bool,
+        typer.Option(
+            "--fast", help="Bulk-download mode: ~20x faster, ~180 GB peak disk"
+        ),
+    ] = False,
 ):
     """Full first-time setup for a VCF file."""
-    _run_init(vcf_path=vcf_path, label=label, gnomad=gnomad, dbsnp=dbsnp, gwas=gwas)
+    _run_init(
+        vcf_path=vcf_path,
+        label=label,
+        gnomad=gnomad,
+        dbsnp=dbsnp,
+        gwas=gwas,
+        fast=fast,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -594,6 +617,7 @@ def _run_annotate(
     all_layers: bool = False,
     stale: bool = False,
     force: bool = False,
+    fast: bool = False,
     genome: str | None = None,
 ):
     """Build or update patch.db for the registered VCF."""
@@ -670,7 +694,6 @@ def _run_annotate(
     run_clinvar = first_run or clinvar or all_layers
     # gnomAD/dbSNP: run when explicitly requested, or on first run if already available
     run_gnomad = gnomad or all_layers or (first_run and gnomad_installed())
-    gnomad_incremental = run_gnomad and not gnomad_installed()
     run_dbsnp = dbsnp or all_layers or (first_run and dbsnp_installed())
 
     # Check tool prerequisites (can't auto-install system packages)
@@ -713,6 +736,15 @@ def _run_annotate(
                 )
                 run_dbsnp = False
 
+    # Fast mode: pre-download all gnomAD chromosomes so annotation is non-incremental
+    if fast and run_gnomad and not gnomad_installed():
+        from genechat.download import download_gnomad
+
+        print("  Pre-downloading all gnomAD chromosomes (fast mode)...")
+        download_gnomad()
+
+    gnomad_incremental = run_gnomad and not gnomad_installed()
+
     # Auto-download references if not present
     if run_clinvar and not clinvar_installed():
         print("  Downloading ClinVar reference...")
@@ -727,7 +759,7 @@ def _run_annotate(
 
     if run_dbsnp and not dbsnp_installed():
         print("  Downloading dbSNP reference...")
-        result = download_dbsnp()
+        result = download_dbsnp(fast=fast)
         if result is None:
             rprint(
                 "[red]Error:[/red] dbSNP download/processing failed.", file=sys.stderr
@@ -1339,6 +1371,7 @@ def _run_init(
     gnomad: bool = False,
     dbsnp: bool = False,
     gwas: bool = False,
+    fast: bool = False,
 ):
     """Full first-time setup: add + download + annotate + configure."""
     vcf_path = Path(vcf_path).expanduser().resolve()
@@ -1389,7 +1422,7 @@ def _run_init(
 
     # Next step: Annotate (auto-downloads ClinVar, SnpEff DB, dbSNP, gnomAD as needed)
     print(f"\nStep {step}: Building annotation database...")
-    _run_annotate(gnomad=gnomad, dbsnp=dbsnp, genome=label)
+    _run_annotate(gnomad=gnomad, dbsnp=dbsnp, fast=fast, genome=label)
 
     # Print MCP config
     step += 1

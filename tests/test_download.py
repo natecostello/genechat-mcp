@@ -424,6 +424,74 @@ class TestDbsnpDownload:
         # chr22 failed, so should not be in completed
         assert "NC_000022.11" not in state.get("completed_contigs", [])
 
+    def test_fast_downloads_raw_and_renames(self, monkeypatch, tmp_path, capsys):
+        """fast=True downloads full file then uses file-based rename."""
+        refs = tmp_path / "refs"
+        monkeypatch.setattr("genechat.download.REFERENCES_DIR", refs)
+        monkeypatch.setattr("shutil.which", lambda name: f"/usr/bin/{name}")
+
+        downloaded = []
+
+        def mock_download_file(url, dest, label=""):
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest.write_bytes(b"fake")
+            downloaded.append(dest.name)
+
+        monkeypatch.setattr("genechat.download.download_file", mock_download_file)
+
+        rename_calls = []
+
+        def mock_file_rename(raw_vcf, chr_map, chrfixed):
+            rename_calls.append((raw_vcf, chr_map, chrfixed))
+            chrfixed.write_bytes(b"renamed")
+            chrfixed.with_name(f"{chrfixed.name}.tbi").write_bytes(b"tbi")
+            return chrfixed
+
+        monkeypatch.setattr(
+            "genechat.download._file_based_dbsnp_rename", mock_file_rename
+        )
+
+        # Ensure per-chromosome path is NOT called
+        chrom_calls = []
+
+        def mock_dl_chrom(*args):
+            chrom_calls.append(args)
+
+        monkeypatch.setattr(
+            "genechat.download._download_dbsnp_chromosome", mock_dl_chrom
+        )
+
+        result = download_dbsnp(fast=True)
+        assert result is not None
+
+        # download_file should be called twice (VCF + TBI)
+        assert len(downloaded) == 2
+        assert "GCF_000001405.40.gz" in downloaded
+        assert "GCF_000001405.40.gz.tbi" in downloaded
+
+        # _file_based_dbsnp_rename should be called once
+        assert len(rename_calls) == 1
+
+        # Per-chromosome download should NOT be called
+        assert len(chrom_calls) == 0
+
+        out = capsys.readouterr().out
+        assert "fast mode" in out
+
+    def test_fast_skips_when_existing(self, monkeypatch, tmp_path, capsys):
+        """fast=True still skips when chrfixed already exists."""
+        refs = tmp_path / "refs"
+        ddir = refs / "dbsnp"
+        ddir.mkdir(parents=True)
+        (ddir / "dbsnp_chrfixed.vcf.gz").write_bytes(b"fake")
+        (ddir / "dbsnp_chrfixed.vcf.gz.tbi").write_bytes(b"fake")
+        monkeypatch.setattr("genechat.download.REFERENCES_DIR", refs)
+        monkeypatch.setattr("shutil.which", lambda name: None)
+
+        result = download_dbsnp(fast=True)
+        assert result == ddir / "dbsnp_chrfixed.vcf.gz"
+        assert "already downloaded" in capsys.readouterr().out
+
 
 class TestDownloadDbsnpChromosome:
     def test_pipes_view_through_rename(self, monkeypatch, tmp_path):

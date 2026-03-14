@@ -106,7 +106,7 @@ LLM Client (Claude Desktop / Claude Code)
 GeneChat MCP Server (Python)
     +-- CLI: init, add, annotate, install, status, licenses, serve
     |         Flags: --version, --no-color, --json (status), --stale (annotate),
-    |                --check-updates (status). Exit codes 0-6, 130.
+    |                --check-updates (status), --fast (init/annotate). Exit codes 0-6, 130.
     +-- Tools: list_genomes, query_variant, query_variants, query_gene,
     |         query_genes, query_clinvar, query_gwas, query_pgx,
     |         calculate_prs, genome_summary
