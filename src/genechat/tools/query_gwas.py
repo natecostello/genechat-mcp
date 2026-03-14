@@ -3,7 +3,7 @@
 import re
 
 from genechat.tools.common import resolve_engine
-from genechat.tools.formatting import short_zygosity
+from genechat.tools.formatting import enhanced_warning_for_genes, short_zygosity
 from genechat.vcf_engine import VCFEngineError
 
 _RSID_RE = re.compile(r"^rs\d+$")
@@ -116,6 +116,17 @@ def register(mcp, engines, db, config):
                 except (ValueError, VCFEngineError):
                     vcf_lookup_failed = True
 
+        # Check for enhanced warnings
+        gwas_genes = set()
+        for r in results:
+            g = r.get("mapped_gene")
+            if g:
+                for sym in g.split(" - "):
+                    gwas_genes.add(sym.strip())
+        if gene:
+            gwas_genes.add(gene.upper())
+        warning = enhanced_warning_for_genes(db, gwas_genes)
+
         # Build header
         search_desc = []
         if trait:
@@ -179,4 +190,4 @@ def register(mcp, engines, db, config):
                     f"| {rs} | {g} | {t} | {ra} | {pv_str} | {ob_str} | {author} |"
                 )
 
-        return "\n".join(lines) + DISCLAIMER
+        return warning + "\n".join(lines) + DISCLAIMER

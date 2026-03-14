@@ -1,6 +1,7 @@
 """Look up a specific variant by rsID or genomic position."""
 
 from genechat.tools.common import resolve_engine
+from genechat.tools.formatting import enhanced_warning_for_genes
 from genechat.vcf_engine import VCFEngineError
 
 DISCLAIMER = (
@@ -58,6 +59,13 @@ def register(mcp, engines, db, config):
                 "or not covered by your sequencing."
             )
 
+        # Check for enhanced warnings based on genes in returned variants
+        all_genes = set()
+        for v in variants:
+            g = v.get("annotation", {}).get("gene")
+            if g:
+                all_genes.add(g)
+
         # Format primary genome results
         genome_build = (
             config.genomes[label].genome_build if label in config.genomes else "GRCh38"
@@ -85,7 +93,8 @@ def register(mcp, engines, db, config):
                 label2, engine2 = resolve_engine(engines, genome2, config)
             except ValueError as e:
                 lines.append(f"\n\n---\n\n**Genome '{genome2}': {e}**")
-                return "\n\n---\n\n".join(lines) + DISCLAIMER
+                warning = enhanced_warning_for_genes(db, all_genes)
+                return warning + "\n\n---\n\n".join(lines) + DISCLAIMER
 
             try:
                 if rsid:
@@ -94,7 +103,8 @@ def register(mcp, engines, db, config):
                     variants2 = engine2.query_region(region)
             except (ValueError, VCFEngineError) as e:
                 lines.append(f"\n\n---\n\n**Genome '{label2}' error: {e}**")
-                return "\n\n---\n\n".join(lines) + DISCLAIMER
+                warning = enhanced_warning_for_genes(db, all_genes)
+                return warning + "\n\n---\n\n".join(lines) + DISCLAIMER
 
             genome_build2 = (
                 config.genomes[label2].genome_build
@@ -104,6 +114,9 @@ def register(mcp, engines, db, config):
             if variants2:
                 for v in variants2:
                     lines.append(_format_variant(v, config, genome_build2, label2))
+                    g = v.get("annotation", {}).get("gene")
+                    if g:
+                        all_genes.add(g)
             else:
                 query_desc = rsid if rsid else position
                 lines.append(
@@ -111,7 +124,8 @@ def register(mcp, engines, db, config):
                     "(homozygous reference or not covered)."
                 )
 
-        return "\n\n---\n\n".join(lines) + DISCLAIMER
+        warning = enhanced_warning_for_genes(db, all_genes)
+        return warning + "\n\n---\n\n".join(lines) + DISCLAIMER
 
 
 def _format_variant(

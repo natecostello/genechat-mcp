@@ -209,6 +209,7 @@ genechat-mcp/
         fetch_gene_coords.py       # HGNC + Ensembl API -> gene coordinates
         fetch_cpic_data.py         # CPIC API -> pgx_drugs + pgx_variants
         fetch_prs_data.py          # PGS Catalog FTP -> prs_weights
+        fetch_warning_genes.py     # ClinVar + HPO -> enhanced_warning_genes
       parsers/
         __init__.py
         snpeff.py                  # Parse SnpEff ANN field
@@ -241,6 +242,7 @@ All seed data is fetched from external APIs at build time. No hand-curated files
 | HGNC + Ensembl | All ~19,000 protein-coding gene coordinates | `genechat.seeds.fetch_gene_coords` |
 | CPIC (ClinPGx API) | PGx drug-gene guidelines + star-allele variants | `genechat.seeds.fetch_cpic_data` |
 | PGS Catalog FTP | Polygenic risk score weights | `genechat.seeds.fetch_prs_data` |
+| ClinVar + HPO | Enhanced-warning gene list (~540 genes) | `genechat.seeds.fetch_warning_genes` |
 
 **Rebuild everything:** `uv run python scripts/build_seed_data.py` (source checkout) or `genechat install --seeds` (pip install)
 

@@ -79,6 +79,73 @@ class TestPrsWeights:
 
 
 # ---------------------------------------------------------------------------
+# Enhanced warning genes
+# ---------------------------------------------------------------------------
+
+
+class TestEnhancedWarningGene:
+    def _create_db_with_warnings(self, path: Path):
+        """Create a lookup DB with enhanced_warning_genes table."""
+        conn = sqlite3.connect(str(path))
+        conn.execute(
+            "CREATE TABLE genes (symbol TEXT PRIMARY KEY, name TEXT, "
+            "chrom TEXT, start INTEGER, end INTEGER, strand TEXT)"
+        )
+        conn.execute("CREATE TABLE enhanced_warning_genes (symbol TEXT PRIMARY KEY)")
+        conn.execute("INSERT INTO enhanced_warning_genes VALUES ('HTT')")
+        conn.execute("INSERT INTO enhanced_warning_genes VALUES ('SOD1')")
+        conn.commit()
+        conn.close()
+
+    def test_known_warning_gene(self, tmp_path):
+        db_path = tmp_path / "lookup_tables.db"
+        self._create_db_with_warnings(db_path)
+        config = AppConfig(databases={"lookup_db": str(db_path)})
+        db = LookupDB(config)
+        try:
+            assert db.is_enhanced_warning_gene("HTT") is True
+        finally:
+            db.close()
+
+    def test_case_insensitive(self, tmp_path):
+        db_path = tmp_path / "lookup_tables.db"
+        self._create_db_with_warnings(db_path)
+        config = AppConfig(databases={"lookup_db": str(db_path)})
+        db = LookupDB(config)
+        try:
+            assert db.is_enhanced_warning_gene("htt") is True
+        finally:
+            db.close()
+
+    def test_unknown_gene(self, tmp_path):
+        db_path = tmp_path / "lookup_tables.db"
+        self._create_db_with_warnings(db_path)
+        config = AppConfig(databases={"lookup_db": str(db_path)})
+        db = LookupDB(config)
+        try:
+            assert db.is_enhanced_warning_gene("BRCA1") is False
+        finally:
+            db.close()
+
+    def test_missing_table_returns_false(self, tmp_path):
+        """When enhanced_warning_genes table doesn't exist, return False."""
+        db_path = tmp_path / "lookup_tables.db"
+        conn = sqlite3.connect(str(db_path))
+        conn.execute(
+            "CREATE TABLE genes (symbol TEXT PRIMARY KEY, name TEXT, "
+            "chrom TEXT, start INTEGER, end INTEGER, strand TEXT)"
+        )
+        conn.commit()
+        conn.close()
+        config = AppConfig(databases={"lookup_db": str(db_path)})
+        db = LookupDB(config)
+        try:
+            assert db.is_enhanced_warning_gene("HTT") is False
+        finally:
+            db.close()
+
+
+# ---------------------------------------------------------------------------
 # GWAS ATTACH DATABASE support
 # ---------------------------------------------------------------------------
 

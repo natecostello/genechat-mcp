@@ -60,6 +60,7 @@ def run_pipeline() -> int:
             ("genechat.seeds.fetch_gene_coords", "gene coordinates"),
             ("genechat.seeds.fetch_cpic_data", "CPIC PGx data"),
             ("genechat.seeds.fetch_prs_data", "PRS data"),
+            ("genechat.seeds.fetch_warning_genes", "enhanced-warning genes"),
         ]:
             print(f"\n{'=' * 60}")
             print(f"Running {module_name}...")
@@ -85,6 +86,7 @@ def run_pipeline() -> int:
                 ("genechat.seeds.fetch_gene_coords", "gene coordinates"),
                 ("genechat.seeds.fetch_cpic_data", "CPIC PGx data"),
                 ("genechat.seeds.fetch_prs_data", "PRS data"),
+                ("genechat.seeds.fetch_warning_genes", "enhanced-warning genes"),
             ]:
                 print(f"\n{'=' * 60}")
                 print(f"Running {module_name}...")
@@ -133,6 +135,7 @@ def _print_summary(seed_dir: Path):
         "pgx_drugs.tsv": "pgx_drugs",
         "pgx_variants.tsv": "pgx_variants",
         "prs_weights.tsv": "prs_weights",
+        "enhanced_warning_genes.tsv": "enhanced_warning_genes",
     }
     for filename, table_name in files.items():
         path = seed_dir / filename

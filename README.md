@@ -288,6 +288,48 @@ E2e tests are automatically skipped when `GENECHAT_GIAB_VCF` is not set.
 
 **pysam installation issues on macOS:** `xcode-select --install`
 
+## Verifying LLM Interpretations
+
+GeneChat's tool responses are derived from curated databases (ClinVar, CPIC,
+gnomAD, PGS Catalog) and your local VCF. Results may be incomplete due to
+query limits, missing annotations, or database version differences — always
+verify against primary sources. The LLM interpreting that data can also
+hallucinate — inventing clinical
+significance, overstating risk, fabricating study references, or filling in
+gaps with training-data knowledge that may be outdated or wrong.
+
+**Practices that reduce this risk:**
+
+- **Require citations.** Ask the LLM to cite specific sources (PMIDs,
+  ClinVar accession numbers, CPIC guideline URLs) for every clinical
+  assertion. If it can't point to a source from the tool response, treat the
+  claim with skepticism.
+
+- **Spot-check against primary sources.** Any assertion about a specific
+  variant can be verified in seconds:
+  - [ClinVar](https://www.ncbi.nlm.nih.gov/clinvar/) — search by rsID for
+    clinical significance and review status
+  - [PharmGKB](https://www.pharmgkb.org/) — drug-gene interactions and CPIC
+    guidelines
+  - [gnomAD](https://gnomad.broadinstitute.org/) — population frequencies
+  - [OMIM](https://www.omim.org/) — gene-disease relationships
+
+- **Cross-model verification.** For high-stakes findings, run the same query
+  through a second LLM. Agreement on specific claims (citing the same
+  guideline or variant classification) increases confidence. Disagreement is
+  a signal to check primary sources.
+
+- **Distinguish tool data from LLM synthesis.** GeneChat tool responses are
+  clearly structured (genotype, annotation, clinical significance, population
+  frequency). Anything the LLM adds beyond that — dietary recommendations,
+  risk quantification, drug dosing suggestions — is LLM-generated
+  interpretation, not database fact.
+
+- **Be wary of confident gap-filling.** If GeneChat returns "no ClinVar
+  entry found" for a variant, but the LLM still offers a clinical
+  interpretation, that interpretation came from training data, not from your
+  annotated genome.
+
 ## Important Disclaimer
 
 GeneChat is an informational tool, not a medical device. It is not a substitute for professional genetic counseling or medical advice. Always discuss genetic findings with a qualified healthcare provider before making health decisions.

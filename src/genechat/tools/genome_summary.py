@@ -1,6 +1,7 @@
 """Genome summary — overview of variant counts and key findings."""
 
 from genechat.tools.common import resolve_engine
+from genechat.tools.formatting import enhanced_warning_for_genes
 from genechat.vcf_engine import VCFEngineError
 
 
@@ -25,9 +26,15 @@ def register(mcp, engines, db, config):
 
         genome_cfg = config.genomes[label]
         show_label = len(engines) > 1
+        all_genes: set[str] = set()
 
         lines = _format_summary(
-            engine, db, config, genome_cfg, label if show_label else None
+            engine,
+            db,
+            config,
+            genome_cfg,
+            label if show_label else None,
+            gene_collector=all_genes,
         )
 
         # Paired genome
@@ -36,22 +43,36 @@ def register(mcp, engines, db, config):
                 label2, engine2 = resolve_engine(engines, genome2, config)
             except ValueError as e:
                 lines.append(f"\n---\n\n**Genome '{genome2}': {e}**")
-                return "\n".join(lines)
+                warning = enhanced_warning_for_genes(db, all_genes)
+                return warning + "\n".join(lines)
 
             genome_cfg2 = config.genomes[label2]
             lines.append("\n---\n")
-            lines.extend(_format_summary(engine2, db, config, genome_cfg2, label2))
+            lines.extend(
+                _format_summary(
+                    engine2,
+                    db,
+                    config,
+                    genome_cfg2,
+                    label2,
+                    gene_collector=all_genes,
+                )
+            )
 
         lines.append(
             "\n---\n*Use specific tools (query_variant, query_gene, query_pgx, "
             "query_clinvar, query_gwas, calculate_prs) for detailed analysis.*"
         )
 
-        return "\n".join(lines)
+        warning = enhanced_warning_for_genes(db, all_genes)
+        return warning + "\n".join(lines)
 
 
-def _format_summary(engine, db, config, genome_cfg, label):
-    """Build genome summary markdown lines for a single engine."""
+def _format_summary(engine, db, config, genome_cfg, label, gene_collector=None):
+    """Build genome summary markdown lines for a single engine.
+
+    If gene_collector is provided (a set), discovered gene symbols are added to it.
+    """
     header = "## Genome Summary"
     if label:
         header += f": {label}"
@@ -97,6 +118,8 @@ def _format_summary(engine, db, config, genome_cfg, label):
                     genes.add(g)
             if genes:
                 lines.append(f"Affected genes: {', '.join(sorted(genes))}")
+                if gene_collector is not None:
+                    gene_collector.update(genes)
     except VCFEngineError:
         lines.append("\n*ClinVar query not available*")
 

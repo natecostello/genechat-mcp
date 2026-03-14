@@ -1,6 +1,7 @@
 """Query variants by ClinVar clinical significance."""
 
 from genechat.tools.common import resolve_engine
+from genechat.tools.formatting import enhanced_warning_for_genes
 from genechat.vcf_engine import VCFEngineError
 
 DISCLAIMER = (
@@ -73,6 +74,15 @@ def register(mcp, engines, db, config):
                 "does not guarantee absence of risk — not all variants are catalogued in ClinVar."
             )
 
+        # Collect genes for warning check
+        all_genes = set()
+        for v in variants:
+            g = v.get("annotation", {}).get("gene")
+            if g:
+                all_genes.add(g)
+        if gene:
+            all_genes.add(gene.upper())
+
         lines = []
         if variants:
             # Group by gene
@@ -128,13 +138,15 @@ def register(mcp, engines, db, config):
                 label2, engine2 = resolve_engine(engines, genome2, config)
             except ValueError as e:
                 lines.append(f"\n---\n\n**Genome '{genome2}': {e}**")
-                return "\n".join(lines) + DISCLAIMER
+                warning = enhanced_warning_for_genes(db, all_genes)
+                return warning + "\n".join(lines) + DISCLAIMER
 
             try:
                 variants2 = engine2.query_clinvar(significance, region=region)
             except (ValueError, VCFEngineError) as e:
                 lines.append(f"\n---\n\n**Genome '{label2}' error: {e}**")
-                return "\n".join(lines) + DISCLAIMER
+                warning = enhanced_warning_for_genes(db, all_genes)
+                return warning + "\n".join(lines) + DISCLAIMER
 
             if condition:
                 condition_upper = condition.upper()
@@ -145,6 +157,11 @@ def register(mcp, engines, db, config):
                     and condition_upper in v["clinvar"]["condition"].upper()
                 ]
             variants2 = variants2[:cap]
+
+            for v in variants2:
+                g = v.get("annotation", {}).get("gene")
+                if g:
+                    all_genes.add(g)
 
             by_gene2: dict[str, list] = {}
             for v in variants2:
@@ -171,4 +188,5 @@ def register(mcp, engines, db, config):
                     lines.append(f"| {rsid} | {pos} | {gt} | {sig} | {cond} |")
                 lines.append("")
 
-        return "\n".join(lines) + DISCLAIMER
+        warning = enhanced_warning_for_genes(db, all_genes)
+        return warning + "\n".join(lines) + DISCLAIMER

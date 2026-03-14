@@ -1,6 +1,7 @@
 """Batch query of variants across multiple genes."""
 
 from genechat.tools.common import resolve_engine
+from genechat.tools.formatting import enhanced_warning_for_genes
 from genechat.vcf_engine import VCFEngineError
 
 DISCLAIMER = (
@@ -87,6 +88,7 @@ def register(mcp, engines, db, config):
                 ):
                     gene_variants[symbol].append(v)
 
+        warning = enhanced_warning_for_genes(db, set(gene_list))
         lines = [f"## Multi-Gene Query ({len(gene_regions)} genes)"]
 
         if not_found:
@@ -136,4 +138,4 @@ def register(mcp, engines, db, config):
 
         lines.insert(1, f"Total notable variants: {total_notable}")
 
-        return "\n".join(lines) + DISCLAIMER
+        return warning + "\n".join(lines) + DISCLAIMER

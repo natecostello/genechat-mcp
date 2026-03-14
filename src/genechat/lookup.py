@@ -110,6 +110,16 @@ class LookupDB:
         ).fetchall()
         return [dict(r) for r in rows]
 
+    def is_enhanced_warning_gene(self, symbol: str) -> bool:
+        """Check if a gene is in the enhanced-warning list."""
+        if not self._has_table_in_main("enhanced_warning_genes"):
+            return False
+        row = self._conn.execute(
+            "SELECT 1 FROM enhanced_warning_genes WHERE UPPER(symbol) = UPPER(?)",
+            (symbol,),
+        ).fetchone()
+        return row is not None
+
     def has_gwas_table(self) -> bool:
         """Check if GWAS associations table is available (main or attached)."""
         if self._gwas_prefix:
