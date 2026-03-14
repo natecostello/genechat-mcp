@@ -48,9 +48,9 @@ GeneChat reads only local files and makes no network calls at runtime. However, 
 
 | Command | Purpose |
 |---------|---------|
-| `genechat init <vcf> [--label] [--gnomad] [--dbsnp] [--gwas]` | Full first-time setup: annotate, write config |
+| `genechat init <vcf> [--label] [--gnomad] [--dbsnp] [--gwas] [--fast]` | Full first-time setup: annotate, write config |
 | `genechat add <vcf> [--label]` | Register a VCF file without annotation |
-| `genechat annotate [--clinvar] [--gnomad] [--snpeff] [--dbsnp] [--all] [--stale] [--force] [--genome]` | Build or update patch.db (auto-downloads references) |
+| `genechat annotate [--clinvar] [--gnomad] [--snpeff] [--dbsnp] [--all] [--stale] [--force] [--fast] [--genome]` | Build or update patch.db (auto-downloads references) |
 | `genechat install [--gwas] [--seeds] [--force]` | Install genome-independent reference databases |
 | `genechat status [--json] [--check-updates]` | Show all registered genomes, annotation state, and caches |
 | `genechat licenses` | Show data source licenses for your installation |
@@ -151,6 +151,8 @@ gnomAD is optional; without it, `query_gene` falls back to ClinVar-only filterin
 > **Disk usage:** `--gnomad` downloads each gnomAD chromosome, annotates from it, then deletes the file — peak disk usage is ~17 GB (one chromosome) rather than ~150 GB for all files at once.
 
 > **Time estimate:** Default init takes ~10–15 minutes (SnpEff + ClinVar). With `--gnomad`, expect several hours — it downloads and processes ~150 GB of per-chromosome data. Consider running `genechat init --gnomad` overnight.
+
+> **Fast mode:** Add `--fast` to bulk-download references instead of incremental processing — ~20x faster but requires ~180 GB peak disk. Useful on machines with ample storage (e.g. `genechat init --gnomad --dbsnp --fast`).
 
 ### Don't have your genome sequenced?
 

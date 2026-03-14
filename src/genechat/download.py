@@ -371,12 +371,16 @@ def _concat_dbsnp_chromosomes(chr_files: list[Path], output: Path) -> None:
         raise
 
 
-def download_dbsnp(force: bool = False) -> Path | None:
-    """Download dbSNP per-chromosome via remote region queries, rename contigs.
+def download_dbsnp(force: bool = False, fast: bool = False) -> Path | None:
+    """Download dbSNP and rename contigs from RefSeq to chr-prefixed names.
 
-    Uses htslib HTTP Range requests against the remote bgzipped+tabix-indexed
-    dbSNP VCF to fetch one chromosome at a time. Each chromosome is independently
-    resumable — on failure, completed chromosomes are skipped on restart.
+    Default mode uses htslib HTTP Range requests against the remote
+    bgzipped+tabix-indexed dbSNP VCF to fetch one chromosome at a time.
+    Each chromosome is independently resumable.
+
+    Fast mode (``fast=True``) bulk-downloads the full file via
+    ``download_file()`` then renames — ~20x faster but requires ~48 GB peak
+    disk instead of ~22 GB.
 
     If a legacy raw dbSNP file exists on disk, uses file-based rename instead
     and deletes the raw file afterward.
@@ -406,6 +410,18 @@ def download_dbsnp(force: bool = False) -> Path | None:
 
     chr_map = ddir / "refseq_to_chr.txt"
     _write_refseq_chr_map(chr_map)
+
+    # Fast mode: bulk-download the full file, then file-based rename
+    if fast:
+        print("  Downloading full dbSNP file (fast mode)...")
+        raw_vcf = dbsnp_raw_path()
+        download_file(f"{DBSNP_BASE}/{DBSNP_VCF_NAME}", raw_vcf, "dbSNP VCF")
+        download_file(
+            f"{DBSNP_BASE}/{DBSNP_TBI_NAME}",
+            raw_vcf.with_suffix(".gz.tbi"),
+            "dbSNP index",
+        )
+        return _file_based_dbsnp_rename(raw_vcf, chr_map, chrfixed)
 
     # Legacy path: if raw dbSNP file already exists on disk, use file-based
     # rename then delete the raw file. This avoids re-downloading ~28 GB.

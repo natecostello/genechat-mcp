@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 date: 2026-03-14
 related ADRs:
   - [0001-patch-architecture.md](0001-patch-architecture.md)
@@ -141,5 +141,6 @@ resume on the raw download.
 - GitHub issue: natecostello/genechat-mcp#49
 - Related demo repo issue: natecostello/genechat-mcp-remote-demo#53
 - PR #47: Streaming dbSNP + progress reporting (current approach)
+- PR #50: Implementation
 - Disk usage analysis: baseline 3.5 GB → peak 28 GB → final 28.1 GB for
   full init pipeline
