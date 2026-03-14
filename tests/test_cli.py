@@ -1,4 +1,4 @@
-"""Tests for the genechat CLI (all 7 subcommands)."""
+"""Tests for the genechat CLI (all 8 subcommands)."""
 
 import importlib.resources as _real_resources
 from pathlib import Path
@@ -796,6 +796,84 @@ class TestStatus:
         assert result.exit_code == 0
         out = result.output
         assert "newer: 2025-06-15" in out
+
+
+# ---------------------------------------------------------------------------
+# genechat licenses
+# ---------------------------------------------------------------------------
+
+
+class TestLicenses:
+    def test_always_shows_base_licenses(self, cli, monkeypatch):
+        monkeypatch.setattr("genechat.cli.load_config", lambda: AppConfig())
+        monkeypatch.setattr("genechat.download.gnomad_installed", lambda: False)
+
+        result = cli.invoke(app, ["licenses"])
+
+        assert result.exit_code == 0
+        out = result.output
+        assert "Always applicable:" in out
+        assert "ClinVar" in out
+        assert "SnpEff" in out
+        assert "CPIC" in out
+        assert "HGNC" in out
+        assert "Ensembl" in out
+        assert "PGS Catalog" in out
+        assert "PGS000349" in out
+        assert "PGS002251" in out
+
+    def test_gnomad_not_installed(self, cli, monkeypatch):
+        monkeypatch.setattr("genechat.cli.load_config", lambda: AppConfig())
+        monkeypatch.setattr("genechat.download.gnomad_installed", lambda: False)
+
+        result = cli.invoke(app, ["licenses"])
+
+        assert result.exit_code == 0
+        assert "gnomAD:            not installed" in result.output
+
+    def test_gnomad_installed_via_annotation(self, cli, tmp_path, monkeypatch):
+        from genechat.patch import PatchDB
+
+        vcf = tmp_path / "test.vcf.gz"
+        vcf.write_bytes(b"fake")
+        patch_path = tmp_path / "test.patch.db"
+        patch = PatchDB.create(patch_path)
+        patch.set_metadata("gnomad", "v4.1", "complete")
+        patch.close()
+
+        config = AppConfig(
+            genomes={"default": {"vcf_path": str(vcf), "patch_db": str(patch_path)}}
+        )
+        monkeypatch.setattr("genechat.cli.load_config", lambda: config)
+        monkeypatch.setattr("genechat.download.gnomad_installed", lambda: False)
+
+        result = cli.invoke(app, ["licenses"])
+
+        assert result.exit_code == 0
+        out = result.output
+        assert "gnomAD (installed):" in out
+        assert "ODbL" in out
+        assert "produced works" in out
+
+    def test_gwas_installed(self, cli, tmp_path, monkeypatch):
+        import sqlite3
+
+        from genechat.config import DatabasesConfig
+
+        gwas_db = tmp_path / "gwas.db"
+        conn = sqlite3.connect(str(gwas_db))
+        conn.execute("CREATE TABLE gwas_associations (rsid TEXT, trait TEXT)")
+        conn.close()
+
+        config = AppConfig(databases=DatabasesConfig(gwas_db=str(gwas_db)))
+        monkeypatch.setattr("genechat.cli.load_config", lambda: config)
+        monkeypatch.setattr("genechat.download.gnomad_installed", lambda: False)
+
+        result = cli.invoke(app, ["licenses"])
+
+        assert result.exit_code == 0
+        assert "GWAS Catalog (installed):" in result.output
+        assert "CC0" in result.output
 
 
 # ---------------------------------------------------------------------------

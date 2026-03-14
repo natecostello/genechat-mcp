@@ -6,6 +6,7 @@ Commands:
   genechat annotate [options]   Build/update patch.db (auto-downloads references)
   genechat install [options]    Install genome-independent reference databases
   genechat status               Show genome + annotation state
+  genechat licenses             Show data source licenses for your installation
   genechat serve / genechat     Start the MCP server
 """
 
@@ -74,6 +75,7 @@ Commands:
   genechat annotate         Build/update annotation database
   genechat install          Install genome-independent databases (GWAS, seeds)
   genechat status           Show genome info and annotation state
+  genechat licenses         Show data source licenses for your installation
   genechat serve            Start the MCP server
 
 Quick start:
@@ -239,6 +241,12 @@ def status(
 ):
     """Show genome info and annotation state."""
     _run_status(json_output=json_output, check_updates=check_updates)
+
+
+@app.command()
+def licenses():
+    """Show data source licenses for your installation."""
+    _run_licenses()
 
 
 @app.command()
@@ -1520,9 +1528,10 @@ def _run_status(json_output: bool = False, check_updates: bool = False):
     # Section 1: Installed databases (genome-independent)
     gwas_ok = _gwas_installed(config.gwas_db_path)
     print("Installed databases:")
-    print(
-        f"  GWAS:           {'installed' if gwas_ok else 'not installed — genechat install --gwas'}"
-    )
+    if gwas_ok:
+        print("  GWAS:           installed (CC0)")
+    else:
+        print("  GWAS:           not installed — genechat install --gwas")
     print("  Lookup tables:  installed")
     print()
 
@@ -1569,7 +1578,9 @@ def _run_status(json_output: bool = False, check_updates: bool = False):
                         freshness = _freshness_indicator(
                             source, version, latest_versions
                         )
-                        layers.append(f"{source} ({version}{freshness})")
+                        lic_tag = _LICENSE_TAGS.get(source, "")
+                        lic_suffix = f", {lic_tag}" if lic_tag else ""
+                        layers.append(f"{source} ({version}{freshness}{lic_suffix})")
                     elif status == "pending":
                         layers.append(f"{source} ([yellow]in progress[/yellow])")
                     elif status == "failed":
@@ -1655,6 +1666,144 @@ def _run_status_json(config):
     data["references"]["gwas"] = _gwas_installed(config.gwas_db_path)
 
     print(json.dumps(data, indent=2))
+
+
+# ---------------------------------------------------------------------------
+# License tags for status output
+# ---------------------------------------------------------------------------
+
+_LICENSE_TAGS: dict[str, str] = {
+    "snpeff": "MIT",
+    "clinvar": "public domain",
+    "gnomad": "ODbL 1.0",
+    "dbsnp": "public domain",
+}
+
+
+# ---------------------------------------------------------------------------
+# genechat licenses
+# ---------------------------------------------------------------------------
+
+
+def _run_licenses():
+    """Print data source licenses for the current installation."""
+    config = load_config()
+
+    from genechat.download import gnomad_installed
+
+    print("Data source licenses for your GeneChat installation")
+    print("=" * 52)
+    print()
+
+    # Always-applicable sources
+    print("Always applicable:")
+    print("  ClinVar          Public domain (NCBI)")
+    print("  SnpEff           MIT — Copyright Pablo Cingolani")
+    print("  CPIC             CC0 (cite: cpicpgx.org)")
+    print("  HGNC             CC0 (cite: PMID:36243972)")
+    print("  Ensembl          No restrictions (cite: PMID:39656687)")
+    print()
+
+    # gnomAD — check if any genome has gnomAD annotations
+    any_gnomad = False
+    for _label, genome_cfg in config.genomes.items():
+        patch_db_path = _patch_db_path_for(
+            Path(genome_cfg.vcf_path) if genome_cfg.vcf_path else Path("."),
+            genome_cfg,
+        )
+        if patch_db_path.exists():
+            from genechat.patch import PatchDB
+
+            patch = PatchDB(patch_db_path, readonly=True)
+            try:
+                meta = patch.get_metadata()
+            finally:
+                patch.close()
+            if meta.get("gnomad", {}).get("status") == "complete":
+                any_gnomad = True
+                break
+
+    if any_gnomad or gnomad_installed():
+        print("gnomAD (installed):")
+        print("  License:         Open Database License (ODbL) v1.0")
+        print('  Attribution:     "Contains information from the Genome Aggregation')
+        print('                   Database (gnomAD), made available under the ODbL."')
+        print(
+            "  Share-alike:     Derivative databases (patch.db with gnomAD frequencies)"
+        )
+        print("                   must be offered under ODbL if shared.")
+        print("                   Tool responses to the LLM are produced works and")
+        print("                   require only the attribution notice above.")
+        print(
+            "  Cite:            Chen S et al., Nature 2024. DOI: 10.1038/s41586-023-06045-0"
+        )
+        print()
+    else:
+        print("gnomAD:            not installed")
+        print()
+
+    # dbSNP — check if any genome has dbSNP annotations
+    any_dbsnp = False
+    for _label, genome_cfg in config.genomes.items():
+        patch_db_path = _patch_db_path_for(
+            Path(genome_cfg.vcf_path) if genome_cfg.vcf_path else Path("."),
+            genome_cfg,
+        )
+        if patch_db_path.exists():
+            from genechat.patch import PatchDB
+
+            patch = PatchDB(patch_db_path, readonly=True)
+            try:
+                meta = patch.get_metadata()
+            finally:
+                patch.close()
+            if meta.get("dbsnp", {}).get("status") == "complete":
+                any_dbsnp = True
+                break
+
+    if any_dbsnp:
+        print("dbSNP (installed):")
+        print("  License:         Public domain (NCBI)")
+        print(
+            "  Cite:            Sherry ST et al., Nucleic Acids Res 2001. PMID: 11125122"
+        )
+        print()
+    else:
+        print("dbSNP:             not installed")
+        print()
+
+    # GWAS Catalog
+    gwas_ok = _gwas_installed(config.gwas_db_path)
+    if gwas_ok:
+        print("GWAS Catalog (installed):")
+        print("  License:         CC0 1.0")
+        print(
+            "  Cite:            Sollis E et al., Nucleic Acids Res 2023. PMID: 36350656"
+        )
+        print()
+    else:
+        print("GWAS Catalog:      not installed")
+        print()
+
+    # PGS Catalog scores
+    print("PGS Catalog (installed via seed data):")
+    print(
+        "  Catalog cite:    Lambert SA et al., Nat Genet 2024. DOI: 10.1038/s41588-024-01937-x"
+    )
+    print("  Installed scores:")
+    print("    PGS000010 (CAD)        Mega JL et al., Lancet 2015. PMID: 25748612")
+    print(
+        "    PGS000349 (CAD)        Pechlivanis S et al., BMC Med Genet 2020. PMID: 32912153"
+    )
+    print("                           CC BY 4.0")
+    print("    PGS000074 (Colorectal) Graff RE et al., Nat Commun 2021. PMID: 33579919")
+    print("                           CC BY 4.0")
+    print("    PGS002251 (BMI)        Dashti HS et al., BMC Med 2022. PMID: 35016652")
+    print("                           CC BY 4.0")
+    print()
+    print(
+        "Full details: docs/licenses.md or https://github.com/natecostello/genechat-mcp/blob/main/docs/licenses.md"
+    )
 
 
 # ---------------------------------------------------------------------------

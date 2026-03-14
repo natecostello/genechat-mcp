@@ -53,6 +53,7 @@ GeneChat reads only local files and makes no network calls at runtime. However, 
 | `genechat annotate [--clinvar] [--gnomad] [--snpeff] [--dbsnp] [--all] [--stale] [--force] [--genome]` | Build or update patch.db (auto-downloads references) |
 | `genechat install [--gwas] [--seeds] [--force]` | Install genome-independent reference databases |
 | `genechat status [--json] [--check-updates]` | Show all registered genomes, annotation state, and caches |
+| `genechat licenses` | Show data source licenses for your installation |
 | `genechat serve` / `genechat` | Start the MCP server |
 
 **Global flags:** `--version` (print version), `--no-color` (disable colored output). Color output respects the `NO_COLOR` environment variable and is automatically disabled when stdout or stderr is not a TTY.
@@ -230,6 +231,20 @@ At runtime, GeneChat uses **only** local files — no external tools, no network
 | [pydantic](https://docs.pydantic.dev/) | Validates tool inputs and config |
 | [typer](https://typer.tiangolo.com/) | CLI framework (subcommands, flags, shell completion) |
 | [platformdirs](https://platformdirs.readthedocs.io/) | OS-standard config and data directories |
+
+## Data Source Licenses
+
+License obligations depend on which annotation layers you install. The base install (`genechat init` without extra flags) has zero mandatory license obligations beyond citation.
+
+| Install path | Sources | License | Key obligation |
+|---|---|---|---|
+| Default (`genechat init`) | ClinVar, SnpEff, CPIC, HGNC, Ensembl | Public domain / MIT / CC0 | None (citation appreciated) |
+| `--gnomad` | gnomAD | ODbL 1.0 | Attribution required; share-alike on derivative databases |
+| `--dbsnp` | dbSNP | Public domain | None |
+| `--gwas` | GWAS Catalog | CC0 | None |
+| `--seeds` (PRS) | PGS Catalog | EBI ToU + per-score | Cite catalog paper + individual score publications |
+
+Run `genechat licenses` to see which licenses apply to your specific installation. See [docs/licenses.md](docs/licenses.md) for full attribution text, citation DOIs, and the gnomAD ODbL produced-works distinction.
 
 ## Security Recommendations
 

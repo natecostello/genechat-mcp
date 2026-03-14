@@ -104,7 +104,7 @@ LLM Client (Claude Desktop / Claude Code)
     | MCP Protocol (stdio or SSE)
     v
 GeneChat MCP Server (Python)
-    +-- CLI: init, add, annotate, install, status, serve
+    +-- CLI: init, add, annotate, install, status, licenses, serve
     |         Flags: --version, --no-color, --json (status), --stale (annotate),
     |                --check-updates (status). Exit codes 0-6, 130.
     +-- Tools: list_genomes, query_variant, query_variants, query_gene,
@@ -157,6 +157,7 @@ genechat-mcp/
     architecture/                  # Architecture Decision Records (MADR 4.0)
     plans/                         # Active implementation plans
     annotation-updates.md          # Incremental annotation update design
+    licenses.md                    # Data source licenses + attribution
     security.md                    # Platform-specific encryption instructions
   .github/
     copilot-instructions.md        # Copilot PR review instructions
