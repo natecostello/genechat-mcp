@@ -413,6 +413,13 @@ def download_dbsnp(force: bool = False, fast: bool = False) -> Path | None:
 
     # Fast mode: bulk-download the full file, then file-based rename
     if fast:
+        # Clean up any leftover per-chromosome artifacts from a previous
+        # default-mode attempt to avoid inflating disk usage.
+        chr_dir = ddir / "per_chrom"
+        if chr_dir.exists():
+            shutil.rmtree(chr_dir, ignore_errors=True)
+        _dbsnp_state_path().unlink(missing_ok=True)
+
         raw_vcf = dbsnp_raw_path()
         raw_tbi = raw_vcf.with_suffix(raw_vcf.suffix + ".tbi")
         try:

@@ -47,8 +47,8 @@ workflow needs a matching "fast" annotation mode in genechat.
 
 ## Considered Options
 
-1. **`--fast` flag on `init` and `annotate`** — bulk/piped downloads, no
-   per-chromosome splitting for dbSNP, non-incremental gnomAD
+1. **`--fast` flag on `init` and `annotate`** — bulk file download for
+   dbSNP (no per-chromosome splitting), non-incremental gnomAD
 2. **Automatic mode selection** — detect available disk and choose mode
 3. **Separate `download-refs` command** — decouple reference acquisition from
    annotation, let users pre-stage files
@@ -75,8 +75,8 @@ Plan: `docs/plans/fast-annotation-mode.md` (created at 78e0da3)
 **Bad:**
 - ~180 GB peak disk with `--fast` (vs ~30 GB default) — requires user to
   ensure sufficient space
-- dbSNP piped download is not resumable (acceptable when annotation takes
-  minutes, not hours)
+- dbSNP bulk download is not per-chromosome resumable (acceptable when
+  download takes minutes on fast connections, not hours)
 - Two code paths to maintain for dbSNP download
 
 **Neutral:**
@@ -85,7 +85,8 @@ Plan: `docs/plans/fast-annotation-mode.md` (created at 78e0da3)
 
 ## Confirmation
 
-- Unit tests: mock bcftools/curl, verify piped dbSNP produces correct output
+- Unit tests: mock `download_file` and `_file_based_dbsnp_rename`, verify
+  fast-mode dbSNP downloads full file and delegates to file-based rename
 - Unit tests: verify `--fast` triggers non-incremental gnomAD path
 - Integration test: `--fast` on a test VCF produces identical patch.db content
   to default mode
@@ -99,7 +100,7 @@ Plan: `docs/plans/fast-annotation-mode.md` (created at 78e0da3)
 - Good: Explicit opt-in — no surprises for disk-constrained users
 - Good: One flag controls all sources — simple mental model
 - Good: Backward-compatible — default behavior unchanged
-- Bad: Two code paths for dbSNP (piped bulk vs per-chromosome)
+- Bad: Two code paths for dbSNP (bulk file-based vs per-chromosome)
 - Bad: User must know they have enough disk
 
 ### Option 2: Automatic mode selection
