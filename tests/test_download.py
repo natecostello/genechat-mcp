@@ -1,7 +1,13 @@
 """Tests for genechat.download (reference database management)."""
 
 from genechat.download import (
+    DBSNP_CONTIGS,
     GNOMAD_CHROMS,
+    _concat_dbsnp_chromosomes,
+    _dbsnp_state_path,
+    _download_dbsnp_chromosome,
+    _load_dbsnp_state,
+    _save_dbsnp_state,
     _write_refseq_chr_map,
     clinvar_installed,
     clinvar_path,
@@ -169,6 +175,32 @@ class TestDbsnpInstalled:
         assert dbsnp_installed() is True
 
 
+class TestDbsnpState:
+    def test_load_empty_when_no_file(self, monkeypatch, tmp_path):
+        monkeypatch.setattr("genechat.download.REFERENCES_DIR", tmp_path / "refs")
+        (tmp_path / "refs" / "dbsnp").mkdir(parents=True)
+        assert _load_dbsnp_state() == {}
+
+    def test_save_and_load_roundtrip(self, monkeypatch, tmp_path):
+        refs = tmp_path / "refs"
+        (refs / "dbsnp").mkdir(parents=True)
+        monkeypatch.setattr("genechat.download.REFERENCES_DIR", refs)
+
+        state = {"completed_contigs": ["NC_000001.11", "NC_000002.12"]}
+        _save_dbsnp_state(state)
+        loaded = _load_dbsnp_state()
+        assert loaded == state
+
+    def test_load_returns_empty_on_corrupt_json(self, monkeypatch, tmp_path):
+        refs = tmp_path / "refs"
+        ddir = refs / "dbsnp"
+        ddir.mkdir(parents=True)
+        monkeypatch.setattr("genechat.download.REFERENCES_DIR", refs)
+
+        (ddir / "dbsnp_progress.json").write_text("not valid json{{{")
+        assert _load_dbsnp_state() == {}
+
+
 class TestDbsnpDownload:
     def test_skips_when_existing(self, monkeypatch, tmp_path, capsys):
         refs = tmp_path / "refs"
@@ -203,67 +235,130 @@ class TestDbsnpDownload:
         assert result is None
         assert "tabix not found" in capsys.readouterr().err
 
-    def test_calls_bcftools_rename_and_tabix(self, monkeypatch, tmp_path, capsys):
-        """Verify bcftools annotate --rename-chrs and tabix are called correctly."""
-        import subprocess
-
+    def test_per_chromosome_pipeline(self, monkeypatch, tmp_path, capsys):
+        """Verify per-chromosome download, concat, and cleanup."""
         refs = tmp_path / "refs"
         monkeypatch.setattr("genechat.download.REFERENCES_DIR", refs)
         monkeypatch.setattr("shutil.which", lambda name: f"/usr/bin/{name}")
 
-        # Pre-create raw dbSNP files so download is skipped
-        ddir = refs / "dbsnp"
-        ddir.mkdir(parents=True)
-        raw = ddir / "GCF_000001405.40.gz"
-        raw.write_bytes(b"fake-vcf")
-        raw.with_suffix(raw.suffix + ".tbi").write_bytes(b"fake-tbi")
-
-        calls = []
-
-        def mock_run(cmd, **kwargs):
-            calls.append(cmd)
-            from pathlib import Path as P
-
-            # For bcftools annotate, create the output file
-            if "annotate" in cmd and "-o" in cmd:
-                out_idx = cmd.index("-o") + 1
-                P(cmd[out_idx]).write_bytes(b"renamed")
-            # For tabix, create the .tbi index file
-            if "tabix" in cmd[0]:
-                vcf_arg = cmd[-1]
-                P(vcf_arg + ".tbi").write_bytes(b"fake-tbi")
-            return subprocess.CompletedProcess(cmd, 0)
-
-        monkeypatch.setattr("subprocess.run", mock_run)
-
-        # Mock download_file to avoid network
+        # Use only 2 contigs for speed
         monkeypatch.setattr(
-            "genechat.download.download_file", lambda url, dest, label="": None
+            "genechat.download.DBSNP_CONTIGS",
+            [("NC_000021.9", "chr21"), ("NC_000022.11", "chr22")],
         )
+
+        def mock_dl_chrom(refseq, chrom, remote_url, chr_map, output):
+            output.write_bytes(f"fake-{chrom}".encode())
+
+        monkeypatch.setattr(
+            "genechat.download._download_dbsnp_chromosome", mock_dl_chrom
+        )
+
+        def mock_concat(chr_files, output):
+            output.write_bytes(b"concatenated")
+            output.with_name(f"{output.name}.tbi").write_bytes(b"tbi")
+
+        monkeypatch.setattr("genechat.download._concat_dbsnp_chromosomes", mock_concat)
 
         result = download_dbsnp()
         assert result is not None
+        assert result.exists()
+        assert result.read_bytes() == b"concatenated"
 
-        # Verify bcftools was called with --rename-chrs
-        bcf_call = [c for c in calls if "bcftools" in c[0] and "--rename-chrs" in c]
-        assert len(bcf_call) == 1
-        assert "-Oz" in bcf_call[0]
+        # State file should be cleaned up
+        assert not _dbsnp_state_path().exists()
+        # Per-chromosome dir should be cleaned up
+        assert not (refs / "dbsnp" / "per_chrom").exists()
 
-        # Verify tabix was called
-        tabix_call = [c for c in calls if "tabix" in c[0]]
-        assert len(tabix_call) == 1
-        assert "-p" in tabix_call[0]
-        assert "vcf" in tabix_call[0]
+    def test_resume_skips_completed(self, monkeypatch, tmp_path, capsys):
+        """Verify completed chromosomes are skipped on resume."""
+        refs = tmp_path / "refs"
+        ddir = refs / "dbsnp"
+        ddir.mkdir(parents=True)
+        monkeypatch.setattr("genechat.download.REFERENCES_DIR", refs)
+        monkeypatch.setattr("shutil.which", lambda name: f"/usr/bin/{name}")
 
-    def test_file_based_deletes_raw_after_rename(self, monkeypatch, tmp_path, capsys):
-        """Verify raw dbSNP files are deleted after successful file-based rename."""
+        monkeypatch.setattr(
+            "genechat.download.DBSNP_CONTIGS",
+            [("NC_000021.9", "chr21"), ("NC_000022.11", "chr22")],
+        )
+
+        # Pre-create state with chr21 already complete
+        chr_dir = ddir / "per_chrom"
+        chr_dir.mkdir()
+        (chr_dir / "dbsnp_chr21.vcf.gz").write_bytes(b"done-chr21")
+        _save_dbsnp_state({"completed_contigs": ["NC_000021.9"]})
+
+        downloaded = []
+
+        def mock_dl_chrom(refseq, chrom, remote_url, chr_map, output):
+            downloaded.append(chrom)
+            output.write_bytes(f"fake-{chrom}".encode())
+
+        monkeypatch.setattr(
+            "genechat.download._download_dbsnp_chromosome", mock_dl_chrom
+        )
+
+        def mock_concat(chr_files, output):
+            output.write_bytes(b"concatenated")
+            output.with_name(f"{output.name}.tbi").write_bytes(b"tbi")
+
+        monkeypatch.setattr("genechat.download._concat_dbsnp_chromosomes", mock_concat)
+
+        result = download_dbsnp()
+        assert result is not None
+        # Only chr22 should have been downloaded
+        assert downloaded == ["chr22"]
+        out = capsys.readouterr().out
+        assert "skipping" in out
+        assert "Resuming" in out
+
+    def test_force_ignores_state(self, monkeypatch, tmp_path, capsys):
+        """Verify --force re-downloads all chromosomes."""
+        refs = tmp_path / "refs"
+        ddir = refs / "dbsnp"
+        ddir.mkdir(parents=True)
+        monkeypatch.setattr("genechat.download.REFERENCES_DIR", refs)
+        monkeypatch.setattr("shutil.which", lambda name: f"/usr/bin/{name}")
+
+        monkeypatch.setattr(
+            "genechat.download.DBSNP_CONTIGS",
+            [("NC_000021.9", "chr21"), ("NC_000022.11", "chr22")],
+        )
+
+        # Pre-create state — should be ignored with force=True
+        _save_dbsnp_state({"completed_contigs": ["NC_000021.9"]})
+
+        downloaded = []
+
+        def mock_dl_chrom(refseq, chrom, remote_url, chr_map, output):
+            downloaded.append(chrom)
+            output.write_bytes(f"fake-{chrom}".encode())
+
+        monkeypatch.setattr(
+            "genechat.download._download_dbsnp_chromosome", mock_dl_chrom
+        )
+
+        def mock_concat(chr_files, output):
+            output.write_bytes(b"concatenated")
+            output.with_name(f"{output.name}.tbi").write_bytes(b"tbi")
+
+        monkeypatch.setattr("genechat.download._concat_dbsnp_chromosomes", mock_concat)
+
+        result = download_dbsnp(force=True)
+        assert result is not None
+        # Both should be downloaded
+        assert "chr21" in downloaded
+        assert "chr22" in downloaded
+
+    def test_file_based_fallback_when_raw_exists(self, monkeypatch, tmp_path, capsys):
+        """Verify legacy raw file triggers file-based rename path."""
         import subprocess
 
         refs = tmp_path / "refs"
         monkeypatch.setattr("genechat.download.REFERENCES_DIR", refs)
         monkeypatch.setattr("shutil.which", lambda name: f"/usr/bin/{name}")
 
-        # Pre-create raw dbSNP files
         ddir = refs / "dbsnp"
         ddir.mkdir(parents=True)
         raw = ddir / "GCF_000001405.40.gz"
@@ -283,79 +378,200 @@ class TestDbsnpDownload:
             return subprocess.CompletedProcess(cmd, 0)
 
         monkeypatch.setattr("subprocess.run", mock_run)
-        monkeypatch.setattr(
-            "genechat.download.download_file", lambda url, dest, label="": None
-        )
 
         result = download_dbsnp()
         assert result is not None
         # Raw files should have been cleaned up
         assert not raw.exists()
         assert not raw_tbi.exists()
-        assert "freed" in capsys.readouterr().out
 
-    def test_streaming_path_when_no_raw(self, monkeypatch, tmp_path, capsys):
-        """Verify streaming path is used when raw dbSNP file doesn't exist."""
+    def test_partial_failure_preserves_state(self, monkeypatch, tmp_path, capsys):
+        """Verify state is preserved when a chromosome fails mid-way."""
         import subprocess
 
         refs = tmp_path / "refs"
         monkeypatch.setattr("genechat.download.REFERENCES_DIR", refs)
         monkeypatch.setattr("shutil.which", lambda name: f"/usr/bin/{name}")
 
-        ddir = refs / "dbsnp"
-        ddir.mkdir(parents=True)
-        # No raw files — should trigger streaming path
-
-        # Mock _stream_dbsnp_rename to create the output file
-        def mock_stream(chr_map, output):
-            output.write_bytes(b"streamed-output")
-
-        monkeypatch.setattr("genechat.download._stream_dbsnp_rename", mock_stream)
-
-        def mock_run(cmd, **kwargs):
-            from pathlib import Path as P
-
-            if "tabix" in cmd[0]:
-                vcf_arg = cmd[-1]
-                P(vcf_arg + ".tbi").write_bytes(b"fake-tbi")
-            return subprocess.CompletedProcess(cmd, 0)
-
-        monkeypatch.setattr("subprocess.run", mock_run)
-
-        result = download_dbsnp()
-        assert result is not None
-        assert result.exists()
-
-    def test_cleans_up_tmp_on_failure(self, monkeypatch, tmp_path, capsys):
-        """Verify tmp file is cleaned up when bcftools fails."""
-        import subprocess
-
-        refs = tmp_path / "refs"
-        monkeypatch.setattr("genechat.download.REFERENCES_DIR", refs)
-        monkeypatch.setattr("shutil.which", lambda name: f"/usr/bin/{name}")
-
-        # Pre-create raw dbSNP files
-        ddir = refs / "dbsnp"
-        ddir.mkdir(parents=True)
-        raw = ddir / "GCF_000001405.40.gz"
-        raw.write_bytes(b"fake-vcf")
-        raw.with_suffix(raw.suffix + ".tbi").write_bytes(b"fake-tbi")
-
-        def mock_run(cmd, **kwargs):
-            if "annotate" in cmd:
-                raise subprocess.CalledProcessError(1, cmd, stderr=b"bcf error")
-            return subprocess.CompletedProcess(cmd, 0)
-
-        monkeypatch.setattr("subprocess.run", mock_run)
         monkeypatch.setattr(
-            "genechat.download.download_file", lambda url, dest, label="": None
+            "genechat.download.DBSNP_CONTIGS",
+            [
+                ("NC_000021.9", "chr21"),
+                ("NC_000022.11", "chr22"),
+                ("NC_000023.11", "chrX"),
+            ],
+        )
+
+        call_count = 0
+
+        def mock_dl_chrom(refseq, chrom, remote_url, chr_map, output):
+            nonlocal call_count
+            call_count += 1
+            if call_count == 2:
+                raise subprocess.CalledProcessError(1, "bcftools", stderr=b"fail")
+            output.write_bytes(f"fake-{chrom}".encode())
+
+        monkeypatch.setattr(
+            "genechat.download._download_dbsnp_chromosome", mock_dl_chrom
         )
 
         result = download_dbsnp()
         assert result is None
 
-        # Verify no tmp file left behind
-        tmp_files = list(ddir.glob("*.tmp*"))
+        # State should show chr21 as complete
+        state = _load_dbsnp_state()
+        assert "NC_000021.9" in state.get("completed_contigs", [])
+        # chr22 failed, so should not be in completed
+        assert "NC_000022.11" not in state.get("completed_contigs", [])
+
+
+class TestDownloadDbsnpChromosome:
+    def test_pipes_view_through_rename(self, monkeypatch, tmp_path):
+        """Verify bcftools view | bcftools annotate pipeline."""
+        import io
+
+        popen_calls = []
+
+        class MockPopen:
+            def __init__(self, cmd, **kwargs):
+                popen_calls.append(cmd)
+                self.cmd = cmd
+                self.returncode = 0
+                self.stderr = None
+
+                if "view" in cmd:
+                    self.stdout = io.BytesIO(b"fake-vcf-data")
+                    self.stderr = io.BytesIO(b"")
+                elif "annotate" in cmd:
+                    if "-o" in cmd:
+                        out_idx = cmd.index("-o") + 1
+                        from pathlib import Path as P
+
+                        P(cmd[out_idx]).write_bytes(b"renamed")
+                    self.stdout = None
+                    self.stderr = io.BytesIO(b"")
+
+            def communicate(self):
+                return b"", b""
+
+            def wait(self):
+                return self.returncode
+
+        monkeypatch.setattr("subprocess.Popen", MockPopen)
+
+        chr_map = tmp_path / "map.txt"
+        chr_map.write_text("NC_000022.11 chr22\n")
+        output = tmp_path / "chr22.vcf.gz"
+
+        _download_dbsnp_chromosome(
+            "NC_000022.11",
+            "chr22",
+            "https://example.com/dbsnp.gz",
+            chr_map,
+            output,
+        )
+
+        assert output.exists()
+        # Verify both bcftools commands were called
+        assert any("view" in cmd for cmd in popen_calls)
+        assert any("annotate" in cmd for cmd in popen_calls)
+
+    def test_cleans_up_tmp_on_failure(self, monkeypatch, tmp_path):
+        """Verify tmp file is removed when pipeline fails."""
+        import io
+        import subprocess
+
+        class MockPopen:
+            def __init__(self, cmd, **kwargs):
+                self.cmd = cmd
+                self.returncode = 1 if "view" in cmd else 0
+                self.stderr = io.BytesIO(b"error")
+                self.stdout = io.BytesIO(b"") if "view" in cmd else None
+
+            def communicate(self):
+                return b"", b""
+
+            def wait(self):
+                return self.returncode
+
+        monkeypatch.setattr("subprocess.Popen", MockPopen)
+
+        chr_map = tmp_path / "map.txt"
+        chr_map.write_text("NC_000022.11 chr22\n")
+        output = tmp_path / "chr22.vcf.gz"
+
+        try:
+            _download_dbsnp_chromosome(
+                "NC_000022.11",
+                "chr22",
+                "https://example.com/dbsnp.gz",
+                chr_map,
+                output,
+            )
+        except subprocess.CalledProcessError:
+            pass
+
+        # No tmp file should remain
+        assert not output.with_suffix(".tmp.vcf.gz").exists()
+
+
+class TestConcatDbsnpChromosomes:
+    def test_concat_and_index(self, monkeypatch, tmp_path):
+        """Verify concat calls bcftools concat + tabix and creates output."""
+        import subprocess
+
+        calls = []
+
+        def mock_run(cmd, **kwargs):
+            calls.append(cmd)
+            from pathlib import Path as P
+
+            if "concat" in cmd and "-o" in cmd:
+                out_idx = cmd.index("-o") + 1
+                P(cmd[out_idx]).write_bytes(b"concatenated")
+            if "tabix" in cmd[0]:
+                P(cmd[-1] + ".tbi").write_bytes(b"tbi")
+            return subprocess.CompletedProcess(cmd, 0)
+
+        monkeypatch.setattr("subprocess.run", mock_run)
+
+        chr_files = [tmp_path / "chr21.vcf.gz", tmp_path / "chr22.vcf.gz"]
+        for f in chr_files:
+            f.write_bytes(b"fake")
+
+        output = tmp_path / "dbsnp_chrfixed.vcf.gz"
+        _concat_dbsnp_chromosomes(chr_files, output)
+
+        assert output.exists()
+        assert output.with_name(f"{output.name}.tbi").exists()
+
+        concat_call = [c for c in calls if "concat" in c]
+        assert len(concat_call) == 1
+        tabix_call = [c for c in calls if "tabix" in c[0]]
+        assert len(tabix_call) == 1
+
+    def test_cleans_up_on_failure(self, monkeypatch, tmp_path):
+        """Verify tmp files are cleaned up when concat fails."""
+        import subprocess
+
+        def mock_run(cmd, **kwargs):
+            if "concat" in cmd:
+                raise subprocess.CalledProcessError(1, cmd, stderr=b"error")
+            return subprocess.CompletedProcess(cmd, 0)
+
+        monkeypatch.setattr("subprocess.run", mock_run)
+
+        chr_files = [tmp_path / "chr21.vcf.gz"]
+        chr_files[0].write_bytes(b"fake")
+        output = tmp_path / "dbsnp_chrfixed.vcf.gz"
+
+        try:
+            _concat_dbsnp_chromosomes(chr_files, output)
+        except subprocess.CalledProcessError:
+            pass
+
+        assert not output.exists()
+        tmp_files = list(tmp_path.glob("*.tmp*"))
         assert len(tmp_files) == 0
 
 
@@ -455,3 +671,13 @@ class TestRefseqChrMap:
         assert lines[0] == "NC_000001.11 chr1"
         assert any("NC_000023.11 chrX" in line for line in lines)
         assert any("NC_012920.1 chrMT" in line for line in lines)
+
+    def test_uses_dbsnp_contigs_constant(self, tmp_path):
+        """Verify _write_refseq_chr_map uses the DBSNP_CONTIGS constant."""
+        mapfile = tmp_path / "map.txt"
+        _write_refseq_chr_map(mapfile)
+
+        lines = mapfile.read_text().strip().split("\n")
+        assert len(lines) == len(DBSNP_CONTIGS)
+        for line, (refseq, chrom) in zip(lines, DBSNP_CONTIGS):
+            assert line == f"{refseq} {chrom}"
