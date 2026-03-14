@@ -23,7 +23,7 @@ def format_eta(elapsed: float, done: int, total: int) -> str:
     """Estimate remaining time based on progress so far."""
     if done <= 0 or total <= 0 or elapsed <= 0:
         return ""
-    remaining = (elapsed / done) * (total - done)
+    remaining = max(0, (elapsed / done) * (total - done))
     return format_elapsed(remaining)
 
 
