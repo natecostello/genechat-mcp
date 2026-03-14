@@ -127,9 +127,13 @@ terms for factual data).
 
 ---
 
-## Future: HPO (Human Phenotype Ontology)
+## Enhanced-warning gene list (installed via seed data)
 
-When the enhanced warning gene list (#51) is implemented:
+The enhanced-warning gene list is built from the intersection of ClinVar
+pathogenic variants and HPO severe phenotypes, minus ACMG SF v3.3 actionable
+genes. It is included in `lookup_tables.db` via `genechat install --seeds`.
+
+### HPO (Human Phenotype Ontology)
 
 - **License:** Custom (see <https://hpo.jax.org/license>)
 - **Obligations:**
