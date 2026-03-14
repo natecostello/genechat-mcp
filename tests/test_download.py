@@ -519,8 +519,9 @@ class TestDownloadDbsnpChromosome:
         except subprocess.CalledProcessError:
             pass
 
-        # No tmp file should remain
-        assert not output.with_suffix(".tmp.vcf.gz").exists()
+        # No tmp file should remain (uses same naming as implementation)
+        tmp_name = output.name.replace(".vcf.gz", ".tmp.vcf.gz")
+        assert not output.with_name(tmp_name).exists()
 
 
 class TestConcatDbsnpChromosomes:
