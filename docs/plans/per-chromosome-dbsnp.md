@@ -42,10 +42,9 @@ bcftools view -r <refseq_contig> <remote_url> \
   | bcftools annotate --rename-chrs <chr_map> - -Oz -o <per_chrom_tmp>
 ```
 
-- Takes: contig name, chr name, remote URL, chr_map path, output dir
-- Returns: path to per-chromosome bgzipped VCF
-- Includes progress reporting via ProgressLine
-- On failure: cleans up partial output, raises
+- Takes: contig name, chr name, remote URL, chr_map path, output path
+- On failure: cleans up partial output, kills orphaned processes, raises
+- Progress reported at the `download_dbsnp()` level (per-chromosome index and timing)
 
 ### 1.3 New function: _concat_dbsnp_chromosomes()
 
@@ -124,8 +123,10 @@ a user already has the raw file and shouldn't re-download.
 **Files:** `src/genechat/download.py`
 
 Each chromosome reports:
-- Overall: `"dbSNP: chromosome 5/25 (chr5)"`
-- Per-chromosome download: bytes transferred, speed, ETA (via ProgressLine)
+- Overall: `"[5/25] Fetching chr5 (NC_000005.10)..."`
+- Completion: `"[5/25] chr5 done (1.2 GB, 45s)"`
+- Resume: `"Resuming dbSNP download (12/25 complete)"`
+- No per-chromosome ProgressLine (bcftools pipes don't expose byte progress)
 
 ### 2.2 Integration with sub_step progress (PR #54)
 
