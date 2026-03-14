@@ -234,7 +234,7 @@ At runtime, GeneChat uses **only** local files — no external tools, no network
 
 ## Data Source Licenses
 
-License obligations depend on which annotation layers you install. The base install (`genechat init` without extra flags) has zero mandatory license obligations beyond citation.
+License obligations depend on which annotation layers you install. The base install (`genechat init` without extra flags) uses public-domain and permissively licensed data — citations are appreciated but not legally required.
 
 | Install path | Sources | License | Key obligation |
 |---|---|---|---|

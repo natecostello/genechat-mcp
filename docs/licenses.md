@@ -2,7 +2,9 @@
 
 GeneChat uses data from multiple public databases. License obligations depend on
 which annotation layers the user installs. The base install (`genechat init`
-without flags) has zero mandatory license obligations beyond citation.
+without extra flags) uses public-domain and permissively licensed data —
+citations are appreciated but not legally required. SnpEff is MIT-licensed,
+which requires preserving the copyright notice when redistributing the software.
 
 Run `genechat licenses` to see which licenses apply to your specific installation.
 
