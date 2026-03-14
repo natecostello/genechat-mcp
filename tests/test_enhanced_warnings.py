@@ -59,7 +59,8 @@ def lookup(warning_db):
             ).fetchone()
             return row is not None
 
-    return FakeLookup(conn)
+    yield FakeLookup(conn)
+    conn.close()
 
 
 class TestIsEnhancedWarningGene:
@@ -102,26 +103,26 @@ class TestEnhancedWarningForGenes:
 
 class TestWarningTableInBuildDb:
     def test_table_created(self, warning_db):
-        conn = sqlite3.connect(warning_db)
-        tables = [
-            r[0]
-            for r in conn.execute(
-                "SELECT name FROM sqlite_master WHERE type='table'"
-            ).fetchall()
-        ]
-        assert "enhanced_warning_genes" in tables
+        with sqlite3.connect(warning_db) as conn:
+            tables = [
+                r[0]
+                for r in conn.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table'"
+                ).fetchall()
+            ]
+            assert "enhanced_warning_genes" in tables
 
     def test_table_has_data(self, warning_db):
-        conn = sqlite3.connect(warning_db)
-        count = conn.execute(
-            "SELECT COUNT(*) FROM enhanced_warning_genes"
-        ).fetchone()[0]
-        assert count == 4  # HTT, SOD1, PRNP, MAPT
+        with sqlite3.connect(warning_db) as conn:
+            count = conn.execute(
+                "SELECT COUNT(*) FROM enhanced_warning_genes"
+            ).fetchone()[0]
+            assert count == 4  # HTT, SOD1, PRNP, MAPT
 
     def test_primary_key_enforced(self, warning_db):
-        conn = sqlite3.connect(warning_db)
-        with pytest.raises(sqlite3.IntegrityError):
-            conn.execute("INSERT INTO enhanced_warning_genes VALUES ('HTT')")
+        with sqlite3.connect(warning_db) as conn:
+            with pytest.raises(sqlite3.IntegrityError):
+                conn.execute("INSERT INTO enhanced_warning_genes VALUES ('HTT')")
 
 
 class TestFetchWarningGenes:
