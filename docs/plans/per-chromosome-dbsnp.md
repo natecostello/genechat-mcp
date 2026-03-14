@@ -71,16 +71,14 @@ A JSON state file (`dbsnp_progress.json`) in the dbSNP directory tracks:
 
 ```json
 {
-  "version": "GCF_000001405.40",
-  "completed_contigs": ["NC_000001.11", "NC_000002.12", ...],
-  "started_at": "2026-03-14T12:00:00Z"
+  "completed_contigs": ["NC_000001.11", "NC_000002.12", ...]
 }
 ```
 
 - On startup: read state file, skip completed contigs
 - After each chromosome completes: update state file
 - After successful concat: delete state file
-- On `--force`: delete state file and start fresh
+- On `--force`: ignore existing state (start with empty completed set)
 
 ### 1.5 Rewrite download_dbsnp()
 

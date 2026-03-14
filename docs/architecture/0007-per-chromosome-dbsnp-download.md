@@ -62,7 +62,7 @@ bcftools view -r NC_000022.11 \
   | bcftools annotate --rename-chrs refseq_to_chr.txt - -Oz -o chr22.vcf.gz
 ```
 
-Plan: `docs/plans/per-chromosome-dbsnp.md` (created at TBD)
+Plan: `docs/plans/per-chromosome-dbsnp.md` (created at 837d6ee)
 
 ### Consequences
 
