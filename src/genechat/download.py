@@ -278,8 +278,13 @@ def _download_dbsnp_chromosome(
     Uses htslib HTTP Range requests to read only the bgzip blocks for the
     requested region. Pipes through bcftools annotate for contig rename.
     """
-    tmp = output.with_suffix(".tmp.vcf.gz")
+    tmp = output.with_name(
+        output.name.replace(".vcf.gz", ".tmp.vcf.gz")
+        if output.name.endswith(".vcf.gz")
+        else output.name + ".tmp"
+    )
     rename = None
+    view = None
     try:
         # bcftools view -r <contig> <remote_url> | bcftools annotate --rename-chrs
         # Redirect view stderr to DEVNULL to avoid pipe buffer deadlock —
@@ -325,6 +330,10 @@ def _download_dbsnp_chromosome(
 
     except Exception:
         tmp.unlink(missing_ok=True)
+        # Kill orphaned view process if rename Popen failed to start
+        if view is not None and view.poll() is None:
+            view.kill()
+            view.wait()
         raise
     finally:
         if rename is not None and rename.stderr:

@@ -496,6 +496,12 @@ class TestDownloadDbsnpChromosome:
             def wait(self):
                 return self.returncode
 
+            def poll(self):
+                return self.returncode
+
+            def kill(self):
+                pass
+
         monkeypatch.setattr("subprocess.Popen", MockPopen)
 
         chr_map = tmp_path / "map.txt"
