@@ -1704,6 +1704,24 @@ def _has_annotation_layer(config, layer: str) -> bool:
     return False
 
 
+def _lookup_db_has_table(config, table_name: str) -> bool:
+    """Check if the lookup_tables.db contains the given table."""
+    import sqlite3 as _sql
+
+    db_path = config.lookup_db_path
+    if not Path(db_path).exists():
+        return False
+    try:
+        with _sql.connect(db_path) as conn:
+            row = conn.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
+                (table_name,),
+            ).fetchone()
+            return row is not None
+    except Exception:
+        return False
+
+
 def _run_licenses():
     """Print data source licenses for the current installation."""
     config = load_config()
@@ -1724,12 +1742,22 @@ def _run_licenses():
     print()
 
     # Enhanced-warning gene list (HPO + ClinVar + ACMG SF)
-    print("Enhanced-warning gene list (installed via seed data):")
-    print("  Sources:         ClinVar (public domain) + HPO + ACMG SF v3.3")
-    print("  HPO license:     Custom — must cite, show version, do not modify HPO data")
-    print("  HPO cite:        Kohler S et al., Nucleic Acids Res 2021. PMID: 33264411")
-    print("  ACMG SF cite:    Miller DT et al., Genet Med 2023. PMID: 37347242")
-    print()
+    if _lookup_db_has_table(config, "enhanced_warning_genes"):
+        print("Enhanced-warning gene list (installed via seed data):")
+        print("  Sources:         ClinVar (public domain) + HPO + ACMG SF v3.3")
+        print(
+            "  HPO license:     Custom — must cite, show version, do not modify HPO data"
+        )
+        print(
+            "  HPO cite:        Kohler S et al., Nucleic Acids Res 2021. PMID: 33264411"
+        )
+        print("  ACMG SF cite:    Miller DT et al., Genet Med 2023. PMID: 37347242")
+        print()
+    else:
+        print(
+            "Enhanced-warning gene list: not installed — run genechat install --seeds"
+        )
+        print()
 
     # gnomAD
     if _has_annotation_layer(config, "gnomad") or gnomad_installed():
@@ -1777,21 +1805,30 @@ def _run_licenses():
         print()
 
     # PGS Catalog scores
-    print("PGS Catalog (installed via seed data):")
-    print(
-        "  Catalog cite:    Lambert SA et al., Nat Genet 2024. DOI: 10.1038/s41588-024-01937-x"
-    )
-    print("  Installed scores:")
-    print("    PGS000010 (CAD)        Mega JL et al., Lancet 2015. PMID: 25748612")
-    print(
-        "    PGS000349 (CAD)        Pechlivanis S et al., BMC Med Genet 2020. PMID: 32912153"
-    )
-    print("                           CC BY 4.0")
-    print("    PGS000074 (Colorectal) Graff RE et al., Nat Commun 2021. PMID: 33579919")
-    print("                           CC BY 4.0")
-    print("    PGS002251 (BMI)        Dashti HS et al., BMC Med 2022. PMID: 35016652")
-    print("                           CC BY 4.0")
-    print()
+    if _lookup_db_has_table(config, "prs_weights"):
+        print("PGS Catalog (installed via seed data):")
+        print(
+            "  Catalog cite:    Lambert SA et al., Nat Genet 2024. DOI: 10.1038/s41588-024-01937-x"
+        )
+        print("  Installed scores:")
+        print("    PGS000010 (CAD)        Mega JL et al., Lancet 2015. PMID: 25748612")
+        print(
+            "    PGS000349 (CAD)        Pechlivanis S et al., BMC Med Genet 2020. PMID: 32912153"
+        )
+        print("                           CC BY 4.0")
+        print(
+            "    PGS000074 (Colorectal) Graff RE et al., Nat Commun 2021. PMID: 33579919"
+        )
+        print("                           CC BY 4.0")
+        print(
+            "    PGS002251 (BMI)        Dashti HS et al., BMC Med 2022. PMID: 35016652"
+        )
+        print("                           CC BY 4.0")
+        print()
+    else:
+        print("PGS Catalog:       not installed — run genechat install --seeds")
+        print()
+
     print("Full details: docs/licenses.md")
 
 

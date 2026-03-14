@@ -1,4 +1,4 @@
-"""Tests for the genechat CLI (all 8 subcommands)."""
+"""Tests for the genechat CLI subcommands."""
 
 import importlib.resources as _real_resources
 from pathlib import Path
@@ -796,6 +796,41 @@ class TestStatus:
         assert result.exit_code == 0
         out = result.output
         assert "newer: 2025-06-15" in out
+
+    def test_status_shows_license_tags(self, cli, tmp_path, monkeypatch):
+        """status output includes license tags for completed layers."""
+        from genechat.patch import PatchDB
+
+        vcf = tmp_path / "test.vcf.gz"
+        vcf.write_bytes(b"fake")
+        patch_path = tmp_path / "test.patch.db"
+        patch = PatchDB.create(patch_path)
+        patch.set_metadata("clinvar", "2025-01-01", "complete")
+        patch.set_metadata("snpeff", "GRCh38.p14", "complete")
+        patch.set_metadata("gnomad", "v4.1", "complete")
+        patch.set_metadata("dbsnp", "b156", "complete")
+        patch.close()
+
+        config = AppConfig(
+            genomes={"default": {"vcf_path": str(vcf), "patch_db": str(patch_path)}}
+        )
+        monkeypatch.setattr("genechat.cli.load_config", lambda: config)
+        monkeypatch.setattr(
+            "genechat.download.references_dir", lambda: Path("/tmp/refs")
+        )
+        monkeypatch.setattr("genechat.download.clinvar_installed", lambda: True)
+        monkeypatch.setattr("genechat.download.snpeff_installed", lambda: True)
+        monkeypatch.setattr("genechat.download.gnomad_installed", lambda: False)
+        monkeypatch.setattr("genechat.download.dbsnp_installed", lambda: False)
+
+        result = cli.invoke(app, ["status"])
+
+        assert result.exit_code == 0
+        out = result.output
+        assert "clinvar (2025-01-01, public domain)" in out
+        assert "snpeff (GRCh38.p14, MIT)" in out
+        assert "gnomad (v4.1, ODbL 1.0)" in out
+        assert "dbsnp (b156, public domain)" in out
 
 
 # ---------------------------------------------------------------------------
