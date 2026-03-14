@@ -238,7 +238,7 @@ class TestDbsnpDownload:
 
         # Mock _download_file to avoid network
         monkeypatch.setattr(
-            "genechat.download._download_file", lambda url, dest, label="": None
+            "genechat.download.download_file", lambda url, dest, label="": None
         )
 
         result = download_dbsnp()
@@ -254,6 +254,77 @@ class TestDbsnpDownload:
         assert len(tabix_call) == 1
         assert "-p" in tabix_call[0]
         assert "vcf" in tabix_call[0]
+
+    def test_file_based_deletes_raw_after_rename(self, monkeypatch, tmp_path, capsys):
+        """Verify raw dbSNP files are deleted after successful file-based rename."""
+        import subprocess
+
+        refs = tmp_path / "refs"
+        monkeypatch.setattr("genechat.download.REFERENCES_DIR", refs)
+        monkeypatch.setattr("shutil.which", lambda name: f"/usr/bin/{name}")
+
+        # Pre-create raw dbSNP files
+        ddir = refs / "dbsnp"
+        ddir.mkdir(parents=True)
+        raw = ddir / "GCF_000001405.40.gz"
+        raw.write_bytes(b"fake-vcf-data")
+        raw_tbi = raw.with_suffix(raw.suffix + ".tbi")
+        raw_tbi.write_bytes(b"fake-tbi")
+
+        def mock_run(cmd, **kwargs):
+            from pathlib import Path as P
+
+            if "annotate" in cmd and "-o" in cmd:
+                out_idx = cmd.index("-o") + 1
+                P(cmd[out_idx]).write_bytes(b"renamed")
+            if "tabix" in cmd[0]:
+                vcf_arg = cmd[-1]
+                P(vcf_arg + ".tbi").write_bytes(b"fake-tbi")
+            return subprocess.CompletedProcess(cmd, 0)
+
+        monkeypatch.setattr("subprocess.run", mock_run)
+        monkeypatch.setattr(
+            "genechat.download.download_file", lambda url, dest, label="": None
+        )
+
+        result = download_dbsnp()
+        assert result is not None
+        # Raw files should have been cleaned up
+        assert not raw.exists()
+        assert not raw_tbi.exists()
+        assert "freed" in capsys.readouterr().out
+
+    def test_streaming_path_when_no_raw(self, monkeypatch, tmp_path, capsys):
+        """Verify streaming path is used when raw dbSNP file doesn't exist."""
+        import subprocess
+
+        refs = tmp_path / "refs"
+        monkeypatch.setattr("genechat.download.REFERENCES_DIR", refs)
+        monkeypatch.setattr("shutil.which", lambda name: f"/usr/bin/{name}")
+
+        ddir = refs / "dbsnp"
+        ddir.mkdir(parents=True)
+        # No raw files — should trigger streaming path
+
+        # Mock _stream_dbsnp_rename to create the output file
+        def mock_stream(chr_map, output):
+            output.write_bytes(b"streamed-output")
+
+        monkeypatch.setattr("genechat.download._stream_dbsnp_rename", mock_stream)
+
+        def mock_run(cmd, **kwargs):
+            from pathlib import Path as P
+
+            if "tabix" in cmd[0]:
+                vcf_arg = cmd[-1]
+                P(vcf_arg + ".tbi").write_bytes(b"fake-tbi")
+            return subprocess.CompletedProcess(cmd, 0)
+
+        monkeypatch.setattr("subprocess.run", mock_run)
+
+        result = download_dbsnp()
+        assert result is not None
+        assert result.exists()
 
     def test_cleans_up_tmp_on_failure(self, monkeypatch, tmp_path, capsys):
         """Verify tmp file is cleaned up when bcftools fails."""
@@ -277,7 +348,7 @@ class TestDbsnpDownload:
 
         monkeypatch.setattr("subprocess.run", mock_run)
         monkeypatch.setattr(
-            "genechat.download._download_file", lambda url, dest, label="": None
+            "genechat.download.download_file", lambda url, dest, label="": None
         )
 
         result = download_dbsnp()
@@ -300,7 +371,7 @@ class TestDownloadGnomadChr:
             dest.write_bytes(b"fake")
             downloaded.append(dest.name)
 
-        monkeypatch.setattr("genechat.download._download_file", mock_download)
+        monkeypatch.setattr("genechat.download.download_file", mock_download)
 
         result = download_gnomad_chr("1")
         assert result.exists()
@@ -317,7 +388,7 @@ class TestDownloadGnomadChr:
 
         downloaded = []
         monkeypatch.setattr(
-            "genechat.download._download_file",
+            "genechat.download.download_file",
             lambda url, dest, label="": downloaded.append(dest.name),
         )
 
@@ -341,7 +412,7 @@ class TestDownloadGnomadChr:
             dest.write_bytes(b"fake")
             downloaded.append(dest.name)
 
-        monkeypatch.setattr("genechat.download._download_file", mock_download)
+        monkeypatch.setattr("genechat.download.download_file", mock_download)
 
         download_gnomad_chr("1")
         assert "gnomad.exomes.v4.1.sites.chr1.vcf.bgz" in downloaded

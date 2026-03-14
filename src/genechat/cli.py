@@ -726,6 +726,10 @@ def _run_annotate(
             )
             raise typer.Exit(code=ExitCode.NETWORK_ERROR)
 
+    import time
+
+    from genechat.progress import format_elapsed, format_size
+
     # Create or open patch.db
     if first_run:
         patch = PatchDB.create(patch_db_path)
@@ -736,6 +740,7 @@ def _run_annotate(
 
     step = 0
     total_steps = sum([run_snpeff, run_clinvar, run_gnomad, run_dbsnp])
+    overall_start = time.monotonic()
 
     try:
         if run_snpeff:
@@ -770,8 +775,9 @@ def _run_annotate(
     finally:
         patch.close()
 
-    size_mb = patch_db_path.stat().st_size / 1024 / 1024
-    print(f"\nPatch database: {patch_db_path} ({size_mb:.0f} MB)")
+    elapsed = format_elapsed(time.monotonic() - overall_start)
+    db_size = format_size(patch_db_path.stat().st_size)
+    print(f"\nAnnotation complete ({elapsed}). Patch database: {patch_db_path} ({db_size})")
 
 
 def _patch_db_path_for(vcf_path: Path, genome_cfg) -> Path:
@@ -835,7 +841,10 @@ def _contig_rename_clinvar(clinvar_vcf: Path, work_dir: Path) -> Path:
 
 def _annotate_snpeff(patch, vcf_path: Path, step: int, total: int, is_update: bool):
     """Step 1: SnpEff functional annotation."""
+    import time
+
     from genechat.download import _detect_snpeff_db
+    from genechat.progress import ProgressLine, format_elapsed
 
     db_name = _detect_snpeff_db()
     print(f"  [{step}/{total}] SnpEff functional annotation ({db_name})...")
@@ -844,6 +853,7 @@ def _annotate_snpeff(patch, vcf_path: Path, step: int, total: int, is_update: bo
         patch.clear_layer("snpeff")
 
     patch.set_metadata("snpeff", db_name, status="pending")
+    step_start = time.monotonic()
 
     try:
         # Get chromosome list from VCF
@@ -858,7 +868,7 @@ def _annotate_snpeff(patch, vcf_path: Path, step: int, total: int, is_update: bo
             flush=True,
         )
         for i, chrom in enumerate(chroms, 1):
-            print(f"    {chrom} ({i}/{len(chroms)})...", end="", flush=True)
+            progress = ProgressLine(f"    {chrom} ({i}/{len(chroms)})")
             # Per-chromosome to avoid SnpEff OOM
             bcf_proc = subprocess.Popen(
                 ["bcftools", "view", "-r", chrom, str(vcf_path)],
@@ -875,11 +885,14 @@ def _annotate_snpeff(patch, vcf_path: Path, step: int, total: int, is_update: bo
             # Allow bcf_proc to receive SIGPIPE if snpeff_proc exits
             bcf_proc.stdout.close()
 
-            rows = patch.populate_from_snpeff_stream(iter(snpeff_proc.stdout))
+            rows = patch.populate_from_snpeff_stream(
+                iter(snpeff_proc.stdout),
+                progress_callback=lambda n: progress.update(n),
+            )
             total_rows += rows
             snpeff_rc = snpeff_proc.wait()
             bcf_rc = bcf_proc.wait()
-            print(f" {rows:,} variants")
+            progress.done(f"{rows:,} variants")
             if snpeff_rc != 0:
                 raise RuntimeError(
                     f"snpEff ann failed with exit code {snpeff_rc} on {chrom}"
@@ -892,13 +905,17 @@ def _annotate_snpeff(patch, vcf_path: Path, step: int, total: int, is_update: bo
         patch.set_metadata("snpeff", db_name, status="failed")
         raise
 
+    elapsed = format_elapsed(time.monotonic() - step_start)
     patch.set_metadata("snpeff", db_name, status="complete")
-    print(f"    {total_rows} variants processed")
+    print(f"    SnpEff complete: {total_rows:,} variants ({elapsed})")
 
 
 def _annotate_clinvar(patch, vcf_path: Path, step: int, total: int, is_update: bool):
     """Step 2: ClinVar clinical significance."""
+    import time
+
     from genechat.download import clinvar_path
+    from genechat.progress import ProgressLine, format_elapsed
 
     print(f"  [{step}/{total}] ClinVar clinical significance...")
 
@@ -909,6 +926,7 @@ def _annotate_clinvar(patch, vcf_path: Path, step: int, total: int, is_update: b
     clinvar_vcf = clinvar_path()
     version = _clinvar_version(clinvar_vcf)
     patch.set_metadata("clinvar", version or "unknown", status="pending")
+    step_start = time.monotonic()
 
     # Handle contig rename if needed (use tempdir for work artifacts)
     import tempfile
@@ -918,6 +936,7 @@ def _annotate_clinvar(patch, vcf_path: Path, step: int, total: int, is_update: b
     try:
         clinvar_use = _contig_rename_clinvar(clinvar_vcf, work_dir)
 
+        progress = ProgressLine("    ClinVar")
         proc = subprocess.Popen(
             [
                 "bcftools",
@@ -932,7 +951,10 @@ def _annotate_clinvar(patch, vcf_path: Path, step: int, total: int, is_update: b
             stderr=subprocess.PIPE,
             text=True,
         )
-        rows = patch.update_clinvar_from_stream(iter(proc.stdout))
+        rows = patch.update_clinvar_from_stream(
+            iter(proc.stdout),
+            progress_callback=lambda n: progress.update(n),
+        )
         rc = proc.wait()
         if rc != 0:
             stderr = proc.stderr.read() if proc.stderr else ""
@@ -952,8 +974,9 @@ def _annotate_clinvar(patch, vcf_path: Path, step: int, total: int, is_update: b
 
         _shutil.rmtree(work_dir, ignore_errors=True)
 
+    elapsed = format_elapsed(time.monotonic() - step_start)
     patch.set_metadata("clinvar", version or "unknown", status="complete")
-    print(f"    {rows} variants updated")
+    progress.done(f"{rows:,} variants updated ({elapsed})")
 
 
 def _clinvar_version(clinvar_vcf: Path) -> str | None:
@@ -989,6 +1012,10 @@ def _annotate_gnomad(
     if incremental:
         from genechat.download import delete_gnomad_chr, download_gnomad_chr
 
+    import time
+
+    from genechat.progress import ProgressLine, format_elapsed
+
     mode = " (incremental)" if incremental else ""
     print(f"  [{step}/{total}] gnomAD population frequencies{mode}...")
 
@@ -996,6 +1023,7 @@ def _annotate_gnomad(
         patch.clear_layer("gnomad")
 
     patch.set_metadata("gnomad", "v4.1", status="pending")
+    step_start = time.monotonic()
 
     try:
         import pysam
@@ -1018,7 +1046,7 @@ def _annotate_gnomad(
             if not gnomad_file.exists():
                 continue
 
-            print(f"    chr{chrom} ({i}/{len(GNOMAD_CHROMS)})...", end="", flush=True)
+            progress = ProgressLine(f"    chr{chrom} ({i}/{len(GNOMAD_CHROMS)})")
             proc = subprocess.Popen(
                 [
                     "bcftools",
@@ -1036,10 +1064,13 @@ def _annotate_gnomad(
                 text=True,
             )
             try:
-                rows = patch.update_gnomad_from_stream(iter(proc.stdout))
+                rows = patch.update_gnomad_from_stream(
+                    iter(proc.stdout),
+                    progress_callback=lambda n: progress.update(n),
+                )
                 total_rows += rows
                 rc = proc.wait()
-                print(f" {rows:,} variants")
+                progress.done(f"{rows:,} variants")
                 if rc != 0:
                     stderr = proc.stderr.read() if proc.stderr else ""
                     raise RuntimeError(
@@ -1064,8 +1095,9 @@ def _annotate_gnomad(
         patch.set_metadata("gnomad", "v4.1", status="failed")
         raise
 
+    elapsed = format_elapsed(time.monotonic() - step_start)
     patch.set_metadata("gnomad", "v4.1", status="complete")
-    print(f"    {total_rows} variants updated")
+    print(f"    gnomAD complete: {total_rows:,} variants ({elapsed})")
 
 
 def _annotate_dbsnp(patch, vcf_path: Path, step: int, total: int, is_update: bool):
@@ -1074,7 +1106,10 @@ def _annotate_dbsnp(patch, vcf_path: Path, step: int, total: int, is_update: boo
     Runs bcftools annotate with the chr-fixed dbSNP VCF to fill rsIDs
     for variants that lack them (rsid IS NULL in patch.db).
     """
+    import time
+
     from genechat.download import dbsnp_path
+    from genechat.progress import ProgressLine, format_elapsed
 
     dbsnp_vcf = dbsnp_path()
     print(f"  [{step}/{total}] dbSNP rsID backfill...")
@@ -1084,9 +1119,11 @@ def _annotate_dbsnp(patch, vcf_path: Path, step: int, total: int, is_update: boo
 
     version = _dbsnp_version(dbsnp_vcf)
     patch.set_metadata("dbsnp", version or "unknown", status="pending")
+    step_start = time.monotonic()
 
     import tempfile
 
+    progress = ProgressLine("    dbSNP", report_interval=15.0)
     proc = None
     try:
         with tempfile.SpooledTemporaryFile(
@@ -1107,7 +1144,10 @@ def _annotate_dbsnp(patch, vcf_path: Path, step: int, total: int, is_update: boo
                 text=True,
             )
             try:
-                rows = patch.update_dbsnp_from_stream(iter(proc.stdout))
+                rows = patch.update_dbsnp_from_stream(
+                    iter(proc.stdout),
+                    progress_callback=lambda n: progress.update(n),
+                )
                 rc = proc.wait()
                 if rc != 0:
                     stderr_file.seek(0)
@@ -1130,8 +1170,9 @@ def _annotate_dbsnp(patch, vcf_path: Path, step: int, total: int, is_update: boo
         patch.set_metadata("dbsnp", version or "unknown", status="failed")
         raise
 
+    elapsed = format_elapsed(time.monotonic() - step_start)
     patch.set_metadata("dbsnp", version or "unknown", status="complete")
-    print(f"    {rows} variants updated")
+    progress.done(f"{rows:,} variants updated ({elapsed})")
 
 
 def _dbsnp_version(dbsnp_vcf: Path) -> str | None:

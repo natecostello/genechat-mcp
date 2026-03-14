@@ -412,3 +412,74 @@ class TestPatchDBEdgeCases:
         assert ann["clnsig"] == "drug_response"
         assert ann["transcript"] == "ENST2"  # SnpEff field updated
         db.close()
+
+
+class TestProgressCallback:
+    """Test that stream methods invoke progress_callback correctly."""
+
+    def test_snpeff_progress_callback(self, tmp_path):
+        db = PatchDB.create(tmp_path / "test.db")
+        lines = [
+            f"chr1\t{100 + i}\t.\tA\tT\t.\tPASS\t"
+            "ANN=T|missense_variant|MODERATE|GENE|ENSG|transcript|ENST|protein_coding||c.1A>T|p.Met1Leu||||||\t"
+            "GT\t0/1\n"
+            for i in range(5)
+        ]
+        calls = []
+        db.populate_from_snpeff_stream(iter(lines), progress_callback=calls.append)
+        assert len(calls) >= 1
+        assert calls[-1] == 5  # final count
+        db.close()
+
+    def test_clinvar_progress_callback(self, tmp_path):
+        db = PatchDB.create(tmp_path / "test.db")
+        # Pre-populate
+        lines = [
+            f"chr1\t{100 + i}\t.\tA\tT\t.\tPASS\t"
+            "ANN=T|missense_variant|MODERATE|GENE|ENSG|transcript|ENST|protein_coding||c.1A>T|p.Met1Leu||||||\t"
+            "GT\t0/1\n"
+            for i in range(3)
+        ]
+        db.populate_from_snpeff_stream(iter(lines))
+
+        clinvar_lines = [
+            f"chr1\t{100 + i}\t.\tA\tT\t.\tPASS\t"
+            "CLNSIG=Pathogenic;CLNDN=Test;CLNREVSTAT=reviewed\t"
+            "GT\t0/1\n"
+            for i in range(3)
+        ]
+        calls = []
+        db.update_clinvar_from_stream(iter(clinvar_lines), progress_callback=calls.append)
+        assert len(calls) >= 1
+        assert calls[-1] == 3
+        db.close()
+
+    def test_gnomad_progress_callback(self, tmp_path):
+        db = PatchDB.create(tmp_path / "test.db")
+        lines = [
+            "chr1\t100\t.\tA\tT\t.\tPASS\t"
+            "ANN=T|missense_variant|MODERATE|GENE|ENSG|transcript|ENST|protein_coding||c.1A>T|p.Met1Leu||||||\t"
+            "GT\t0/1\n"
+        ]
+        db.populate_from_snpeff_stream(iter(lines))
+
+        gnomad_lines = ["chr1\t100\t.\tA\tT\t.\tPASS\tAF=0.05;AF_grpmax=0.1\tGT\t0/1\n"]
+        calls = []
+        db.update_gnomad_from_stream(iter(gnomad_lines), progress_callback=calls.append)
+        assert len(calls) >= 1
+        db.close()
+
+    def test_dbsnp_progress_callback(self, tmp_path):
+        db = PatchDB.create(tmp_path / "test.db")
+        lines = [
+            "chr1\t100\t.\tA\tT\t.\tPASS\t"
+            "ANN=T|missense_variant|MODERATE|GENE|ENSG|transcript|ENST|protein_coding||c.1A>T|p.Met1Leu||||||\t"
+            "GT\t0/1\n"
+        ]
+        db.populate_from_snpeff_stream(iter(lines))
+
+        dbsnp_lines = ["chr1\t100\trs12345\tA\tT\t.\tPASS\t.\tGT\t0/1\n"]
+        calls = []
+        db.update_dbsnp_from_stream(iter(dbsnp_lines), progress_callback=calls.append)
+        assert len(calls) >= 1
+        db.close()
