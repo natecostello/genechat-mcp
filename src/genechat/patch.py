@@ -267,11 +267,15 @@ class PatchDB:
         """
         count = 0
         records_seen = 0
+        last_report = 0
         batch = []
         for record in parse_vcf_stream(stream, ["CLNSIG", "CLNDN", "CLNREVSTAT"]):
             records_seen += 1
             clnsig = record.get("CLNSIG")
             if not clnsig:
+                if progress_callback and records_seen - last_report >= 10_000:
+                    progress_callback(records_seen)
+                    last_report = records_seen
                 continue
             batch.append(
                 (
@@ -286,13 +290,14 @@ class PatchDB:
             )
             if len(batch) >= 10_000:
                 count += self._update_clinvar_batch(batch)
-                if progress_callback:
-                    progress_callback(records_seen)
                 batch.clear()
+                if progress_callback and records_seen - last_report >= 10_000:
+                    progress_callback(records_seen)
+                    last_report = records_seen
         if batch:
             count += self._update_clinvar_batch(batch)
-            if progress_callback:
-                progress_callback(records_seen)
+        if progress_callback:
+            progress_callback(records_seen)
         self._conn.commit()
         return count
 
@@ -317,6 +322,7 @@ class PatchDB:
         """
         count = 0
         records_seen = 0
+        last_report = 0
         batch = []
         for record in parse_vcf_stream(stream, ["AF", "AF_grpmax", "AF_popmax"]):
             records_seen += 1
@@ -324,6 +330,9 @@ class PatchDB:
             # Prefer AF_popmax, fall back to AF_grpmax (gnomAD v4 renamed it)
             af_grpmax = record.get("AF_popmax") or record.get("AF_grpmax")
             if af is None and af_grpmax is None:
+                if progress_callback and records_seen - last_report >= 10_000:
+                    progress_callback(records_seen)
+                    last_report = records_seen
                 continue
             batch.append(
                 (
@@ -337,13 +346,14 @@ class PatchDB:
             )
             if len(batch) >= 10_000:
                 count += self._update_gnomad_batch(batch)
-                if progress_callback:
-                    progress_callback(records_seen)
                 batch.clear()
+                if progress_callback and records_seen - last_report >= 10_000:
+                    progress_callback(records_seen)
+                    last_report = records_seen
         if batch:
             count += self._update_gnomad_batch(batch)
-            if progress_callback:
-                progress_callback(records_seen)
+        if progress_callback:
+            progress_callback(records_seen)
         self._conn.commit()
         return count
 
@@ -368,11 +378,15 @@ class PatchDB:
         """
         count = 0
         records_seen = 0
+        last_report = 0
         batch = []
         for record in parse_vcf_stream(stream, []):
             records_seen += 1
             rsid = record.get("rsid")
             if not rsid:
+                if progress_callback and records_seen - last_report >= 10_000:
+                    progress_callback(records_seen)
+                    last_report = records_seen
                 continue
             batch.append(
                 (
@@ -385,13 +399,14 @@ class PatchDB:
             )
             if len(batch) >= 10_000:
                 count += self._update_dbsnp_batch(batch)
-                if progress_callback:
-                    progress_callback(records_seen)
                 batch.clear()
+                if progress_callback and records_seen - last_report >= 10_000:
+                    progress_callback(records_seen)
+                    last_report = records_seen
         if batch:
             count += self._update_dbsnp_batch(batch)
-            if progress_callback:
-                progress_callback(records_seen)
+        if progress_callback:
+            progress_callback(records_seen)
         self._conn.commit()
         return count
 
