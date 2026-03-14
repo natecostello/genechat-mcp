@@ -8,7 +8,7 @@ build/
 gwas.db
 *.vcf
 *.vcf.gz
-*.vcf.gz.tbi
+*.tbi
 *.vcf.gz.csi
 .pytest_cache/
 giab/
