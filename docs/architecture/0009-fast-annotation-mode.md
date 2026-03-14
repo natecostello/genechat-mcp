@@ -62,7 +62,7 @@ disk is hard to probe reliably across platforms. A separate download command
 (option 3) is useful but orthogonal — `--fast` can be added now and a
 `download-refs` command later if needed.
 
-Plan: `docs/plans/fast-annotation-mode.md` (created at PENDING)
+Plan: `docs/plans/fast-annotation-mode.md` (created at 78e0da3)
 
 ### Consequences
 
