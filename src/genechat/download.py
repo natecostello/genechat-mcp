@@ -217,8 +217,13 @@ def _stream_dbsnp_rename(chr_map: Path, output: Path) -> None:
     Streams the HTTP download into bcftools stdin, avoiding writing the
     ~20 GB raw file to disk. Only the chr-fixed output touches disk.
     """
+    import tempfile
+
     url = f"{DBSNP_BASE}/{DBSNP_VCF_NAME}"
     req = Request(url, headers={"User-Agent": "genechat/0.1"})
+
+    # Redirect stderr to a tempfile to avoid pipe buffer deadlock
+    stderr_file = tempfile.SpooledTemporaryFile(max_size=64 * 1024)
 
     proc = subprocess.Popen(
         [
@@ -232,7 +237,7 @@ def _stream_dbsnp_rename(chr_map: Path, output: Path) -> None:
             str(output),
         ],
         stdin=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        stderr=stderr_file,
     )
 
     try:
@@ -262,20 +267,23 @@ def _stream_dbsnp_rename(chr_map: Path, output: Path) -> None:
                 progress.update(downloaded, suffix=speed)
 
         proc.stdin.close()
-        stderr_output = proc.stderr.read()
         rc = proc.wait()
 
         if rc != 0:
-            err_msg = stderr_output.decode(errors="replace")[:500] if stderr_output else ""
+            stderr_file.seek(0)
+            err_msg = stderr_file.read().decode(errors="replace")[:500]
             raise subprocess.CalledProcessError(rc, "bcftools annotate", stderr=err_msg)
 
         progress.done(f"{format_size(downloaded)} streamed + renamed")
 
     except Exception:
-        proc.stdin.close()
+        if proc.stdin and not proc.stdin.closed:
+            proc.stdin.close()
         proc.kill()
         proc.wait()
         raise
+    finally:
+        stderr_file.close()
 
 
 def download_dbsnp(force: bool = False) -> Path | None:
