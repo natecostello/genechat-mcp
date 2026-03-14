@@ -91,9 +91,7 @@ class TestEnhancedWarningGene:
             "CREATE TABLE genes (symbol TEXT PRIMARY KEY, name TEXT, "
             "chrom TEXT, start INTEGER, end INTEGER, strand TEXT)"
         )
-        conn.execute(
-            "CREATE TABLE enhanced_warning_genes (symbol TEXT PRIMARY KEY)"
-        )
+        conn.execute("CREATE TABLE enhanced_warning_genes (symbol TEXT PRIMARY KEY)")
         conn.execute("INSERT INTO enhanced_warning_genes VALUES ('HTT')")
         conn.execute("INSERT INTO enhanced_warning_genes VALUES ('SOD1')")
         conn.commit()

@@ -29,7 +29,11 @@ def register(mcp, engines, db, config):
         all_genes: set[str] = set()
 
         lines = _format_summary(
-            engine, db, config, genome_cfg, label if show_label else None,
+            engine,
+            db,
+            config,
+            genome_cfg,
+            label if show_label else None,
             gene_collector=all_genes,
         )
 
@@ -44,10 +48,16 @@ def register(mcp, engines, db, config):
 
             genome_cfg2 = config.genomes[label2]
             lines.append("\n---\n")
-            lines.extend(_format_summary(
-                engine2, db, config, genome_cfg2, label2,
-                gene_collector=all_genes,
-            ))
+            lines.extend(
+                _format_summary(
+                    engine2,
+                    db,
+                    config,
+                    genome_cfg2,
+                    label2,
+                    gene_collector=all_genes,
+                )
+            )
 
         lines.append(
             "\n---\n*Use specific tools (query_variant, query_gene, query_pgx, "
