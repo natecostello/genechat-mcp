@@ -243,6 +243,7 @@ License obligations depend on which annotation layers you install. The base inst
 | `--dbsnp` | dbSNP | Public domain | None |
 | `--gwas` | GWAS Catalog | CC0 | None |
 | `--seeds` (PRS) | PGS Catalog | EBI ToU + per-score | Cite catalog paper + individual score publications |
+| `--seeds` (warnings) | HPO, ACMG SF | Custom / academic | HPO: cite, show version, do not modify; ACMG: cite |
 
 Run `genechat licenses` to see which licenses apply to your specific installation. See [docs/licenses.md](docs/licenses.md) for full attribution text, citation DOIs, and the gnomAD ODbL produced-works distinction.
 
