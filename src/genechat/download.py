@@ -386,8 +386,9 @@ def download_dbsnp(force: bool = False, fast: bool = False) -> Path | None:
     and deletes the raw file afterward.
 
     Returns path to the chr-fixed VCF on success.
-    Returns None only if required tools are missing or processing fails;
-    download/network errors will raise.
+    Returns None if required tools are missing or bcftools processing fails
+    (per-chromosome mode catches ``CalledProcessError`` and returns None).
+    Fast mode and ``download_file()`` raise on network/HTTP errors.
     """
     ddir = dbsnp_dir()
     ddir.mkdir(parents=True, exist_ok=True)
