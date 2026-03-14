@@ -914,10 +914,8 @@ def _annotate_snpeff(patch, vcf_path: Path, step: int, total: int, is_update: bo
 
 def _annotate_clinvar(patch, vcf_path: Path, step: int, total: int, is_update: bool):
     """Step 2: ClinVar clinical significance."""
-    import time
-
     from genechat.download import clinvar_path
-    from genechat.progress import ProgressLine, format_elapsed
+    from genechat.progress import ProgressLine
 
     print(f"  [{step}/{total}] ClinVar clinical significance...")
 
@@ -928,7 +926,6 @@ def _annotate_clinvar(patch, vcf_path: Path, step: int, total: int, is_update: b
     clinvar_vcf = clinvar_path()
     version = _clinvar_version(clinvar_vcf)
     patch.set_metadata("clinvar", version or "unknown", status="pending")
-    step_start = time.monotonic()
 
     # Handle contig rename if needed (use tempdir for work artifacts)
     import tempfile
@@ -976,9 +973,8 @@ def _annotate_clinvar(patch, vcf_path: Path, step: int, total: int, is_update: b
 
         _shutil.rmtree(work_dir, ignore_errors=True)
 
-    elapsed = format_elapsed(time.monotonic() - step_start)
     patch.set_metadata("clinvar", version or "unknown", status="complete")
-    progress.done(f"{rows:,} variants updated ({elapsed})")
+    progress.done(f"{rows:,} variants updated")
 
 
 def _clinvar_version(clinvar_vcf: Path) -> str | None:
@@ -1108,10 +1104,8 @@ def _annotate_dbsnp(patch, vcf_path: Path, step: int, total: int, is_update: boo
     Runs bcftools annotate with the chr-fixed dbSNP VCF to fill rsIDs
     for variants that lack them (rsid IS NULL in patch.db).
     """
-    import time
-
     from genechat.download import dbsnp_path
-    from genechat.progress import ProgressLine, format_elapsed
+    from genechat.progress import ProgressLine
 
     dbsnp_vcf = dbsnp_path()
     print(f"  [{step}/{total}] dbSNP rsID backfill...")
@@ -1121,7 +1115,6 @@ def _annotate_dbsnp(patch, vcf_path: Path, step: int, total: int, is_update: boo
 
     version = _dbsnp_version(dbsnp_vcf)
     patch.set_metadata("dbsnp", version or "unknown", status="pending")
-    step_start = time.monotonic()
 
     import tempfile
 
@@ -1172,9 +1165,8 @@ def _annotate_dbsnp(patch, vcf_path: Path, step: int, total: int, is_update: boo
         patch.set_metadata("dbsnp", version or "unknown", status="failed")
         raise
 
-    elapsed = format_elapsed(time.monotonic() - step_start)
     patch.set_metadata("dbsnp", version or "unknown", status="complete")
-    progress.done(f"{rows:,} variants updated ({elapsed})")
+    progress.done(f"{rows:,} variants updated")
 
 
 def _dbsnp_version(dbsnp_vcf: Path) -> str | None:
