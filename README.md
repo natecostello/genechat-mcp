@@ -290,9 +290,11 @@ E2e tests are automatically skipped when `GENECHAT_GIAB_VCF` is not set.
 
 ## Verifying LLM Interpretations
 
-GeneChat's tool responses come directly from curated databases (ClinVar, CPIC,
-gnomAD, PGS Catalog). The data returned by each tool call is ground truth.
-However, the LLM interpreting that data can hallucinate — inventing clinical
+GeneChat's tool responses are derived from curated databases (ClinVar, CPIC,
+gnomAD, PGS Catalog) and your local VCF. Results may be incomplete due to
+query limits, missing annotations, or database version differences — always
+verify against primary sources. The LLM interpreting that data can also
+hallucinate — inventing clinical
 significance, overstating risk, fabricating study references, or filling in
 gaps with training-data knowledge that may be outdated or wrong.
 
