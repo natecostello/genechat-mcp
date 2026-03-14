@@ -7,7 +7,7 @@ genotypes with patch annotations.
 
 import os
 import sqlite3
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from pathlib import Path
 
 from genechat.parsers import parse_ann_field
@@ -190,7 +190,11 @@ class PatchDB:
 
     # -- Write methods (used during annotation) --
 
-    def populate_from_snpeff_stream(self, stream: Iterator[str]) -> int:
+    def populate_from_snpeff_stream(
+        self,
+        stream: Iterator[str],
+        progress_callback: Callable[[int], None] | None = None,
+    ) -> int:
         """Parse SnpEff-annotated VCF stream and upsert rows.
 
         Step 1: creates or updates ALL rows. Extracts ANN field + ID column.
@@ -222,10 +226,14 @@ class PatchDB:
             if len(batch) >= 10_000:
                 self._insert_snpeff_batch(batch)
                 count += len(batch)
+                if progress_callback:
+                    progress_callback(count)
                 batch.clear()
         if batch:
             self._insert_snpeff_batch(batch)
             count += len(batch)
+            if progress_callback:
+                progress_callback(count)
         self._conn.commit()
         return count
 
@@ -247,17 +255,27 @@ class PatchDB:
             batch,
         )
 
-    def update_clinvar_from_stream(self, stream: Iterator[str]) -> int:
+    def update_clinvar_from_stream(
+        self,
+        stream: Iterator[str],
+        progress_callback: Callable[[int], None] | None = None,
+    ) -> int:
         """Parse bcftools ClinVar-annotated VCF stream and UPDATE rows.
 
         Step 2: updates existing rows with ClinVar fields.
         Returns the number of rows updated.
         """
         count = 0
+        records_seen = 0
+        last_report = 0
         batch = []
         for record in parse_vcf_stream(stream, ["CLNSIG", "CLNDN", "CLNREVSTAT"]):
+            records_seen += 1
             clnsig = record.get("CLNSIG")
             if not clnsig:
+                if progress_callback and records_seen - last_report >= 10_000:
+                    progress_callback(records_seen)
+                    last_report = records_seen
                 continue
             batch.append(
                 (
@@ -273,8 +291,13 @@ class PatchDB:
             if len(batch) >= 10_000:
                 count += self._update_clinvar_batch(batch)
                 batch.clear()
+                if progress_callback and records_seen - last_report >= 10_000:
+                    progress_callback(records_seen)
+                    last_report = records_seen
         if batch:
             count += self._update_clinvar_batch(batch)
+        if progress_callback:
+            progress_callback(records_seen)
         self._conn.commit()
         return count
 
@@ -287,19 +310,29 @@ class PatchDB:
         )
         return self._conn.total_changes - before
 
-    def update_gnomad_from_stream(self, stream: Iterator[str]) -> int:
+    def update_gnomad_from_stream(
+        self,
+        stream: Iterator[str],
+        progress_callback: Callable[[int], None] | None = None,
+    ) -> int:
         """Parse bcftools gnomAD-annotated VCF stream and UPDATE rows.
 
         Step 3: updates existing rows with population frequency fields.
         Returns the number of rows updated.
         """
         count = 0
+        records_seen = 0
+        last_report = 0
         batch = []
         for record in parse_vcf_stream(stream, ["AF", "AF_grpmax", "AF_popmax"]):
+            records_seen += 1
             af = record.get("AF")
             # Prefer AF_popmax, fall back to AF_grpmax (gnomAD v4 renamed it)
             af_grpmax = record.get("AF_popmax") or record.get("AF_grpmax")
             if af is None and af_grpmax is None:
+                if progress_callback and records_seen - last_report >= 10_000:
+                    progress_callback(records_seen)
+                    last_report = records_seen
                 continue
             batch.append(
                 (
@@ -314,8 +347,13 @@ class PatchDB:
             if len(batch) >= 10_000:
                 count += self._update_gnomad_batch(batch)
                 batch.clear()
+                if progress_callback and records_seen - last_report >= 10_000:
+                    progress_callback(records_seen)
+                    last_report = records_seen
         if batch:
             count += self._update_gnomad_batch(batch)
+        if progress_callback:
+            progress_callback(records_seen)
         self._conn.commit()
         return count
 
@@ -328,17 +366,27 @@ class PatchDB:
         )
         return self._conn.total_changes - before
 
-    def update_dbsnp_from_stream(self, stream: Iterator[str]) -> int:
+    def update_dbsnp_from_stream(
+        self,
+        stream: Iterator[str],
+        progress_callback: Callable[[int], None] | None = None,
+    ) -> int:
         """Parse bcftools dbSNP-annotated VCF stream and UPDATE rsid where NULL.
 
         Step 4: backfills rsIDs from dbSNP for records missing an rsID.
         Returns the number of rows updated.
         """
         count = 0
+        records_seen = 0
+        last_report = 0
         batch = []
         for record in parse_vcf_stream(stream, []):
+            records_seen += 1
             rsid = record.get("rsid")
             if not rsid:
+                if progress_callback and records_seen - last_report >= 10_000:
+                    progress_callback(records_seen)
+                    last_report = records_seen
                 continue
             batch.append(
                 (
@@ -352,8 +400,13 @@ class PatchDB:
             if len(batch) >= 10_000:
                 count += self._update_dbsnp_batch(batch)
                 batch.clear()
+                if progress_callback and records_seen - last_report >= 10_000:
+                    progress_callback(records_seen)
+                    last_report = records_seen
         if batch:
             count += self._update_dbsnp_batch(batch)
+        if progress_callback:
+            progress_callback(records_seen)
         self._conn.commit()
         return count
 

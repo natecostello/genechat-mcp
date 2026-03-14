@@ -126,19 +126,11 @@ def _normalize_chrom(chrom: str) -> str | None:
 
 def download_gwas_catalog(dest_path: Path | None = None) -> Path:
     """Download the GWAS Catalog associations zip. Returns path to the zip."""
-    import urllib.request
+    from genechat.download import download_file
 
     zip_path = dest_path or DEFAULT_GWAS_ZIP
     zip_path.parent.mkdir(parents=True, exist_ok=True)
-    tmp_path = zip_path.with_suffix(".tmp")
-    print("Downloading GWAS Catalog (~58 MB)...")
-    try:
-        urllib.request.urlretrieve(GWAS_URL, tmp_path)
-        os.replace(tmp_path, zip_path)
-    except Exception:
-        tmp_path.unlink(missing_ok=True)
-        raise
-    print(f"Downloaded: {zip_path}")
+    download_file(GWAS_URL, zip_path, "GWAS Catalog")
     return zip_path
 
 
@@ -146,7 +138,9 @@ def build_gwas_db(zip_path: Path | None = None, db_path: Path | None = None) -> 
     """Process GWAS catalog zip into a standalone SQLite DB. Returns row count.
 
     If zip_path does not exist, downloads it first.
+    Deletes the zip after a successful build when using the default cache path.
     """
+    using_default_zip = zip_path is None
     zip_path = zip_path or DEFAULT_GWAS_ZIP
     db_path = db_path or DEFAULT_GWAS_DB
 
@@ -232,6 +226,14 @@ def build_gwas_db(zip_path: Path | None = None, db_path: Path | None = None) -> 
 
     # Atomic replace — only after successful build
     os.replace(tmp_db, db_path)
+
+    # Clean up zip to free disk space (~58 MB) — only for default cache path
+    if using_default_zip and zip_path.exists():
+        freed = zip_path.stat().st_size
+        zip_path.unlink()
+        from genechat.progress import format_size
+
+        print(f"  Cleaned up GWAS zip ({format_size(freed)} freed)")
 
     print(f"GWAS associations loaded: {rows_inserted:,}")
     if rows_skipped:
