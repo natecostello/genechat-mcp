@@ -21,7 +21,9 @@ import sys
 import urllib.request
 from pathlib import Path
 
-_DEFAULT_SEED_DIR = Path(__file__).resolve().parent.parent.parent.parent / "data" / "seed"
+_DEFAULT_SEED_DIR = (
+    Path(__file__).resolve().parent.parent.parent.parent / "data" / "seed"
+)
 
 # ---------------------------------------------------------------------------
 # Source URLs
@@ -31,9 +33,7 @@ CLINVAR_URL = (
     "https://ftp.ncbi.nlm.nih.gov/pub/clinvar/tab_delimited/variant_summary.txt.gz"
 )
 
-HPO_URL = (
-    "https://purl.obolibrary.org/obo/hp/hpoa/genes_to_phenotype.txt"
-)
+HPO_URL = "https://purl.obolibrary.org/obo/hp/hpoa/genes_to_phenotype.txt"
 
 # ---------------------------------------------------------------------------
 # HPO phenotype terms indicating death or progressive neurodegeneration
@@ -66,20 +66,96 @@ HPO_TERMS = {
 
 ACMG_SF_V3_3 = {
     # Hereditary cancer
-    "APC", "BMPR1A", "BRCA1", "BRCA2", "BRIP1", "CDH1", "CDK4", "CDKN2A",
-    "CHEK2", "DICER1", "EPCAM", "GREM1", "HOXB13", "KIT", "MAX", "MEN1",
-    "MET", "MLH1", "MSH2", "MSH6", "MUTYH", "NF2", "NTHL1", "PALB2",
-    "PDGFRA", "PMS2", "POLD1", "POLE", "PTEN", "RAD51C", "RAD51D", "RB1",
-    "RET", "SDHA", "SDHAF2", "SDHB", "SDHC", "SDHD", "SMAD4", "STK11",
-    "TMEM127", "TP53", "TSC1", "TSC2", "VHL",
+    "APC",
+    "BMPR1A",
+    "BRCA1",
+    "BRCA2",
+    "BRIP1",
+    "CDH1",
+    "CDK4",
+    "CDKN2A",
+    "CHEK2",
+    "DICER1",
+    "EPCAM",
+    "GREM1",
+    "HOXB13",
+    "KIT",
+    "MAX",
+    "MEN1",
+    "MET",
+    "MLH1",
+    "MSH2",
+    "MSH6",
+    "MUTYH",
+    "NF2",
+    "NTHL1",
+    "PALB2",
+    "PDGFRA",
+    "PMS2",
+    "POLD1",
+    "POLE",
+    "PTEN",
+    "RAD51C",
+    "RAD51D",
+    "RB1",
+    "RET",
+    "SDHA",
+    "SDHAF2",
+    "SDHB",
+    "SDHC",
+    "SDHD",
+    "SMAD4",
+    "STK11",
+    "TMEM127",
+    "TP53",
+    "TSC1",
+    "TSC2",
+    "VHL",
     # Cardiovascular
-    "ACTA2", "ACTC1", "APOB", "COL3A1", "DSC2", "DSG2", "DSP", "FBN1",
-    "FLNC", "GLA", "HFE", "KCNH2", "KCNQ1", "LDLR", "LMNA", "MYBPC3",
-    "MYH11", "MYH7", "MYL2", "MYL3", "PCSK9", "PKP2", "PLN", "RBM20",
-    "RPE65", "RYR2", "SCN5A", "SMAD3", "TGFBR1", "TGFBR2", "TMEM43",
-    "TNNC1", "TNNI3", "TNNT2", "TPM1", "TRDN", "TTN", "TTR",
+    "ACTA2",
+    "ACTC1",
+    "APOB",
+    "COL3A1",
+    "DSC2",
+    "DSG2",
+    "DSP",
+    "FBN1",
+    "FLNC",
+    "GLA",
+    "HFE",
+    "KCNH2",
+    "KCNQ1",
+    "LDLR",
+    "LMNA",
+    "MYBPC3",
+    "MYH11",
+    "MYH7",
+    "MYL2",
+    "MYL3",
+    "PCSK9",
+    "PKP2",
+    "PLN",
+    "RBM20",
+    "RPE65",
+    "RYR2",
+    "SCN5A",
+    "SMAD3",
+    "TGFBR1",
+    "TGFBR2",
+    "TMEM43",
+    "TNNC1",
+    "TNNI3",
+    "TNNT2",
+    "TPM1",
+    "TRDN",
+    "TTN",
+    "TTR",
     # Other
-    "ATP7B", "BTD", "GAA", "OTC", "RYR1",
+    "ATP7B",
+    "BTD",
+    "GAA",
+    "OTC",
+    "RYR1",
 }
 
 
@@ -152,7 +228,9 @@ def build_warning_list(
     result = sorted(intersection - ACMG_SF_V3_3)
     removed = intersection & ACMG_SF_V3_3
     if removed:
-        print(f"  Removed {len(removed)} ACMG SF v3.3 actionable genes: {', '.join(sorted(removed))}")
+        print(
+            f"  Removed {len(removed)} ACMG SF v3.3 actionable genes: {', '.join(sorted(removed))}"
+        )
     print(f"  Final enhanced-warning gene list: {len(result)} genes")
     return result
 
@@ -160,8 +238,12 @@ def build_warning_list(
 def write_tsv(genes: list[str], output_path: Path) -> None:
     """Write enhanced_warning_genes.tsv."""
     with open(output_path, "w", newline="", encoding="utf-8") as f:
-        f.write("# Enhanced-warning genes: ClinVar Pathogenic ∩ HPO death/neurodegeneration - ACMG SF v3.3\n")
-        f.write("# Sources: ClinVar variant_summary, HPO genes_to_phenotype, ACMG SF v3.3\n")
+        f.write(
+            "# Enhanced-warning genes: ClinVar Pathogenic ∩ HPO death/neurodegeneration - ACMG SF v3.3\n"
+        )
+        f.write(
+            "# Sources: ClinVar variant_summary, HPO genes_to_phenotype, ACMG SF v3.3\n"
+        )
         writer = csv.DictWriter(f, fieldnames=["symbol"], delimiter="\t")
         writer.writeheader()
         for gene in genes:
@@ -196,12 +278,18 @@ def main(output_dir: Path | None = None) -> int:
     wrongly_included = expected_absent & gene_set
 
     if missing:
-        print(f"\n  WARNING: Expected genes missing from list: {', '.join(sorted(missing))}")
+        print(
+            f"\n  WARNING: Expected genes missing from list: {', '.join(sorted(missing))}"
+        )
     if wrongly_included:
-        print(f"\n  WARNING: Actionable genes wrongly included: {', '.join(sorted(wrongly_included))}")
+        print(
+            f"\n  WARNING: Actionable genes wrongly included: {', '.join(sorted(wrongly_included))}"
+        )
 
     if not missing and not wrongly_included:
-        print("\n  Validation: all expected genes present, no actionable genes included")
+        print(
+            "\n  Validation: all expected genes present, no actionable genes included"
+        )
 
     return 0
 
