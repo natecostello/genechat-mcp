@@ -23,8 +23,8 @@ _REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 _DEFAULT_SEED_DIR = _REPO_ROOT / "data" / "seed"
 
 # PGS IDs to fetch: (pgs_id, trait_name, max_variants or None for all)
-# All scores must have permissive licenses (CC BY 4.0 or equivalent).
-# See docs/licenses.md for per-score citation requirements.
+# All scores should have permissive licenses (CC BY 4.0 or standard academic
+# terms for factual data). See docs/licenses.md for per-score details.
 PGS_SCORES = [
     ("PGS000010", "Coronary artery disease", None),
     ("PGS000349", "Coronary artery disease", None),
