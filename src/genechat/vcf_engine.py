@@ -61,6 +61,10 @@ class VCFEngine:
         try:
             with pysam.VariantFile(str(self.vcf_path)) as vcf:
                 self._samples = list(vcf.header.samples)
+                # Detect whether VCF uses chr-prefixed contig names
+                self._vcf_uses_chr = any(
+                    c.startswith("chr") for c in vcf.header.contigs
+                )
         except Exception as e:
             raise VCFEngineError(f"Cannot open VCF: {e}") from e
 
@@ -116,6 +120,12 @@ class VCFEngine:
             for k, v in meta.items()
             if v["status"] == "complete" and k != "vcf_fingerprint"
         }
+
+    def _to_vcf_chrom(self, bare_chrom: str) -> str:
+        """Convert a bare chrom name (from patch.db) to the VCF's contig format."""
+        if self._vcf_uses_chr and not bare_chrom.startswith("chr"):
+            return f"chr{bare_chrom}"
+        return bare_chrom
 
     def _get_sample_index(self) -> int:
         """Return the sample index to use (0 unless sample_name specified)."""
@@ -200,7 +210,8 @@ class VCFEngine:
             with pysam.VariantFile(str(self.vcf_path)) as vcf:
                 sample_idx = self._get_sample_index()
                 for pr in patch_rows:
-                    region = f"{pr['chrom']}:{pr['pos']}-{pr['pos']}"
+                    vcf_chrom = self._to_vcf_chrom(pr["chrom"])
+                    region = f"{vcf_chrom}:{pr['pos']}-{pr['pos']}"
                     try:
                         for record in vcf.fetch(region=region):
                             alt = ",".join(record.alts) if record.alts else "."
@@ -252,7 +263,8 @@ class VCFEngine:
                 capped = False
                 for rsid, patch_rows in patch_results.items():
                     for pr in patch_rows:
-                        region = f"{pr['chrom']}:{pr['pos']}-{pr['pos']}"
+                        vcf_chrom = self._to_vcf_chrom(pr["chrom"])
+                        region = f"{vcf_chrom}:{pr['pos']}-{pr['pos']}"
                         try:
                             for record in vcf.fetch(region=region):
                                 alt = ",".join(record.alts) if record.alts else "."
@@ -315,7 +327,8 @@ class VCFEngine:
             with pysam.VariantFile(str(self.vcf_path)) as vcf:
                 sample_idx = self._get_sample_index()
                 for pr in patch_rows:
-                    region_str = f"{pr['chrom']}:{pr['pos']}-{pr['pos']}"
+                    vcf_chrom = self._to_vcf_chrom(pr["chrom"])
+                    region_str = f"{vcf_chrom}:{pr['pos']}-{pr['pos']}"
                     try:
                         for record in vcf.fetch(region=region_str):
                             alt = ",".join(record.alts) if record.alts else "."

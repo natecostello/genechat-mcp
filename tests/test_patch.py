@@ -2,7 +2,12 @@
 
 import pytest
 
-from genechat.patch import PatchDB, parse_vcf_stream, _extract_info_field
+from genechat.patch import (
+    PatchDB,
+    normalize_chrom,
+    parse_vcf_stream,
+    _extract_info_field,
+)
 
 
 # -- VCF stream parser tests --
@@ -47,7 +52,7 @@ class TestParseVcfStream:
         ]
         results = list(parse_vcf_stream(self._make_stream(lines), ["AF"]))
         assert len(results) == 1
-        assert results[0]["chrom"] == "chr1"
+        assert results[0]["chrom"] == "1"  # chr prefix stripped by normalize_chrom
         assert results[0]["pos"] == 100
         assert results[0]["rsid"] == "rs123"
         assert results[0]["AF"] == "0.1"
@@ -170,6 +175,15 @@ class TestPatchDBReadWrite:
         assert ann["af"] == pytest.approx(0.14)
         assert ann["af_grpmax"] == pytest.approx(0.21)
 
+    def test_normalize_chrom(self):
+        """normalize_chrom strips chr prefix consistently."""
+        assert normalize_chrom("chr1") == "1"
+        assert normalize_chrom("chr22") == "22"
+        assert normalize_chrom("chrX") == "X"
+        assert normalize_chrom("chrMT") == "MT"
+        assert normalize_chrom("1") == "1"
+        assert normalize_chrom("X") == "X"
+
     def test_update_gnomad_multiallelic_af(self, patch_db):
         """Multi-allelic AF values like '0.25,.' are parsed correctly.
 
@@ -224,6 +238,36 @@ class TestPatchDBReadWrite:
         assert PatchDB._parse_af(".,0.30") == pytest.approx(0.30)
         assert PatchDB._parse_af(".,.") is None
         assert PatchDB._parse_af("0.01,0.02") == pytest.approx(0.01)
+
+    def test_gnomad_cross_format_chrom(self, patch_db):
+        """gnomAD update matches even when SnpEff stored bare chrom names.
+
+        Reproduces issue #60: SnpEff outputs bare '1', gnomAD bcftools
+        outputs 'chr1'. Both are normalized to '1' in parse_vcf_stream,
+        so the UPDATE WHERE clause matches.
+        """
+        # SnpEff might output bare chrom name
+        snpeff_lines = [
+            "1\t500\t.\tA\tG\t.\tPASS\t"
+            "ANN=G|missense_variant|MODERATE|GENE1||\t"
+            "GT\t0/1\n"
+        ]
+        patch_db.populate_from_snpeff_stream(iter(snpeff_lines))
+
+        # gnomAD bcftools outputs chr-prefixed names
+        gnomad_lines = [
+            "chr1\t500\t.\tA\tG\t.\tPASS\tAF=0.05;AF_grpmax=0.08\tGT\t0/1\n"
+        ]
+        count = patch_db.update_gnomad_from_stream(iter(gnomad_lines))
+        assert count == 1
+
+        # Read back — both 'chr1' and '1' should find it
+        ann = patch_db.get_annotation("chr1", 500, "A", "G")
+        assert ann is not None
+        assert ann["af"] == pytest.approx(0.05)
+        ann2 = patch_db.get_annotation("1", 500, "A", "G")
+        assert ann2 is not None
+        assert ann2["af"] == pytest.approx(0.05)
 
     def test_update_dbsnp(self, patch_db):
         # Populate without rsID

@@ -12,6 +12,16 @@ from pathlib import Path
 
 from genechat.parsers import parse_ann_field
 
+
+def normalize_chrom(chrom: str) -> str:
+    """Normalize chromosome name to bare form (strip 'chr' prefix).
+
+    Ensures consistent storage regardless of whether SnpEff, bcftools,
+    or the source VCF uses 'chr'-prefixed contig names.
+    """
+    return chrom[3:] if chrom.startswith("chr") else chrom
+
+
 SCHEMA = """\
 PRAGMA journal_mode=WAL;
 
@@ -91,7 +101,7 @@ class PatchDB:
         """Get annotation for a single variant."""
         row = self._conn.execute(
             "SELECT * FROM annotations WHERE chrom=? AND pos=? AND ref=? AND alt=?",
-            (chrom, pos, ref, alt),
+            (normalize_chrom(chrom), pos, ref, alt),
         ).fetchone()
         return dict(row) if row else None
 
@@ -101,7 +111,7 @@ class PatchDB:
         """Get all annotations in a region, keyed by (pos, ref, alt)."""
         rows = self._conn.execute(
             "SELECT * FROM annotations WHERE chrom=? AND pos BETWEEN ? AND ?",
-            (chrom, start, end),
+            (normalize_chrom(chrom), start, end),
         ).fetchall()
         return {(r["pos"], r["ref"], r["alt"]): dict(r) for r in rows}
 
@@ -141,7 +151,7 @@ class PatchDB:
                 "WHERE clnsig IS NOT NULL "
                 "AND instr(lower(clnsig), lower(?)) > 0 "
                 "AND chrom=? AND pos BETWEEN ? AND ?",
-                (significance, chrom, start, end),
+                (significance, normalize_chrom(chrom), start, end),
             ).fetchall()
         else:
             rows = self._conn.execute(
@@ -510,7 +520,7 @@ def parse_vcf_stream(
         info = cols[7]
 
         extracted: dict = {
-            "chrom": chrom,
+            "chrom": normalize_chrom(chrom),
             "pos": int(pos_str),
             "ref": ref,
             "alt": alt,
