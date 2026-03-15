@@ -21,16 +21,17 @@ using `ProcessPoolExecutor` and per-chromosome temp SQLite databases.
 
 **`annotate_gnomad_chromosome(chrom, vcf_contig, vcf_path, gnomad_file, temp_db_path, chr_rename_map_path)`**
 - Creates lightweight temp SQLite DB with table `results`: `CREATE TABLE results (chrom TEXT, pos INT, ref TEXT, alt TEXT, af REAL, af_grpmax REAL, PRIMARY KEY(chrom, pos, ref, alt))`
-- Region arg uses `vcf_contig` (the resolved contig name from the input VCF header, passed by the orchestrator) for `-r {vcf_contig}`. This handles `chrM` vs `chrMT` correctly — the orchestrator inspects the VCF header once and passes the exact contig name to each worker.
-- If `chr_rename_map_path` is set (bare-contig VCF), pipes through `bcftools annotate --rename-chrs` **before** the annotation step so contigs match the reference (which uses chr-prefixed names)
+- Pipeline ordering for bare-contig VCFs: `bcftools view -r {vcf_contig} {vcf_path}` (region filter on original contig names) **|** `bcftools annotate --rename-chrs {map}` (rename bare→chr) **|** `bcftools annotate -a {gnomad_file} ...` (annotate against chr-prefixed reference). The `-r` arg uses the pre-rename contig name (`vcf_contig`); rename happens after region filtering but before annotation matching.
+- For chr-prefixed VCFs: no rename needed, just `bcftools annotate -a {gnomad_file} -r {vcf_contig} ...`
+- `vcf_contig` is the resolved contig name from the input VCF header, passed by the orchestrator. This handles `chrM` vs `chrMT` correctly.
 - For dbSNP MT: if user VCF has `chrM` but dbSNP uses `chrMT`, the rename map must handle this mismatch (rename `chrM` → `chrMT` for matching, or skip MT if contigs are irreconcilable)
 - Parses VCF stream, normalizes chrom to bare form via `normalize_chrom()` before inserting into temp DB (matching PatchDB convention)
 - Returns `(chrom, row_count, temp_db_path)`
 
 **`annotate_dbsnp_chromosome(chrom, vcf_contig, vcf_path, dbsnp_vcf, temp_db_path, chr_rename_map_path)`**
 - Creates temp DB with table `results`: `CREATE TABLE results (chrom TEXT, pos INT, ref TEXT, alt TEXT, rsid TEXT, PRIMARY KEY(chrom, pos, ref, alt))`
-- Region arg uses `vcf_contig` passed by orchestrator (same as gnomAD worker)
-- If `chr_rename_map_path` is set, pipes through rename before annotation
+- Same pipeline ordering as gnomAD: region filter (`-r {vcf_contig}`) → rename (if bare) → annotate
+- `vcf_contig` passed by orchestrator
 - MT contig: must detect `chrM` vs `chrMT` in input VCF header and align with dbSNP's `chrMT` convention via rename map
 - Normalizes chrom to bare form before inserting into temp DB
 - Returns `(chrom, row_count, temp_db_path)`
