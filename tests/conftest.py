@@ -15,13 +15,10 @@ DB_PATH = REPO_ROOT / "src" / "genechat" / "data" / "lookup_tables.db"
 
 @pytest.fixture(scope="session", autouse=True)
 def ensure_test_vcf():
-    """Auto-generate the test VCF if missing (session-scoped, runs once)."""
-    gz_path = TEST_DATA / "test_sample.vcf.gz"
-    tbi_path = TEST_DATA / "test_sample.vcf.gz.tbi"
-    if not gz_path.exists() or not tbi_path.exists():
-        from scripts.generate_test_vcf import generate_vcf
+    """Always regenerate the test VCF to stay in sync with generate_test_vcf.py."""
+    from scripts.generate_test_vcf import generate_vcf
 
-        generate_vcf()
+    generate_vcf()
 
 
 @pytest.fixture(scope="session", autouse=True)
