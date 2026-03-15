@@ -62,11 +62,18 @@ class VCFEngine:
             with pysam.VariantFile(str(self.vcf_path)) as vcf:
                 self._samples = list(vcf.header.samples)
                 # Detect whether VCF uses chr-prefixed contig names.
-                # Check multiple canonical contigs to handle panel/subset
-                # VCFs that may not include chr1.
-                contigs = set(vcf.header.contigs)
-                _CANONICAL_CHR = ("chr1", "chr2", "chr22", "chrX")
-                self._vcf_uses_chr = any(c in contigs for c in _CANONICAL_CHR)
+                # Check multiple canonical contigs (including mito) to
+                # handle panel/subset VCFs that may not include chr1.
+                self._vcf_contigs = set(vcf.header.contigs)
+                _CANONICAL_CHR = (
+                    "chr1",
+                    "chr2",
+                    "chr22",
+                    "chrX",
+                    "chrM",
+                    "chrMT",
+                )
+                self._vcf_uses_chr = any(c in self._vcf_contigs for c in _CANONICAL_CHR)
         except Exception as e:
             raise VCFEngineError(f"Cannot open VCF: {e}") from e
 
@@ -127,13 +134,25 @@ class VCFEngine:
         """Convert a chrom name (from patch.db) to the VCF's contig format.
 
         Handles both directions: adds 'chr' prefix when VCF uses it,
-        strips 'chr' prefix when VCF uses bare contig names.
+        strips 'chr' prefix when VCF uses bare contig names. For
+        mitochondrial contigs (M/MT), checks actual VCF header contigs
+        to pick the correct spelling.
         """
-        if self._vcf_uses_chr and not chrom.startswith("chr"):
-            return f"chr{chrom}"
-        if not self._vcf_uses_chr and chrom.startswith("chr"):
-            return chrom[3:]
-        return chrom
+        from genechat.patch import normalize_chrom
+
+        bare = normalize_chrom(chrom)
+
+        # Special handling for mito: VCFs use chrM or chrMT (or M/MT)
+        if bare == "MT":
+            for candidate in ("chrM", "chrMT", "M", "MT"):
+                if candidate in self._vcf_contigs:
+                    return candidate
+            # Fallback: apply general prefix rule
+            return "chrMT" if self._vcf_uses_chr else "MT"
+
+        if self._vcf_uses_chr:
+            return f"chr{bare}"
+        return bare
 
     def _get_sample_index(self) -> int:
         """Return the sample index to use (0 unless sample_name specified)."""
