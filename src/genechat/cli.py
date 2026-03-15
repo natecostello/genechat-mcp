@@ -1063,6 +1063,7 @@ def _annotate_clinvar(
     except Exception:
         if rename_proc and rename_proc.poll() is None:
             rename_proc.terminate()
+            rename_proc.wait()
         patch.set_metadata("clinvar", version or "unknown", status="failed")
         # Clean up work directory before re-raising
         import shutil as _shutil
@@ -1220,6 +1221,7 @@ def _annotate_gnomad(
                         proc.wait()
                 if rename_proc and rename_proc.poll() is None:
                     rename_proc.terminate()
+                    rename_proc.wait()
                 raise
             finally:
                 if proc.stdout is not None:
@@ -1334,6 +1336,7 @@ def _annotate_dbsnp(
                 proc.wait()
         if rename_proc is not None and rename_proc.poll() is None:
             rename_proc.terminate()
+            rename_proc.wait()
         patch.set_metadata("dbsnp", version or "unknown", status="failed")
         raise
 
@@ -1433,7 +1436,7 @@ def _detect_bare_contigs(vcf_path: Path) -> bool:
     """Check if a VCF uses bare contig names (1, 2, ...) instead of chr prefix."""
     import pysam
 
-    bare_names = {str(i) for i in range(1, 23)} | {"X", "Y", "MT"}
+    bare_names = {str(i) for i in range(1, 23)} | {"X", "Y", "MT", "M"}
     with pysam.VariantFile(str(vcf_path)) as vf:
         for contig in vf.header.contigs:
             if contig in bare_names:
