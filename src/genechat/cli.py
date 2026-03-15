@@ -1049,17 +1049,19 @@ def _annotate_clinvar(
             progress_callback=lambda n: progress.update(n),
         )
         rc = proc.wait()
+        if rc != 0:
+            stderr = proc.stderr.read() if proc.stderr else ""
+            if rename_proc:
+                rename_proc.wait()  # reap to avoid zombie
+            raise RuntimeError(
+                f"bcftools annotate (ClinVar) failed with exit code {rc}: {stderr}"
+            )
         if rename_proc:
             rename_rc = rename_proc.wait()
             if rename_rc != 0:
                 raise RuntimeError(
                     f"bcftools annotate --rename-chrs failed with exit code {rename_rc}"
                 )
-        if rc != 0:
-            stderr = proc.stderr.read() if proc.stderr else ""
-            raise RuntimeError(
-                f"bcftools annotate (ClinVar) failed with exit code {rc}: {stderr}"
-            )
     except Exception:
         if rename_proc and rename_proc.poll() is None:
             rename_proc.terminate()
@@ -1197,6 +1199,15 @@ def _annotate_gnomad(
                 )
                 total_rows += rows
                 rc = proc.wait()
+                progress.done(f"{rows:,} variants")
+                if rc != 0:
+                    stderr = proc.stderr.read() if proc.stderr else ""
+                    if rename_proc:
+                        rename_proc.wait()  # reap to avoid zombie
+                    raise RuntimeError(
+                        f"bcftools annotate (gnomAD) failed with exit code {rc} "
+                        f"on chr{chrom}: {stderr}"
+                    )
                 if rename_proc:
                     rename_rc = rename_proc.wait()
                     if rename_rc != 0:
@@ -1204,13 +1215,6 @@ def _annotate_gnomad(
                             f"bcftools annotate --rename-chrs failed with "
                             f"exit code {rename_rc} on chr{chrom}"
                         )
-                progress.done(f"{rows:,} variants")
-                if rc != 0:
-                    stderr = proc.stderr.read() if proc.stderr else ""
-                    raise RuntimeError(
-                        f"bcftools annotate (gnomAD) failed with exit code {rc} "
-                        f"on chr{chrom}: {stderr}"
-                    )
             except Exception:
                 if proc.poll() is None:
                     proc.terminate()
@@ -1309,6 +1313,15 @@ def _annotate_dbsnp(
                     progress_callback=lambda n: progress.update(n),
                 )
                 rc = proc.wait()
+                if rc != 0:
+                    stderr_file.seek(0)
+                    stderr_tail = stderr_file.read()[-500:]
+                    if rename_proc:
+                        rename_proc.wait()  # reap to avoid zombie
+                    raise RuntimeError(
+                        f"bcftools annotate (dbSNP) failed with exit code {rc}:"
+                        f" {stderr_tail}"
+                    )
                 if rename_proc:
                     rename_rc = rename_proc.wait()
                     if rename_rc != 0:
@@ -1316,13 +1329,6 @@ def _annotate_dbsnp(
                             f"bcftools annotate --rename-chrs failed with "
                             f"exit code {rename_rc}"
                         )
-                if rc != 0:
-                    stderr_file.seek(0)
-                    stderr_tail = stderr_file.read()[-500:]
-                    raise RuntimeError(
-                        f"bcftools annotate (dbSNP) failed with exit code {rc}:"
-                        f" {stderr_tail}"
-                    )
             finally:
                 if proc.stdout is not None:
                     proc.stdout.close()
