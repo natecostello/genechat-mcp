@@ -345,13 +345,13 @@ class PatchDB:
         batch = []
         for record in parse_vcf_stream(stream, ["AF", "AF_grpmax", "AF_popmax"]):
             records_seen += 1
+            if progress_callback and records_seen - last_report >= 10_000:
+                progress_callback(records_seen)
+                last_report = records_seen
             af = record.get("AF")
             # Prefer AF_popmax, fall back to AF_grpmax (gnomAD v4 renamed it)
             af_grpmax = record.get("AF_popmax") or record.get("AF_grpmax")
             if af is None and af_grpmax is None:
-                if progress_callback and records_seen - last_report >= 10_000:
-                    progress_callback(records_seen)
-                    last_report = records_seen
                 continue
             parsed_af = self._parse_af(af)
             parsed_af_grpmax = self._parse_af(af_grpmax)
@@ -370,9 +370,6 @@ class PatchDB:
             if len(batch) >= 10_000:
                 count += self._update_gnomad_batch(batch)
                 batch.clear()
-                if progress_callback and records_seen - last_report >= 10_000:
-                    progress_callback(records_seen)
-                    last_report = records_seen
         if batch:
             count += self._update_gnomad_batch(batch)
         if progress_callback:
