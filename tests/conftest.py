@@ -74,8 +74,17 @@ def ensure_test_patch_db(ensure_test_vcf):
             )
             ann_lines.append(line)
 
+    # Simulate cross-tool contig mismatch (issue #60): SnpEff strips chr
+    # prefix while bcftools (ClinVar, gnomAD) preserves it
+    snpeff_lines = []
+    for line in ann_lines:
+        if line.startswith("chr"):
+            line = line[3:]  # "chr1\t..." -> "1\t..."
+        snpeff_lines.append(line)
+
     db = PatchDB.create(patch_path)
-    db.populate_from_snpeff_stream(iter(ann_lines))
+    db.populate_from_snpeff_stream(iter(snpeff_lines))
+    # ClinVar and gnomAD streams keep chr prefix (bcftools behavior)
     db.update_clinvar_from_stream(iter(ann_lines))
     db.update_gnomad_from_stream(iter(ann_lines))
     db.store_vcf_fingerprint(vcf_path)

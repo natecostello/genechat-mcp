@@ -38,6 +38,16 @@ class TestExtractInfoField:
         assert _extract_info_field(info, "ANN") == "T|splice_donor_variant|HIGH|DPYD"
         assert _extract_info_field(info, "CLNSIG") == "Pathogenic"
 
+    def test_multiallelic_af_value(self):
+        """Multi-allelic AF values are extracted as raw comma-separated strings."""
+        assert _extract_info_field("AF=0.25,.", "AF") == "0.25,."
+
+    def test_multiallelic_af_grpmax(self):
+        assert _extract_info_field("AF=0.1;AF_grpmax=.,0.30", "AF_grpmax") == ".,0.30"
+
+    def test_all_missing_af(self):
+        assert _extract_info_field("AF=.,.;AC=5", "AF") == ".,."
+
 
 class TestParseVcfStream:
     def _make_stream(self, lines):
@@ -85,6 +95,22 @@ class TestParseVcfStream:
         lines = [f"chr12\t21178615\trs4149056\tT\tC\t.\tPASS\tANN={ann}\tGT\t0/1\n"]
         results = list(parse_vcf_stream(self._make_stream(lines), ["ANN"]))
         assert results[0]["ANN"] == ann
+
+    def test_bare_chrom_normalized(self):
+        """Bare contig names (no chr prefix) are normalized correctly."""
+        lines = ["1\t100\trs123\tA\tG\t.\tPASS\tAF=0.1\tGT\t0/1\n"]
+        results = list(parse_vcf_stream(self._make_stream(lines), ["AF"]))
+        assert results[0]["chrom"] == "1"  # Already bare, should stay bare
+
+    def test_mixed_chrom_formats(self):
+        """Mixed chr-prefixed and bare contig names both normalize."""
+        lines = [
+            "chr1\t100\t.\tA\tG\t.\tPASS\t.\tGT\t0/1\n",
+            "2\t200\t.\tC\tT\t.\tPASS\t.\tGT\t0/1\n",
+        ]
+        results = list(parse_vcf_stream(self._make_stream(lines), []))
+        assert results[0]["chrom"] == "1"
+        assert results[1]["chrom"] == "2"
 
 
 # -- PatchDB tests --
@@ -454,6 +480,119 @@ class TestPatchDBLegacyCompat:
         ann = db.get_annotation("chr1", 500, "A", "G")
         assert ann is not None
         assert ann["af"] == pytest.approx(0.05)
+        db.close()
+
+
+class TestAnnotationPipelineSimulation:
+    """Simulate the full annotation pipeline with realistic tool output differences.
+
+    Each annotation step in production uses a different external tool that may
+    produce different contig naming conventions. These tests verify the complete
+    pipeline sequence works end-to-end.
+    """
+
+    def test_full_pipeline_cross_format_contigs(self, tmp_path):
+        """SnpEff bare contigs + bcftools chr-prefixed contigs -> all data present."""
+        db = PatchDB.create(tmp_path / "pipeline.db")
+
+        # Step 1: SnpEff outputs bare contig names
+        snpeff_lines = [
+            "1\t100\t.\tA\tG\t.\tPASS\tANN=G|missense_variant|MODERATE|GENE1||\tGT\t0/1\n",
+            "12\t21178615\t.\tT\tC\t.\tPASS\t"
+            "ANN=C|missense_variant|MODERATE|SLCO1B1|ENSG|transcript|ENST|protein_coding||c.521T>C|p.Val174Ala||||||\t"
+            "GT\t0/1\n",
+        ]
+        snpeff_count = db.populate_from_snpeff_stream(iter(snpeff_lines))
+        assert snpeff_count == 2
+
+        # Step 2: bcftools ClinVar outputs chr-prefixed names
+        clinvar_lines = [
+            "chr12\t21178615\t.\tT\tC\t.\tPASS\t"
+            "CLNSIG=drug_response;CLNDN=Simvastatin;CLNREVSTAT=reviewed\tGT\t0/1\n"
+        ]
+        clinvar_count = db.update_clinvar_from_stream(iter(clinvar_lines))
+        assert clinvar_count == 1  # Must match despite different prefix
+
+        # Step 3: bcftools gnomAD outputs chr-prefixed names with multi-allelic AF
+        gnomad_lines = [
+            "chr1\t100\t.\tA\tG\t.\tPASS\tAF=0.03,.;AF_grpmax=.,0.05\tGT\t0/1\n",
+            "chr12\t21178615\t.\tT\tC\t.\tPASS\tAF=0.14;AF_grpmax=0.21\tGT\t0/1\n",
+        ]
+        gnomad_count = db.update_gnomad_from_stream(iter(gnomad_lines))
+        assert gnomad_count == 2  # Must match despite different prefix
+
+        # Step 4: dbSNP backfill with chr-prefixed names
+        dbsnp_lines = [
+            "chr1\t100\trs999\tA\tG\t.\tPASS\t.\tGT\t0/1\n",
+            "chr12\t21178615\trs4149056\tT\tC\t.\tPASS\t.\tGT\t0/1\n",
+        ]
+        dbsnp_count = db.update_dbsnp_from_stream(iter(dbsnp_lines))
+        assert dbsnp_count == 2
+
+        # Verify all data is present and readable
+        ann1 = db.get_annotation("chr1", 100, "A", "G")
+        assert ann1 is not None
+        assert ann1["af"] == pytest.approx(0.03)  # parsed from "0.03,."
+        assert ann1["af_grpmax"] == pytest.approx(0.05)  # parsed from ".,0.05"
+        assert ann1["rsid"] == "rs999"
+
+        ann2 = db.get_annotation("chr12", 21178615, "T", "C")
+        assert ann2 is not None
+        assert ann2["gene"] == "SLCO1B1"
+        assert ann2["clnsig"] == "drug_response"
+        assert ann2["af"] == pytest.approx(0.14)
+        assert ann2["rsid"] == "rs4149056"
+
+        db.close()
+
+    def test_pipeline_reports_zero_updates_on_mismatch(self, tmp_path):
+        """Detect if a contig format mismatch causes silent zero-update.
+
+        This is a canary test: if normalize_chrom or _chrom_variants_fixed
+        regresses, this test fails with gnomad_count == 0.
+        """
+        db = PatchDB.create(tmp_path / "mismatch.db")
+
+        # Populate with bare contigs (simulating SnpEff)
+        db._conn.execute(
+            "INSERT INTO annotations (chrom, pos, ref, alt, gene) "
+            "VALUES ('1', 500, 'A', 'G', 'TEST')"
+        )
+        db._conn.commit()
+
+        # Update with chr-prefixed contigs (simulating bcftools gnomAD)
+        gnomad_lines = [
+            "chr1\t500\t.\tA\tG\t.\tPASS\tAF=0.10;AF_grpmax=0.15\tGT\t0/1\n"
+        ]
+        count = db.update_gnomad_from_stream(iter(gnomad_lines))
+        assert count == 1, (
+            f"gnomAD update matched {count} rows (expected 1). "
+            "Contig normalization may have regressed — see issue #60."
+        )
+        db.close()
+
+    def test_pipeline_with_multiallelic_af(self, tmp_path):
+        """Full pipeline handles multi-allelic AF values correctly."""
+        db = PatchDB.create(tmp_path / "multiallelic.db")
+
+        # SnpEff with bare contigs
+        snpeff_lines = [
+            "14\t94844947\t.\tG\tA\t.\tPASS\t"
+            "ANN=A|missense_variant|MODERATE|SERPINA1||\tGT\t0/1\n"
+        ]
+        db.populate_from_snpeff_stream(iter(snpeff_lines))
+
+        # gnomAD with chr-prefixed contigs and multi-allelic AF
+        gnomad_lines = [
+            "chr14\t94844947\t.\tG\tA\t.\tPASS\tAF=0.03,.;AF_popmax=.,0.05\tGT\t0/1\n"
+        ]
+        count = db.update_gnomad_from_stream(iter(gnomad_lines))
+        assert count == 1
+
+        ann = db.get_annotation("14", 94844947, "G", "A")
+        assert ann is not None
+        assert ann["af"] == pytest.approx(0.03)
+        assert ann["af_grpmax"] == pytest.approx(0.05)
         db.close()
 
 

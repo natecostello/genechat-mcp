@@ -393,6 +393,33 @@ VARIANTS = [
         "AF=0.30;AF_popmax=0.35",
         "0/1",
     ),
+    # Multi-allelic AF from gnomAD: biallelic user site, multi-allelic gnomAD source (chr14)
+    (
+        "chr14",
+        94844947,
+        "rs12879035",
+        "G",
+        "A",
+        ".",
+        "PASS",
+        "ANN=A|missense_variant|MODERATE|SERPINA1|ENSG00000197249|transcript|ENST00000440909|protein_coding||c.863A>T|p.Glu288Val||||||;"
+        "AF=0.03,.;AF_popmax=.,0.05",
+        "0/1",
+    ),
+    # All-missing AF: gnomAD has no data for any allele (chr17)
+    (
+        "chr17",
+        7674220,
+        "rs28934578",
+        "G",
+        "C",
+        ".",
+        "PASS",
+        "ANN=C|missense_variant|MODERATE|TP53|ENSG00000141510|transcript|ENST00000269305|protein_coding||c.743G>C|p.Arg248Thr||||||;"
+        "CLNSIG=Pathogenic;CLNDN=Li-Fraumeni_syndrome;"
+        "CLNREVSTAT=reviewed_by_expert_panel;AF=.,.;AF_popmax=.",
+        "0/1",
+    ),
 ]
 
 

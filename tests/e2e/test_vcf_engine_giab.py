@@ -104,6 +104,26 @@ class TestEngineBasics:
         # May or may not be empty, but should not error
         assert isinstance(variants, list)
 
+    def test_gnomad_data_populated(self, giab_engine):
+        """At least some variants in a well-covered region should have AF data.
+
+        Catches issue #60 where gnomAD annotation silently wrote 0 variants.
+        """
+        # BRCA1 region — well covered by gnomAD exomes
+        variants = giab_engine.query_region("chr17:43044295-43170245")
+        if not variants:
+            pytest.skip("No variants in BRCA1 region")
+
+        has_af = [
+            v
+            for v in variants
+            if v.get("population_freq", {}).get("global") is not None
+        ]
+        assert len(has_af) > 0, (
+            f"Found {len(variants)} variants in BRCA1 but none have gnomAD AF. "
+            "gnomAD annotation may have silently failed (see issue #60)."
+        )
+
     def test_variant_dict_structure(self, giab_engine):
         """Verify variant dicts have the expected structure."""
         # Query a region known to have variants
