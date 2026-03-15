@@ -16,9 +16,10 @@ wall-clock time from 25+ hours to ~8-10 hours on `performance-2x` (2 vCPU,
 each chromosome is processed one at a time for both gnomAD and dbSNP.
 
 On multi-core machines, the annotation pipeline is limited by single-threaded
-bcftools processing and SQLite writes. gnomAD annotation across 24 chromosomes
-takes ~6 hours sequentially on `performance-2x`; dbSNP takes ~2 hours.
-Parallelizing across chromosomes could reduce this to ~1-2 hours total.
+bcftools processing and SQLite writes. gnomAD annotation across 24 contigs (1-22, X, Y)
+takes ~6 hours sequentially on `performance-2x`; dbSNP across 25 contigs
+(adds chrMT) takes ~2 hours. Parallelizing across contigs could reduce
+this to ~1-2 hours total.
 
 ## Decision Drivers
 
@@ -88,7 +89,7 @@ Plan: `docs/plans/parallel-annotation.md` (created at 45b2ed1)
 - Good: Clean failure semantics — discard temp DB on worker error
 - Good: Merge is a simple single-threaded ATTACH + INSERT/UPDATE
 - Bad: ~120 MB additional temp disk (negligible)
-- Bad: Merge adds a sequential phase (~30s for 24 chromosomes)
+- Bad: Merge adds a sequential phase (~30s for 24-25 contigs)
 
 ### Option 2: WAL mode + busy-timeout retry
 
@@ -104,7 +105,7 @@ Plan: `docs/plans/parallel-annotation.md` (created at 45b2ed1)
 - Good: Workers stay simple (just produce tuples)
 - Bad: Queue becomes a bottleneck if workers produce faster than consumer writes
 - Bad: Complex coordination: queue draining, backpressure, shutdown ordering
-- Bad: Over-engineered for 24 chromosomes with moderate write volume
+- Bad: Over-engineered for 24-25 contigs with moderate write volume
 
 ## More Information
 

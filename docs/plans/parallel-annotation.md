@@ -50,7 +50,7 @@ using `ProcessPoolExecutor` and per-chromosome temp SQLite databases.
 - Determines worker count: `min(cpu_count, len(chroms), MAX_WORKERS)` where `MAX_WORKERS = 8`
 - Creates temp directory for per-chromosome DBs
 - Submits tasks via `ProcessPoolExecutor`
-- Uses `as_completed()` for progress reporting: `"chr1 complete: 45,231 variants [4/24]"`
+- Uses `as_completed()` for progress reporting: `"chr1 complete: 45,231 variants [4/N]"` (N varies: gnomAD=24, dbSNP=25)
 - Calls `merge_temp_databases()` after all complete
 - Returns total rows
 - `finally:` cleans up temp directory
