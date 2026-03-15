@@ -1,5 +1,5 @@
 # Copilot Instructions
-<!-- rev: 2 -->
+<!-- rev: 3 -->
 
 ## Role
 
@@ -9,6 +9,23 @@ rather than descriptive-only feedback.
 
 Do NOT act as a coding agent. Do NOT open sub-PRs, create branches, or push commits.
 All feedback must be review comments.
+
+## Review Priority
+
+Focus review effort in this order. Do not spend budget on lower tiers until higher
+tiers have been thoroughly checked. A round that catches a typo but misses a silent
+data-loss bug is a failed review.
+
+1. **Correctness** — Would this work if implemented/deployed as written? Check data
+   flow between components, implicit assumptions, edge cases, join/key consistency,
+   and off-by-one or empty-input scenarios
+2. **Breaking changes** — Does this silently break existing behavior, contracts, or
+   downstream consumers?
+3. **Security** — Injection, data exposure, unsafe operations, credential handling
+4. **Compatibility** — Version requirements, platform assumptions, dependency
+   constraints that aren't documented
+5. **Consistency** — Naming, conventions, cross-reference accuracy
+6. **Cosmetics** — Formatting, wording, documentation polish
 
 ## Repository Summary
 
@@ -58,6 +75,7 @@ High-risk areas:
 - `src/genechat/vcf_engine.py` — all VCF queries flow through this; bugs here break every tool
 - `data/seed/*.tsv` — genomic positions must be GRCh38 with chr prefix; wrong coords = wrong results
 - `src/genechat/parsers/` — parse VCF INFO fields; subtle bugs silently drop clinical data
+- `src/genechat/cli.py` annotation pipeline — handles contig name normalization (bare `1` vs chr-prefixed `chr1`), subprocess piping, and PatchDB writes; wrong contig handling silently produces empty annotations
 
 ## Project Layout
 
@@ -109,6 +127,8 @@ Configuration files:
 - `query_regions()` returns a flat list of variants; callers must map results back to input regions by `chrom:pos` key. It also signals truncation via `_truncated` on the last variant — callers must check this
 - `query_rsids()` returns a dict with an optional `_truncated` sentinel key — callers must pop and handle it, not silently discard
 - gnomAD v4 uses `AF_grpmax` (not `AF_popmax`); `VCFEngine._record_to_dict()` has a 2-line fallback
+- Annotation pipeline must handle both bare-contig (`1`, `2`, `MT`) and chr-prefixed (`chr1`, `chr2`, `chrM`) VCFs. Region arguments (`-r`), rename pipes, and database joins must all account for the input contig style. `PatchDB` normalizes to bare form internally
+- gnomAD uses 24 contigs (1-22, X, Y); dbSNP uses 25 (adds MT). These counts differ and must not be hard-coded interchangeably
 
 ## Planning Documents
 
@@ -125,6 +145,17 @@ with the architecture, tool specifications, and seed data schemas defined there.
 - Medical disclaimer appended to every clinical result
 - All VCF queries go through `VCFEngine` — tools never touch pysam directly
 - Commit messages use imperative mood; `fix:` prefix for review-driven changes
+
+## Plan and Design Document Reviews
+
+When reviewing plans, ADRs, RFCs, or other design documents (not code):
+
+- Verify described steps would work correctly if implemented as written
+- Check that data formats, schemas, and join keys are consistent across components
+- Flag implicit assumptions that could cause silent failures at implementation time
+- Check version or compatibility requirements are stated, not assumed
+- Verify edge cases are addressed (different input formats, missing data, empty sets)
+- Do not focus on prose style or markdown formatting — focus on technical soundness
 
 ## Code Review Focus Areas
 
@@ -152,4 +183,4 @@ with the architecture, tool specifications, and seed data schemas defined there.
 - Do not flag the use of `dict` return types from VCFEngine — tools expect untyped dicts by design
 - Do not suggest replacing pysam with bcftools subprocess calls — pysam is the intentional choice
 
-[copilot-instructions rev 2]
+[copilot-instructions rev 3]
