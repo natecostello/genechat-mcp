@@ -269,16 +269,16 @@ def _parse_gnomad_to_db(conn: sqlite3.Connection, proc: subprocess.Popen) -> int
             )
         )
         if len(batch) >= 10_000:
-            conn.executemany(
+            cur = conn.executemany(
                 "INSERT OR IGNORE INTO results VALUES (?, ?, ?, ?, ?, ?)", batch
             )
-            count += len(batch)
+            count += cur.rowcount
             batch.clear()
     if batch:
-        conn.executemany(
+        cur = conn.executemany(
             "INSERT OR IGNORE INTO results VALUES (?, ?, ?, ?, ?, ?)", batch
         )
-        count += len(batch)
+        count += cur.rowcount
     return count
 
 
@@ -300,14 +300,16 @@ def _parse_dbsnp_to_db(conn: sqlite3.Connection, proc: subprocess.Popen) -> int:
             )
         )
         if len(batch) >= 10_000:
-            conn.executemany(
+            cur = conn.executemany(
                 "INSERT OR IGNORE INTO results VALUES (?, ?, ?, ?, ?)", batch
             )
-            count += len(batch)
+            count += cur.rowcount
             batch.clear()
     if batch:
-        conn.executemany("INSERT OR IGNORE INTO results VALUES (?, ?, ?, ?, ?)", batch)
-        count += len(batch)
+        cur = conn.executemany(
+            "INSERT OR IGNORE INTO results VALUES (?, ?, ?, ?, ?)", batch
+        )
+        count += cur.rowcount
     return count
 
 
@@ -375,62 +377,63 @@ def merge_temp_databases(
             continue
 
         conn.execute("ATTACH DATABASE ? AS tmpdb", (temp_path,))
+        try:
+            if layer == "gnomad":
+                if use_update_from:
+                    cur = conn.execute(
+                        "UPDATE annotations SET af = tmpdb.results.af, "
+                        "af_grpmax = tmpdb.results.af_grpmax "
+                        "FROM tmpdb.results "
+                        "WHERE annotations.chrom = tmpdb.results.chrom "
+                        "AND annotations.pos = tmpdb.results.pos "
+                        "AND annotations.ref = tmpdb.results.ref "
+                        "AND annotations.alt = tmpdb.results.alt"
+                    )
+                else:
+                    cur = conn.execute(
+                        "UPDATE annotations SET "
+                        "af = (SELECT r.af FROM tmpdb.results r "
+                        "  WHERE r.chrom = annotations.chrom AND r.pos = annotations.pos "
+                        "  AND r.ref = annotations.ref AND r.alt = annotations.alt), "
+                        "af_grpmax = (SELECT r.af_grpmax FROM tmpdb.results r "
+                        "  WHERE r.chrom = annotations.chrom AND r.pos = annotations.pos "
+                        "  AND r.ref = annotations.ref AND r.alt = annotations.alt) "
+                        "WHERE EXISTS (SELECT 1 FROM tmpdb.results r "
+                        "  WHERE r.chrom = annotations.chrom AND r.pos = annotations.pos "
+                        "  AND r.ref = annotations.ref AND r.alt = annotations.alt)"
+                    )
+                total += cur.rowcount
 
-        if layer == "gnomad":
-            if use_update_from:
-                cur = conn.execute(
-                    "UPDATE annotations SET af = tmpdb.results.af, "
-                    "af_grpmax = tmpdb.results.af_grpmax "
-                    "FROM tmpdb.results "
-                    "WHERE annotations.chrom = tmpdb.results.chrom "
-                    "AND annotations.pos = tmpdb.results.pos "
-                    "AND annotations.ref = tmpdb.results.ref "
-                    "AND annotations.alt = tmpdb.results.alt"
-                )
-            else:
-                cur = conn.execute(
-                    "UPDATE annotations SET "
-                    "af = (SELECT r.af FROM tmpdb.results r "
-                    "  WHERE r.chrom = annotations.chrom AND r.pos = annotations.pos "
-                    "  AND r.ref = annotations.ref AND r.alt = annotations.alt), "
-                    "af_grpmax = (SELECT r.af_grpmax FROM tmpdb.results r "
-                    "  WHERE r.chrom = annotations.chrom AND r.pos = annotations.pos "
-                    "  AND r.ref = annotations.ref AND r.alt = annotations.alt) "
-                    "WHERE EXISTS (SELECT 1 FROM tmpdb.results r "
-                    "  WHERE r.chrom = annotations.chrom AND r.pos = annotations.pos "
-                    "  AND r.ref = annotations.ref AND r.alt = annotations.alt)"
-                )
-            total += cur.rowcount
+            elif layer == "dbsnp":
+                if use_update_from:
+                    cur = conn.execute(
+                        "UPDATE annotations SET rsid = tmpdb.results.rsid, "
+                        "rsid_source = 'dbsnp' "
+                        "FROM tmpdb.results "
+                        "WHERE annotations.chrom = tmpdb.results.chrom "
+                        "AND annotations.pos = tmpdb.results.pos "
+                        "AND annotations.ref = tmpdb.results.ref "
+                        "AND annotations.alt = tmpdb.results.alt "
+                        "AND annotations.rsid IS NULL"
+                    )
+                else:
+                    cur = conn.execute(
+                        "UPDATE annotations SET "
+                        "rsid = (SELECT r.rsid FROM tmpdb.results r "
+                        "  WHERE r.chrom = annotations.chrom AND r.pos = annotations.pos "
+                        "  AND r.ref = annotations.ref AND r.alt = annotations.alt), "
+                        "rsid_source = 'dbsnp' "
+                        "WHERE annotations.rsid IS NULL "
+                        "AND EXISTS (SELECT 1 FROM tmpdb.results r "
+                        "  WHERE r.chrom = annotations.chrom AND r.pos = annotations.pos "
+                        "  AND r.ref = annotations.ref AND r.alt = annotations.alt)"
+                    )
+                total += cur.rowcount
 
-        elif layer == "dbsnp":
-            if use_update_from:
-                cur = conn.execute(
-                    "UPDATE annotations SET rsid = tmpdb.results.rsid, "
-                    "rsid_source = 'dbsnp' "
-                    "FROM tmpdb.results "
-                    "WHERE annotations.chrom = tmpdb.results.chrom "
-                    "AND annotations.pos = tmpdb.results.pos "
-                    "AND annotations.ref = tmpdb.results.ref "
-                    "AND annotations.alt = tmpdb.results.alt "
-                    "AND annotations.rsid IS NULL"
-                )
-            else:
-                cur = conn.execute(
-                    "UPDATE annotations SET "
-                    "rsid = (SELECT r.rsid FROM tmpdb.results r "
-                    "  WHERE r.chrom = annotations.chrom AND r.pos = annotations.pos "
-                    "  AND r.ref = annotations.ref AND r.alt = annotations.alt), "
-                    "rsid_source = 'dbsnp' "
-                    "WHERE annotations.rsid IS NULL "
-                    "AND EXISTS (SELECT 1 FROM tmpdb.results r "
-                    "  WHERE r.chrom = annotations.chrom AND r.pos = annotations.pos "
-                    "  AND r.ref = annotations.ref AND r.alt = annotations.alt)"
-                )
-            total += cur.rowcount
-
-        conn.commit()
-        conn.execute("DETACH DATABASE tmpdb")
-        Path(temp_path).unlink(missing_ok=True)
+            conn.commit()
+        finally:
+            conn.execute("DETACH DATABASE tmpdb")
+            Path(temp_path).unlink(missing_ok=True)
 
     conn.close()
     return total
