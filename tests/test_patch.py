@@ -170,6 +170,61 @@ class TestPatchDBReadWrite:
         assert ann["af"] == pytest.approx(0.14)
         assert ann["af_grpmax"] == pytest.approx(0.21)
 
+    def test_update_gnomad_multiallelic_af(self, patch_db):
+        """Multi-allelic AF values like '0.25,.' are parsed correctly.
+
+        bcftools annotate transfers gnomAD Number=A fields verbatim into
+        the output stream. When gnomAD's source site is multi-allelic, the
+        AF value contains comma-separated entries even though the user's
+        VCF record may have a single ALT allele. _parse_af() extracts the
+        first valid float from such values.
+        """
+        snpeff_lines = [
+            "chr1\t100\t.\tA\tG\t.\tPASS\t"
+            "ANN=G|missense_variant|MODERATE|GENE1||\t"
+            "GT\t0/1\n"
+        ]
+        patch_db.populate_from_snpeff_stream(iter(snpeff_lines))
+
+        # bcftools transfers gnomAD's multi-allelic AF verbatim into
+        # the user's single-ALT record
+        gnomad_lines = [
+            "chr1\t100\t.\tA\tG\t.\tPASS\tAF=0.25,.;AF_grpmax=.,0.30\tGT\t0/1\n"
+        ]
+        count = patch_db.update_gnomad_from_stream(iter(gnomad_lines))
+        assert count == 1
+
+        ann = patch_db.get_annotation("chr1", 100, "A", "G")
+        assert ann["af"] == pytest.approx(0.25)
+        assert ann["af_grpmax"] == pytest.approx(0.30)
+
+    def test_update_gnomad_all_missing_af(self, patch_db):
+        """AF values that are all missing (e.g. '.,.' ) are skipped entirely."""
+        snpeff_lines = [
+            "chr1\t200\t.\tC\tT\t.\tPASS\t"
+            "ANN=T|synonymous_variant|LOW|GENE2||\t"
+            "GT\t0/1\n"
+        ]
+        patch_db.populate_from_snpeff_stream(iter(snpeff_lines))
+
+        gnomad_lines = ["chr1\t200\t.\tC\tT\t.\tPASS\tAF=.,.;AF_grpmax=.\tGT\t0/1\n"]
+        count = patch_db.update_gnomad_from_stream(iter(gnomad_lines))
+        # Both parsed AFs are None, so the record is skipped (no UPDATE)
+        assert count == 0
+
+    def test_parse_af_helper(self):
+        """Unit tests for _parse_af static method."""
+        from genechat.patch import PatchDB
+
+        assert PatchDB._parse_af(None) is None
+        assert PatchDB._parse_af("") is None
+        assert PatchDB._parse_af(".") is None
+        assert PatchDB._parse_af("0.14") == pytest.approx(0.14)
+        assert PatchDB._parse_af("0.25,.") == pytest.approx(0.25)
+        assert PatchDB._parse_af(".,0.30") == pytest.approx(0.30)
+        assert PatchDB._parse_af(".,.") is None
+        assert PatchDB._parse_af("0.01,0.02") == pytest.approx(0.01)
+
     def test_update_dbsnp(self, patch_db):
         # Populate without rsID
         snpeff_lines = [
