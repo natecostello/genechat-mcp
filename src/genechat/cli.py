@@ -1039,7 +1039,7 @@ def _annotate_clinvar(
                     str(vcf_path),
                 ],
                 stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
             )
             proc = subprocess.Popen(
                 [
@@ -1087,10 +1087,8 @@ def _annotate_clinvar(
         if rename_proc:
             rename_rc = rename_proc.wait()
             if rename_rc != 0:
-                rename_stderr = rename_proc.stderr.read() if rename_proc.stderr else ""
                 raise RuntimeError(
-                    f"bcftools annotate --rename-chrs failed with exit code "
-                    f"{rename_rc}: {rename_stderr}"
+                    f"bcftools annotate --rename-chrs failed with exit code {rename_rc}"
                 )
     except Exception:
         if proc is not None and proc.poll() is None:
@@ -1212,7 +1210,7 @@ def _annotate_gnomad(
                         str(vcf_path),
                     ],
                     stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
+                    stderr=subprocess.DEVNULL,
                 )
                 proc = subprocess.Popen(
                     [
@@ -1266,13 +1264,9 @@ def _annotate_gnomad(
                 if rename_proc:
                     rename_rc = rename_proc.wait()
                     if rename_rc != 0:
-                        rename_stderr = (
-                            rename_proc.stderr.read() if rename_proc.stderr else ""
-                        )
                         raise RuntimeError(
                             f"bcftools annotate --rename-chrs failed with "
-                            f"exit code {rename_rc} on chr{chrom}: "
-                            f"{rename_stderr}"
+                            f"exit code {rename_rc} on chr{chrom}"
                         )
             except Exception:
                 if proc.poll() is None:
@@ -1353,7 +1347,7 @@ def _annotate_dbsnp(
                         str(vcf_path),
                     ],
                     stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
+                    stderr=subprocess.DEVNULL,
                 )
                 proc = subprocess.Popen(
                     ["bcftools", "annotate", "-a", str(dbsnp_vcf), "-c", "ID", "-"],
@@ -1396,12 +1390,9 @@ def _annotate_dbsnp(
                 if rename_proc:
                     rename_rc = rename_proc.wait()
                     if rename_rc != 0:
-                        rename_stderr = (
-                            rename_proc.stderr.read() if rename_proc.stderr else ""
-                        )
                         raise RuntimeError(
                             f"bcftools annotate --rename-chrs failed with "
-                            f"exit code {rename_rc}: {rename_stderr}"
+                            f"exit code {rename_rc}"
                         )
             finally:
                 if proc.stdout is not None:
