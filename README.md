@@ -152,7 +152,7 @@ gnomAD is optional; without it, `query_gene` falls back to ClinVar-only filterin
 
 > **Time estimate:** Default init takes ~10–15 minutes (SnpEff + ClinVar). With `--gnomad`, expect several hours — it downloads and processes ~150 GB of per-chromosome data. Consider running `genechat init --gnomad` overnight.
 
-> **Fast mode:** Add `--fast` to bulk-download references instead of incremental processing — ~20x faster but requires ~180 GB peak disk. Useful on machines with ample storage (e.g. `genechat init --gnomad --dbsnp --fast`).
+> **Fast mode:** Add `--fast` to bulk-download references and parallelize annotation across chromosomes — ~20x faster but requires ~180 GB peak disk. Useful on machines with ample storage (e.g. `genechat init --gnomad --dbsnp --fast`).
 
 ### Don't have your genome sequenced?
 

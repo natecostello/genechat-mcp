@@ -14,4 +14,4 @@ significant decisions.
 | [0007](0007-per-chromosome-dbsnp-download.md) | Per-chromosome dbSNP download via remote region queries | Accepted |
 | [0008](0008-enhanced-warning-genes.md) | Enhanced warnings for high-impact gene results | Accepted |
 | [0009](0009-fast-annotation-mode.md) | Fast annotation mode (`--fast` flag) | Accepted |
-| [0010](0010-parallel-annotation.md) | Parallel per-chromosome annotation in `--fast` mode | Proposed |
+| [0010](0010-parallel-annotation.md) | Parallel per-chromosome annotation in `--fast` mode | Accepted |
