@@ -116,6 +116,7 @@ Plan: `docs/plans/parallel-annotation.md` (created at 45b2ed1)
 ## More Information
 
 - GitHub issue: #66
+- Implementing PR: #68
 - ADR-0009: Fast annotation mode (`--fast` flag)
 - ADR-0001: Patch architecture (SQLite overlay design)
 - `concurrent.futures.ProcessPoolExecutor` stdlib docs
