@@ -21,15 +21,17 @@ using `ProcessPoolExecutor` and per-chromosome temp SQLite databases.
 
 **`annotate_gnomad_chromosome(chrom, vcf_path, gnomad_file, temp_db_path, chr_rename_map_path)`**
 - Creates lightweight temp SQLite DB with table `results`: `CREATE TABLE results (chrom TEXT, pos INT, ref TEXT, alt TEXT, af REAL, af_grpmax REAL, PRIMARY KEY(chrom, pos, ref, alt))`
-- Region arg uses input VCF's contig style: `-r chr{chrom}` for chr-prefixed VCFs, `-r {chrom}` for bare-contig VCFs. The orchestrator passes a `contig_prefix` flag based on `_detect_bare_contigs()`.
-- If `chr_rename_map_path` is set (bare-contig VCF), pipes through `bcftools annotate --rename-chrs` **before** the annotation step so contigs match the gnomAD reference (which uses chr-prefixed names)
+- Region arg must use the actual contig name from the input VCF header (not derived via string concatenation). The orchestrator inspects the VCF header to build a `chrom → vcf_contig_name` map — this handles `chrM` vs `chrMT` correctly (e.g., gnomAD skips MT; dbSNP uses `chrMT` but many user VCFs use `chrM`). For bare-contig VCFs, region uses bare names (`-r 1`, `-r MT`).
+- If `chr_rename_map_path` is set (bare-contig VCF), pipes through `bcftools annotate --rename-chrs` **before** the annotation step so contigs match the reference (which uses chr-prefixed names)
+- For dbSNP MT: if user VCF has `chrM` but dbSNP uses `chrMT`, the rename map must handle this mismatch (rename `chrM` → `chrMT` for matching, or skip MT if contigs are irreconcilable)
 - Parses VCF stream, normalizes chrom to bare form via `normalize_chrom()` before inserting into temp DB (matching PatchDB convention)
 - Returns `(chrom, row_count, temp_db_path)`
 
 **`annotate_dbsnp_chromosome(chrom, vcf_path, dbsnp_vcf, temp_db_path, chr_rename_map_path)`**
 - Creates temp DB with table `results`: `CREATE TABLE results (chrom TEXT, pos INT, ref TEXT, alt TEXT, rsid TEXT, PRIMARY KEY(chrom, pos, ref, alt))`
-- Region arg uses input VCF's contig style (same logic as gnomAD worker)
+- Region arg uses actual VCF header contig name (same header-based lookup as gnomAD worker)
 - If `chr_rename_map_path` is set, pipes through rename before annotation
+- MT contig: must detect `chrM` vs `chrMT` in input VCF header and align with dbSNP's `chrMT` convention via rename map
 - Normalizes chrom to bare form before inserting into temp DB
 - Returns `(chrom, row_count, temp_db_path)`
 
@@ -42,7 +44,7 @@ using `ProcessPoolExecutor` and per-chromosome temp SQLite databases.
   - gnomAD: `UPDATE annotations SET af = ..., af_grpmax = ... FROM temp.results WHERE annotations.chrom = temp.results.chrom AND ...` (both sides use bare chrom names)
   - dbSNP: `UPDATE annotations SET rsid = ..., rsid_source = 'dbsnp' FROM temp.results WHERE ... AND annotations.rsid IS NULL`
   - `DETACH temp`
-- Requires SQLite >= 3.33 for `UPDATE...FROM` syntax (Python 3.11+ bundles >= 3.39)
+- Requires SQLite >= 3.33 for `UPDATE...FROM` syntax. CPython bundles its own SQLite (>= 3.39 for Python 3.11+), but Linux distro packages may link against system SQLite which can be older. The merge function must check `sqlite3.sqlite_version_info >= (3, 33, 0)` at runtime and fall back to correlated subqueries if the version is too old
 - Deletes temp files after merge
 - Returns total rows merged
 

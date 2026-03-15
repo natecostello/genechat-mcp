@@ -18,8 +18,14 @@ fast, but the sequential annotation steps dominate wall-clock time.
 Each chromosome is processed one at a time for both gnomAD and dbSNP. On
 multi-core machines, the pipeline is limited by single-threaded bcftools
 processing and SQLite writes. gnomAD annotation across 24 contigs (1-22, X, Y)
-takes ~6 hours sequentially; dbSNP across 25 contigs (adds chrMT) takes ~2
+takes ~6 hours sequentially; dbSNP across 25 contigs (adds MT) takes ~2
 hours. Parallelizing across contigs could reduce this to ~1-2 hours total.
+
+**MT contig edge case:** Mitochondrial contig naming varies — user VCFs may use
+`chrM`, `chrMT`, `M`, or `MT`. dbSNP uses `chrMT`. Per-chromosome region
+filtering must detect the actual MT contig name from the input VCF header,
+not derive it via string concatenation (e.g., `chr` + `MT` → `chrMT` would
+silently miss variants in `chrM` VCFs).
 
 ## Decision Drivers
 
