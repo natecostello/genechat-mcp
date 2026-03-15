@@ -21,15 +21,16 @@ using `ProcessPoolExecutor` and per-chromosome temp SQLite databases.
 
 **`annotate_gnomad_chromosome(chrom, vcf_path, gnomad_file, temp_db_path, chr_rename_map_path)`**
 - Creates lightweight temp SQLite DB with table `results`: `CREATE TABLE results (chrom TEXT, pos INT, ref TEXT, alt TEXT, af REAL, af_grpmax REAL, PRIMARY KEY(chrom, pos, ref, alt))`
-- Runs `bcftools annotate -a {gnomad_file} -c INFO/AF,INFO/AF_grpmax -r chr{chrom} {vcf_path}`
-- Pipes through `bcftools annotate --rename-chrs` if `chr_rename_map_path` is set
-- Parses VCF stream, inserts rows into temp DB
+- Region arg uses input VCF's contig style: `-r chr{chrom}` for chr-prefixed VCFs, `-r {chrom}` for bare-contig VCFs. The orchestrator passes a `contig_prefix` flag based on `_detect_bare_contigs()`.
+- If `chr_rename_map_path` is set (bare-contig VCF), pipes through `bcftools annotate --rename-chrs` **before** the annotation step so contigs match the gnomAD reference (which uses chr-prefixed names)
+- Parses VCF stream, normalizes chrom to bare form via `normalize_chrom()` before inserting into temp DB (matching PatchDB convention)
 - Returns `(chrom, row_count, temp_db_path)`
 
 **`annotate_dbsnp_chromosome(chrom, vcf_path, dbsnp_vcf, temp_db_path, chr_rename_map_path)`**
 - Creates temp DB with table `results`: `CREATE TABLE results (chrom TEXT, pos INT, ref TEXT, alt TEXT, rsid TEXT, PRIMARY KEY(chrom, pos, ref, alt))`
-- Runs `bcftools annotate -a {dbsnp_vcf} -c ID -r chr{chrom} {vcf_path}`
-- Pipes through rename if needed
+- Region arg uses input VCF's contig style (same logic as gnomAD worker)
+- If `chr_rename_map_path` is set, pipes through rename before annotation
+- Normalizes chrom to bare form before inserting into temp DB
 - Returns `(chrom, row_count, temp_db_path)`
 
 ### Merge function
@@ -38,9 +39,10 @@ using `ProcessPoolExecutor` and per-chromosome temp SQLite databases.
 - Opens main PatchDB
 - For each `(chrom, count, temp_path)`:
   - `ATTACH DATABASE temp_path AS temp`
-  - gnomAD: `UPDATE annotations SET af = ..., af_grpmax = ... FROM temp.results WHERE ...`
+  - gnomAD: `UPDATE annotations SET af = ..., af_grpmax = ... FROM temp.results WHERE annotations.chrom = temp.results.chrom AND ...` (both sides use bare chrom names)
   - dbSNP: `UPDATE annotations SET rsid = ..., rsid_source = 'dbsnp' FROM temp.results WHERE ... AND annotations.rsid IS NULL`
   - `DETACH temp`
+- Requires SQLite >= 3.33 for `UPDATE...FROM` syntax (Python 3.11+ bundles >= 3.39)
 - Deletes temp files after merge
 - Returns total rows merged
 
