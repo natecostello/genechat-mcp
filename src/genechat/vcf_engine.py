@@ -61,10 +61,10 @@ class VCFEngine:
         try:
             with pysam.VariantFile(str(self.vcf_path)) as vcf:
                 self._samples = list(vcf.header.samples)
-                # Detect whether VCF uses chr-prefixed contig names
-                self._vcf_uses_chr = any(
-                    c.startswith("chr") for c in vcf.header.contigs
-                )
+                # Detect whether VCF uses chr-prefixed contig names.
+                # Check canonical chr1 specifically to avoid false positives
+                # from non-standard contigs like chrEBV or chrUn_*.
+                self._vcf_uses_chr = "chr1" in vcf.header.contigs
         except Exception as e:
             raise VCFEngineError(f"Cannot open VCF: {e}") from e
 
@@ -121,11 +121,17 @@ class VCFEngine:
             if v["status"] == "complete" and k != "vcf_fingerprint"
         }
 
-    def _to_vcf_chrom(self, bare_chrom: str) -> str:
-        """Convert a bare chrom name (from patch.db) to the VCF's contig format."""
-        if self._vcf_uses_chr and not bare_chrom.startswith("chr"):
-            return f"chr{bare_chrom}"
-        return bare_chrom
+    def _to_vcf_chrom(self, chrom: str) -> str:
+        """Convert a chrom name (from patch.db) to the VCF's contig format.
+
+        Handles both directions: adds 'chr' prefix when VCF uses it,
+        strips 'chr' prefix when VCF uses bare contig names.
+        """
+        if self._vcf_uses_chr and not chrom.startswith("chr"):
+            return f"chr{chrom}"
+        if not self._vcf_uses_chr and chrom.startswith("chr"):
+            return chrom[3:]
+        return chrom
 
     def _get_sample_index(self) -> int:
         """Return the sample index to use (0 unless sample_name specified)."""
