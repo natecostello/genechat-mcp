@@ -10,16 +10,16 @@ related ADRs:
 
 ## Context and Problem Statement
 
-ADR-0009 introduced `--fast` mode for bulk reference downloads, reducing
-wall-clock time from 25+ hours to ~8-10 hours on `performance-2x` (2 vCPU,
-4 GB RAM). However, the annotation steps themselves are still sequential —
-each chromosome is processed one at a time for both gnomAD and dbSNP.
+ADR-0009 introduced `--fast` mode for bulk reference downloads. ADR-0009
+estimated ~1-2 hours total on capable hardware, but observed performance on
+`performance-2x` (2 vCPU, 4 GB RAM) is ~8-10 hours — the download phase is
+fast, but the sequential annotation steps dominate wall-clock time.
 
-On multi-core machines, the annotation pipeline is limited by single-threaded
-bcftools processing and SQLite writes. gnomAD annotation across 24 contigs (1-22, X, Y)
-takes ~6 hours sequentially on `performance-2x`; dbSNP across 25 contigs
-(adds chrMT) takes ~2 hours. Parallelizing across contigs could reduce
-this to ~1-2 hours total.
+Each chromosome is processed one at a time for both gnomAD and dbSNP. On
+multi-core machines, the pipeline is limited by single-threaded bcftools
+processing and SQLite writes. gnomAD annotation across 24 contigs (1-22, X, Y)
+takes ~6 hours sequentially; dbSNP across 25 contigs (adds chrMT) takes ~2
+hours. Parallelizing across contigs could reduce this to ~1-2 hours total.
 
 ## Decision Drivers
 
