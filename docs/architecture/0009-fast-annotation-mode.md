@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 date: 2026-03-14
 related ADRs:
   - [0007-per-chromosome-dbsnp-download.md](0007-per-chromosome-dbsnp-download.md)
