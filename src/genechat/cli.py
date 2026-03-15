@@ -782,12 +782,16 @@ def _run_annotate(
     total_steps = sum([run_snpeff, run_clinvar, run_gnomad, run_dbsnp])
     overall_start = time.monotonic()
 
-    # Detect bare contigs — create rename map if annotation steps need it
+    # Detect bare contigs — create rename map if bcftools-based steps need it
     chr_rename_map = None
-    if _detect_bare_contigs(vcf_path):
+    needs_bcftools_rename = (run_clinvar or run_gnomad or run_dbsnp) and _detect_bare_contigs(vcf_path)
+    if needs_bcftools_rename:
+        import os
         import tempfile as _tf
 
-        chr_rename_map = Path(_tf.mktemp(suffix=".txt", prefix="genechat_chr_"))
+        fd, map_name = _tf.mkstemp(suffix=".txt", prefix="genechat_chr_")
+        os.close(fd)
+        chr_rename_map = Path(map_name)
         _write_bare_to_chr_map(chr_rename_map)
         print("  VCF uses bare contig names — will rename to chr prefix for annotation")
 
@@ -882,10 +886,7 @@ def _contig_rename_clinvar(clinvar_vcf: Path, work_dir: Path) -> Path:
             if re.search(r"ID=\d", line):
                 print("    Renaming ClinVar contigs to chr prefix...")
                 chr_map = work_dir / "chr_rename.txt"
-                with open(chr_map, "w") as f:
-                    for i in range(1, 23):
-                        f.write(f"{i} chr{i}\n")
-                    f.write("X chrX\nY chrY\nMT chrMT\n")
+                _write_bare_to_chr_map(chr_map)
                 fixed = work_dir / "clinvar_chrfixed.vcf.gz"
                 subprocess.run(
                     [
@@ -1461,9 +1462,7 @@ def _fix_user_contigs(vcf_path: Path) -> Path:
     try:
         with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
             chr_map = Path(f.name)
-            for i in range(1, 23):
-                f.write(f"{i} chr{i}\n")
-            f.write("X chrX\nY chrY\nMT chrMT\n")
+        _write_bare_to_chr_map(chr_map)
 
         subprocess.run(
             [
