@@ -38,8 +38,8 @@ using `ProcessPoolExecutor` and per-chromosome temp SQLite databases.
 - Opens main PatchDB
 - For each `(chrom, count, temp_path)`:
   - `ATTACH DATABASE temp_path AS temp`
-  - gnomAD: `UPDATE variants SET af = ..., af_grpmax = ... FROM temp.results WHERE ...`
-  - dbSNP: `UPDATE variants SET rsid = ... FROM temp.results WHERE ... AND variants.rsid IS NULL`
+  - gnomAD: `UPDATE annotations SET af = ..., af_grpmax = ... FROM temp.results WHERE ...`
+  - dbSNP: `UPDATE annotations SET rsid = ..., rsid_source = 'dbsnp' FROM temp.results WHERE ... AND annotations.rsid IS NULL`
   - `DETACH temp`
 - Deletes temp files after merge
 - Returns total rows merged
@@ -111,7 +111,7 @@ in workers).
 
 | File | Change |
 |------|--------|
-| `docs/architecture/0010-parallel-annotation.md` | Update PENDING with plan commit hash |
+| `docs/architecture/0010-parallel-annotation.md` | Already done (commit hash 45b2ed1) |
 | `docs/architecture/README.md` | Add ADR-0010 row |
 | `CLAUDE.md` | Note parallel annotation in architecture section |
 | `README.md` | Update `--fast` description to mention parallelization |
