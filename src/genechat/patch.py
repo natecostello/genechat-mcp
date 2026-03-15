@@ -310,6 +310,25 @@ class PatchDB:
         )
         return self._conn.total_changes - before
 
+    @staticmethod
+    def _parse_af(raw: str | None) -> float | None:
+        """Parse an AF value that may be comma-separated (multi-allelic sites).
+
+        gnomAD ``Number=A`` fields at multi-allelic sites contain
+        comma-separated values like ``0.25,.`` — one per ALT allele.
+        Returns the first valid float, or None if all values are missing.
+        """
+        if not raw:
+            return None
+        for part in raw.split(","):
+            part = part.strip()
+            if part and part != ".":
+                try:
+                    return float(part)
+                except ValueError:
+                    continue
+        return None
+
     def update_gnomad_from_stream(
         self,
         stream: Iterator[str],
@@ -336,8 +355,8 @@ class PatchDB:
                 continue
             batch.append(
                 (
-                    float(af) if af else None,
-                    float(af_grpmax) if af_grpmax else None,
+                    self._parse_af(af),
+                    self._parse_af(af_grpmax),
                     record["chrom"],
                     record["pos"],
                     record["ref"],
