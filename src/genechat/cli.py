@@ -1511,7 +1511,7 @@ def _detect_bare_contigs(vcf_path: Path) -> bool:
     """Check if a VCF uses bare contig names (1, 2, ...) instead of chr prefix."""
     import pysam
 
-    bare_names = {str(i) for i in range(1, 23)} | {"X", "Y", "MT", "M"}
+    bare_names = {str(i) for i in range(1, 23)} | {"X", "Y", "MT"}
     with pysam.VariantFile(str(vcf_path)) as vf:
         for contig in vf.header.contigs:
             if contig in bare_names:
