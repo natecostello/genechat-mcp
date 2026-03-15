@@ -784,20 +784,22 @@ def _run_annotate(
 
     # Detect bare contigs — create rename map if bcftools-based steps need it
     chr_rename_map = None
-    needs_bcftools_rename = (
-        run_clinvar or run_gnomad or run_dbsnp
-    ) and _detect_bare_contigs(vcf_path)
-    if needs_bcftools_rename:
-        import os
-        import tempfile as _tf
-
-        fd, map_name = _tf.mkstemp(suffix=".txt", prefix="genechat_chr_")
-        os.close(fd)
-        chr_rename_map = Path(map_name)
-        _write_bare_to_chr_map(chr_rename_map)
-        print("  VCF uses bare contig names — will rename to chr prefix for annotation")
 
     try:
+        needs_bcftools_rename = (
+            run_clinvar or run_gnomad or run_dbsnp
+        ) and _detect_bare_contigs(vcf_path)
+        if needs_bcftools_rename:
+            import os
+            import tempfile as _tf
+
+            fd, map_name = _tf.mkstemp(suffix=".txt", prefix="genechat_chr_")
+            os.close(fd)
+            chr_rename_map = Path(map_name)
+            _write_bare_to_chr_map(chr_rename_map)
+            print(
+                "  VCF uses bare contig names — will rename to chr prefix for annotation"
+            )
         if run_snpeff:
             step += 1
             _annotate_snpeff(patch, vcf_path, step, total_steps, not first_run)
@@ -1020,6 +1022,7 @@ def _annotate_clinvar(
 
     work_dir = Path(tempfile.mkdtemp(prefix="genechat_"))
 
+    proc = None
     rename_proc = None
     try:
         clinvar_use = _contig_rename_clinvar(clinvar_vcf, work_dir)
@@ -1088,7 +1091,7 @@ def _annotate_clinvar(
                     f"bcftools annotate --rename-chrs failed with exit code {rename_rc}"
                 )
     except Exception:
-        if proc.poll() is None:
+        if proc is not None and proc.poll() is None:
             proc.terminate()
             try:
                 proc.wait(timeout=5)
@@ -1097,7 +1100,11 @@ def _annotate_clinvar(
                 proc.wait()
         if rename_proc and rename_proc.poll() is None:
             rename_proc.terminate()
-            rename_proc.wait()
+            try:
+                rename_proc.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                rename_proc.kill()
+                rename_proc.wait()
         patch.set_metadata("clinvar", version or "unknown", status="failed")
         # Clean up work directory before re-raising
         import shutil as _shutil
@@ -1271,7 +1278,11 @@ def _annotate_gnomad(
                         proc.wait()
                 if rename_proc and rename_proc.poll() is None:
                     rename_proc.terminate()
-                    rename_proc.wait()
+                    try:
+                        rename_proc.wait(timeout=5)
+                    except subprocess.TimeoutExpired:
+                        rename_proc.kill()
+                        rename_proc.wait()
                 raise
             finally:
                 if proc.stdout is not None:
@@ -1396,7 +1407,11 @@ def _annotate_dbsnp(
                 proc.wait()
         if rename_proc is not None and rename_proc.poll() is None:
             rename_proc.terminate()
-            rename_proc.wait()
+            try:
+                rename_proc.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                rename_proc.kill()
+                rename_proc.wait()
         patch.set_metadata("dbsnp", version or "unknown", status="failed")
         raise
 
