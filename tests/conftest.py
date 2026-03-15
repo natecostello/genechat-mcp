@@ -15,13 +15,10 @@ DB_PATH = REPO_ROOT / "src" / "genechat" / "data" / "lookup_tables.db"
 
 @pytest.fixture(scope="session", autouse=True)
 def ensure_test_vcf():
-    """Auto-generate the test VCF if missing (session-scoped, runs once)."""
-    gz_path = TEST_DATA / "test_sample.vcf.gz"
-    tbi_path = TEST_DATA / "test_sample.vcf.gz.tbi"
-    if not gz_path.exists() or not tbi_path.exists():
-        from scripts.generate_test_vcf import generate_vcf
+    """Always regenerate the test VCF to stay in sync with generate_test_vcf.py."""
+    from scripts.generate_test_vcf import generate_vcf
 
-        generate_vcf()
+    generate_vcf()
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -30,7 +27,16 @@ def ensure_test_patch_db(ensure_test_vcf):
     vcf_path = TEST_DATA / "test_sample.vcf.gz"
     patch_path = TEST_DATA / "test_sample.patch.db"
     if patch_path.exists():
-        return
+        # Rebuild if VCF changed (e.g. new variants added) to avoid stale data
+        from genechat.patch import PatchDB
+
+        existing = PatchDB(patch_path, readonly=True)
+        has_fingerprint = existing.get_vcf_fingerprint() is not None
+        fingerprint_ok = has_fingerprint and existing.check_vcf_fingerprint(vcf_path)
+        existing.close()
+        if fingerprint_ok:
+            return
+        patch_path.unlink()  # stale — rebuild below
     if not vcf_path.exists():
         return  # VCF generation must have failed
 
@@ -74,8 +80,17 @@ def ensure_test_patch_db(ensure_test_vcf):
             )
             ann_lines.append(line)
 
+    # Simulate cross-tool contig mismatch (issue #60): SnpEff strips chr
+    # prefix while bcftools (ClinVar, gnomAD) preserves it
+    snpeff_lines = []
+    for line in ann_lines:
+        if line.startswith("chr"):
+            line = line[3:]  # "chr1\t..." -> "1\t..."
+        snpeff_lines.append(line)
+
     db = PatchDB.create(patch_path)
-    db.populate_from_snpeff_stream(iter(ann_lines))
+    db.populate_from_snpeff_stream(iter(snpeff_lines))
+    # ClinVar and gnomAD streams keep chr prefix (bcftools behavior)
     db.update_clinvar_from_stream(iter(ann_lines))
     db.update_gnomad_from_stream(iter(ann_lines))
     db.store_vcf_fingerprint(vcf_path)
