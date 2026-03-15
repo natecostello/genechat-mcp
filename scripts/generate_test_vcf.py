@@ -20,9 +20,9 @@ VCF_HEADER = """\
 ##INFO=<ID=CLNSIG,Number=.,Type=String,Description="ClinVar clinical significance">
 ##INFO=<ID=CLNDN,Number=.,Type=String,Description="ClinVar disease name">
 ##INFO=<ID=CLNREVSTAT,Number=.,Type=String,Description="ClinVar review status">
-##INFO=<ID=AF,Number=A,Type=Float,Description="Allele frequency">
-##INFO=<ID=AF_popmax,Number=A,Type=Float,Description="Maximum allele frequency across populations">
-##INFO=<ID=AF_grpmax,Number=A,Type=Float,Description="Maximum allele frequency across genetic ancestry groups (gnomAD v4)">
+##INFO=<ID=AF,Number=.,Type=Float,Description="Allele frequency (Number=. to accommodate multi-allelic gnomAD transfers)">
+##INFO=<ID=AF_popmax,Number=.,Type=Float,Description="Maximum allele frequency across populations">
+##INFO=<ID=AF_grpmax,Number=.,Type=Float,Description="Maximum allele frequency across genetic ancestry groups (gnomAD v4)">
 ##contig=<ID=chr1,length=248956422>
 ##contig=<ID=chr2,length=242193529>
 ##contig=<ID=chr4,length=190214555>
