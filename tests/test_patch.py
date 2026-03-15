@@ -2,7 +2,12 @@
 
 import pytest
 
-from genechat.patch import PatchDB, parse_vcf_stream, _extract_info_field
+from genechat.patch import (
+    PatchDB,
+    normalize_chrom,
+    parse_vcf_stream,
+    _extract_info_field,
+)
 
 
 # -- VCF stream parser tests --
@@ -47,7 +52,7 @@ class TestParseVcfStream:
         ]
         results = list(parse_vcf_stream(self._make_stream(lines), ["AF"]))
         assert len(results) == 1
-        assert results[0]["chrom"] == "chr1"
+        assert results[0]["chrom"] == "1"  # chr prefix stripped by normalize_chrom
         assert results[0]["pos"] == 100
         assert results[0]["rsid"] == "rs123"
         assert results[0]["AF"] == "0.1"
@@ -170,6 +175,18 @@ class TestPatchDBReadWrite:
         assert ann["af"] == pytest.approx(0.14)
         assert ann["af_grpmax"] == pytest.approx(0.21)
 
+    def test_normalize_chrom(self):
+        """normalize_chrom strips chr prefix and canonicalizes mito."""
+        assert normalize_chrom("chr1") == "1"
+        assert normalize_chrom("chr22") == "22"
+        assert normalize_chrom("chrX") == "X"
+        assert normalize_chrom("chrMT") == "MT"
+        assert normalize_chrom("chrM") == "MT"  # M → MT canonical form
+        assert normalize_chrom("M") == "MT"
+        assert normalize_chrom("MT") == "MT"
+        assert normalize_chrom("1") == "1"
+        assert normalize_chrom("X") == "X"
+
     def test_update_gnomad_multiallelic_af(self, patch_db):
         """Multi-allelic AF values like '0.25,.' are parsed correctly.
 
@@ -224,6 +241,36 @@ class TestPatchDBReadWrite:
         assert PatchDB._parse_af(".,0.30") == pytest.approx(0.30)
         assert PatchDB._parse_af(".,.") is None
         assert PatchDB._parse_af("0.01,0.02") == pytest.approx(0.01)
+
+    def test_gnomad_cross_format_chrom(self, patch_db):
+        """gnomAD update matches even when SnpEff stored bare chrom names.
+
+        Reproduces issue #60: SnpEff outputs bare '1', gnomAD bcftools
+        outputs 'chr1'. Both are normalized to '1' in parse_vcf_stream,
+        so the UPDATE WHERE clause matches.
+        """
+        # SnpEff might output bare chrom name
+        snpeff_lines = [
+            "1\t500\t.\tA\tG\t.\tPASS\t"
+            "ANN=G|missense_variant|MODERATE|GENE1||\t"
+            "GT\t0/1\n"
+        ]
+        patch_db.populate_from_snpeff_stream(iter(snpeff_lines))
+
+        # gnomAD bcftools outputs chr-prefixed names
+        gnomad_lines = [
+            "chr1\t500\t.\tA\tG\t.\tPASS\tAF=0.05;AF_grpmax=0.08\tGT\t0/1\n"
+        ]
+        count = patch_db.update_gnomad_from_stream(iter(gnomad_lines))
+        assert count == 1
+
+        # Read back — both 'chr1' and '1' should find it
+        ann = patch_db.get_annotation("chr1", 500, "A", "G")
+        assert ann is not None
+        assert ann["af"] == pytest.approx(0.05)
+        ann2 = patch_db.get_annotation("1", 500, "A", "G")
+        assert ann2 is not None
+        assert ann2["af"] == pytest.approx(0.05)
 
     def test_update_dbsnp(self, patch_db):
         # Populate without rsID
@@ -325,6 +372,89 @@ class TestPatchDBLookup:
     def test_query_clinvar_no_match(self, populated_db):
         results = populated_db.query_clinvar("Benign")
         assert len(results) == 0
+
+
+class TestPatchDBLegacyCompat:
+    """Regression tests for legacy patch.db files with chr-prefixed chrom values."""
+
+    def test_legacy_chr_prefixed_rows_readable(self, tmp_path):
+        """Existing patch.db with chr-prefixed chrom values is still readable."""
+        db = PatchDB.create(tmp_path / "legacy.db")
+        # Manually insert a row with chr-prefixed chrom (simulating old behavior)
+        db._conn.execute(
+            "INSERT INTO annotations "
+            "(chrom, pos, ref, alt, rsid, gene, effect, impact) "
+            "VALUES ('chr12', 21178615, 'T', 'C', 'rs4149056', "
+            "'SLCO1B1', 'missense_variant', 'MODERATE')"
+        )
+        db._conn.commit()
+
+        # Read with chr-prefixed query — should find the row
+        ann = db.get_annotation("chr12", 21178615, "T", "C")
+        assert ann is not None
+        assert ann["gene"] == "SLCO1B1"
+
+        # Read with bare query — should also find it (backward compat)
+        ann2 = db.get_annotation("12", 21178615, "T", "C")
+        assert ann2 is not None
+        assert ann2["gene"] == "SLCO1B1"
+        db.close()
+
+    def test_legacy_chr_prefixed_region_query(self, tmp_path):
+        """get_annotations_in_region works with legacy chr-prefixed rows."""
+        db = PatchDB.create(tmp_path / "legacy.db")
+        db._conn.execute(
+            "INSERT INTO annotations "
+            "(chrom, pos, ref, alt, gene) "
+            "VALUES ('chr7', 117559590, 'ATCT', 'A', 'CFTR')"
+        )
+        db._conn.commit()
+
+        results = db.get_annotations_in_region("chr7", 117559580, 117559600)
+        assert len(results) == 1
+        results2 = db.get_annotations_in_region("7", 117559580, 117559600)
+        assert len(results2) == 1
+        db.close()
+
+    def test_legacy_chr_prefixed_clinvar_query(self, tmp_path):
+        """query_clinvar with region works on legacy chr-prefixed rows."""
+        db = PatchDB.create(tmp_path / "legacy.db")
+        db._conn.execute(
+            "INSERT INTO annotations "
+            "(chrom, pos, ref, alt, clnsig, clndn) "
+            "VALUES ('chr12', 21178615, 'T', 'C', 'drug_response', 'Simvastatin')"
+        )
+        db._conn.commit()
+
+        results = db.query_clinvar("drug_response", "chr12", 21178600, 21178700)
+        assert len(results) == 1
+        results2 = db.query_clinvar("drug_response", "12", 21178600, 21178700)
+        assert len(results2) == 1
+        db.close()
+
+    def test_gnomad_updates_legacy_chr_prefixed_rows(self, tmp_path):
+        """gnomAD update matches legacy chr-prefixed rows in patch.db."""
+        db = PatchDB.create(tmp_path / "legacy.db")
+        # Insert legacy chr-prefixed row
+        db._conn.execute(
+            "INSERT INTO annotations "
+            "(chrom, pos, ref, alt, gene) "
+            "VALUES ('chr1', 500, 'A', 'G', 'GENE1')"
+        )
+        db._conn.commit()
+
+        # gnomAD stream outputs chr-prefixed — parse_vcf_stream normalizes
+        # to bare '1', but UPDATE uses IN (bare, prefixed) to match both
+        gnomad_lines = [
+            "chr1\t500\t.\tA\tG\t.\tPASS\tAF=0.05;AF_grpmax=0.08\tGT\t0/1\n"
+        ]
+        count = db.update_gnomad_from_stream(iter(gnomad_lines))
+        assert count == 1
+
+        ann = db.get_annotation("chr1", 500, "A", "G")
+        assert ann is not None
+        assert ann["af"] == pytest.approx(0.05)
+        db.close()
 
 
 class TestPatchDBMetadata:

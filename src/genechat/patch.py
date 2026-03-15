@@ -12,6 +12,21 @@ from pathlib import Path
 
 from genechat.parsers import parse_ann_field
 
+
+def normalize_chrom(chrom: str) -> str:
+    """Normalize chromosome name to bare form (strip 'chr' prefix).
+
+    Ensures consistent storage regardless of whether SnpEff, bcftools,
+    or the source VCF uses 'chr'-prefixed contig names. Also normalizes
+    the mitochondrial contig: both 'M' and 'MT' (and their 'chr' variants)
+    are stored as 'MT'.
+    """
+    bare = chrom[3:] if chrom.startswith("chr") else chrom
+    if bare == "M":
+        return "MT"
+    return bare
+
+
 SCHEMA = """\
 PRAGMA journal_mode=WAL;
 
@@ -87,11 +102,42 @@ class PatchDB:
 
     # -- Read methods (used by VCFEngine at query time) --
 
+    @staticmethod
+    def _chrom_variants(chrom: str) -> tuple[str, ...]:
+        """Return all plausible chrom forms for backward-compatible queries.
+
+        New databases store bare chrom names, but legacy databases may have
+        chr-prefixed names. For mitochondrial contigs, includes both M and MT
+        forms since different tools use different spellings.
+        """
+        bare = normalize_chrom(chrom)
+        forms = {bare, f"chr{bare}"}
+        if bare == "MT":
+            forms.update({"M", "chrM"})
+        return tuple(forms)
+
+    @staticmethod
+    def _chrom_variants_fixed(chrom: str) -> tuple[str, str, str, str]:
+        """Return exactly 4 chrom forms for use in executemany batch queries.
+
+        Same as _chrom_variants but always returns 4 elements, padding with
+        duplicates for non-MT chroms. Required because executemany needs
+        fixed-width parameter tuples.
+        """
+        bare = normalize_chrom(chrom)
+        prefixed = f"chr{bare}"
+        if bare == "MT":
+            return (bare, prefixed, "M", "chrM")
+        return (bare, prefixed, bare, prefixed)
+
     def get_annotation(self, chrom: str, pos: int, ref: str, alt: str) -> dict | None:
         """Get annotation for a single variant."""
+        variants = self._chrom_variants(chrom)
+        placeholders = ",".join("?" for _ in variants)
         row = self._conn.execute(
-            "SELECT * FROM annotations WHERE chrom=? AND pos=? AND ref=? AND alt=?",
-            (chrom, pos, ref, alt),
+            f"SELECT * FROM annotations WHERE chrom IN ({placeholders}) "
+            "AND pos=? AND ref=? AND alt=?",
+            (*variants, pos, ref, alt),
         ).fetchone()
         return dict(row) if row else None
 
@@ -99,9 +145,12 @@ class PatchDB:
         self, chrom: str, start: int, end: int
     ) -> dict[tuple, dict]:
         """Get all annotations in a region, keyed by (pos, ref, alt)."""
+        variants = self._chrom_variants(chrom)
+        placeholders = ",".join("?" for _ in variants)
         rows = self._conn.execute(
-            "SELECT * FROM annotations WHERE chrom=? AND pos BETWEEN ? AND ?",
-            (chrom, start, end),
+            f"SELECT * FROM annotations WHERE chrom IN ({placeholders}) "
+            "AND pos BETWEEN ? AND ?",
+            (*variants, start, end),
         ).fetchall()
         return {(r["pos"], r["ref"], r["alt"]): dict(r) for r in rows}
 
@@ -136,12 +185,14 @@ class PatchDB:
     ) -> list[dict]:
         """Query variants by ClinVar significance substring (case-insensitive)."""
         if chrom and start is not None and end is not None:
+            variants = self._chrom_variants(chrom)
+            placeholders = ",".join("?" for _ in variants)
             rows = self._conn.execute(
                 "SELECT * FROM annotations "
                 "WHERE clnsig IS NOT NULL "
                 "AND instr(lower(clnsig), lower(?)) > 0 "
-                "AND chrom=? AND pos BETWEEN ? AND ?",
-                (significance, chrom, start, end),
+                f"AND chrom IN ({placeholders}) AND pos BETWEEN ? AND ?",
+                (significance, *variants, start, end),
             ).fetchall()
         else:
             rows = self._conn.execute(
@@ -277,12 +328,13 @@ class PatchDB:
                     progress_callback(records_seen)
                     last_report = records_seen
                 continue
+            cv = self._chrom_variants_fixed(record["chrom"])
             batch.append(
                 (
                     clnsig,
                     record.get("CLNDN"),
                     record.get("CLNREVSTAT"),
-                    record["chrom"],
+                    *cv,
                     record["pos"],
                     record["ref"],
                     record["alt"],
@@ -305,7 +357,7 @@ class PatchDB:
         before = self._conn.total_changes
         self._conn.executemany(
             "UPDATE annotations SET clnsig=?, clndn=?, clnrevstat=? "
-            "WHERE chrom=? AND pos=? AND ref=? AND alt=?",
+            "WHERE chrom IN (?, ?, ?, ?) AND pos=? AND ref=? AND alt=?",
             batch,
         )
         return self._conn.total_changes - before
@@ -357,11 +409,12 @@ class PatchDB:
             parsed_af_grpmax = self._parse_af(af_grpmax)
             if parsed_af is None and parsed_af_grpmax is None:
                 continue
+            cv = self._chrom_variants_fixed(record["chrom"])
             batch.append(
                 (
                     parsed_af,
                     parsed_af_grpmax,
-                    record["chrom"],
+                    *cv,
                     record["pos"],
                     record["ref"],
                     record["alt"],
@@ -381,7 +434,7 @@ class PatchDB:
         before = self._conn.total_changes
         self._conn.executemany(
             "UPDATE annotations SET af=?, af_grpmax=? "
-            "WHERE chrom=? AND pos=? AND ref=? AND alt=?",
+            "WHERE chrom IN (?, ?, ?, ?) AND pos=? AND ref=? AND alt=?",
             batch,
         )
         return self._conn.total_changes - before
@@ -408,10 +461,11 @@ class PatchDB:
                     progress_callback(records_seen)
                     last_report = records_seen
                 continue
+            cv = self._chrom_variants_fixed(record["chrom"])
             batch.append(
                 (
                     rsid,
-                    record["chrom"],
+                    *cv,
                     record["pos"],
                     record["ref"],
                     record["alt"],
@@ -434,7 +488,8 @@ class PatchDB:
         before = self._conn.total_changes
         self._conn.executemany(
             "UPDATE annotations SET rsid=?, rsid_source='dbsnp' "
-            "WHERE chrom=? AND pos=? AND ref=? AND alt=? AND rsid IS NULL",
+            "WHERE chrom IN (?, ?, ?, ?) AND pos=? AND ref=? AND alt=? "
+            "AND rsid IS NULL",
             batch,
         )
         return self._conn.total_changes - before
@@ -510,7 +565,7 @@ def parse_vcf_stream(
         info = cols[7]
 
         extracted: dict = {
-            "chrom": chrom,
+            "chrom": normalize_chrom(chrom),
             "pos": int(pos_str),
             "ref": ref,
             "alt": alt,

@@ -61,6 +61,19 @@ class VCFEngine:
         try:
             with pysam.VariantFile(str(self.vcf_path)) as vcf:
                 self._samples = list(vcf.header.samples)
+                # Detect whether VCF uses chr-prefixed contig names.
+                # Check multiple canonical contigs (including mito) to
+                # handle panel/subset VCFs that may not include chr1.
+                self._vcf_contigs = set(vcf.header.contigs)
+                _CANONICAL_CHR = (
+                    "chr1",
+                    "chr2",
+                    "chr22",
+                    "chrX",
+                    "chrM",
+                    "chrMT",
+                )
+                self._vcf_uses_chr = any(c in self._vcf_contigs for c in _CANONICAL_CHR)
         except Exception as e:
             raise VCFEngineError(f"Cannot open VCF: {e}") from e
 
@@ -116,6 +129,30 @@ class VCFEngine:
             for k, v in meta.items()
             if v["status"] == "complete" and k != "vcf_fingerprint"
         }
+
+    def _to_vcf_chrom(self, chrom: str) -> str:
+        """Convert a chrom name (from patch.db) to the VCF's contig format.
+
+        Handles both directions: adds 'chr' prefix when VCF uses it,
+        strips 'chr' prefix when VCF uses bare contig names. For
+        mitochondrial contigs (M/MT), checks actual VCF header contigs
+        to pick the correct spelling.
+        """
+        from genechat.patch import normalize_chrom
+
+        bare = normalize_chrom(chrom)
+
+        # Special handling for mito: VCFs use chrM or chrMT (or M/MT)
+        if bare == "MT":
+            for candidate in ("chrM", "chrMT", "M", "MT"):
+                if candidate in self._vcf_contigs:
+                    return candidate
+            # Fallback: apply general prefix rule
+            return "chrMT" if self._vcf_uses_chr else "MT"
+
+        if self._vcf_uses_chr:
+            return f"chr{bare}"
+        return bare
 
     def _get_sample_index(self) -> int:
         """Return the sample index to use (0 unless sample_name specified)."""
@@ -200,7 +237,8 @@ class VCFEngine:
             with pysam.VariantFile(str(self.vcf_path)) as vcf:
                 sample_idx = self._get_sample_index()
                 for pr in patch_rows:
-                    region = f"{pr['chrom']}:{pr['pos']}-{pr['pos']}"
+                    vcf_chrom = self._to_vcf_chrom(pr["chrom"])
+                    region = f"{vcf_chrom}:{pr['pos']}-{pr['pos']}"
                     try:
                         for record in vcf.fetch(region=region):
                             alt = ",".join(record.alts) if record.alts else "."
@@ -252,7 +290,8 @@ class VCFEngine:
                 capped = False
                 for rsid, patch_rows in patch_results.items():
                     for pr in patch_rows:
-                        region = f"{pr['chrom']}:{pr['pos']}-{pr['pos']}"
+                        vcf_chrom = self._to_vcf_chrom(pr["chrom"])
+                        region = f"{vcf_chrom}:{pr['pos']}-{pr['pos']}"
                         try:
                             for record in vcf.fetch(region=region):
                                 alt = ",".join(record.alts) if record.alts else "."
@@ -315,7 +354,8 @@ class VCFEngine:
             with pysam.VariantFile(str(self.vcf_path)) as vcf:
                 sample_idx = self._get_sample_index()
                 for pr in patch_rows:
-                    region_str = f"{pr['chrom']}:{pr['pos']}-{pr['pos']}"
+                    vcf_chrom = self._to_vcf_chrom(pr["chrom"])
+                    region_str = f"{vcf_chrom}:{pr['pos']}-{pr['pos']}"
                     try:
                         for record in vcf.fetch(region=region_str):
                             alt = ",".join(record.alts) if record.alts else "."
