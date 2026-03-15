@@ -30,7 +30,15 @@ def ensure_test_patch_db(ensure_test_vcf):
     vcf_path = TEST_DATA / "test_sample.vcf.gz"
     patch_path = TEST_DATA / "test_sample.patch.db"
     if patch_path.exists():
-        return
+        # Rebuild if VCF changed (e.g. new variants added) to avoid stale data
+        from genechat.patch import PatchDB
+
+        existing = PatchDB(patch_path, readonly=True)
+        fingerprint_ok = existing.check_vcf_fingerprint(vcf_path)
+        existing.close()
+        if fingerprint_ok:
+            return
+        patch_path.unlink()  # stale — rebuild below
     if not vcf_path.exists():
         return  # VCF generation must have failed
 
