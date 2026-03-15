@@ -1730,6 +1730,47 @@ class TestContigAutoFix:
 
 
 # ---------------------------------------------------------------------------
+# _annotate_snpeff skips empty contigs
+# ---------------------------------------------------------------------------
+
+
+class TestAnnotateSnpeffSkipsEmpty:
+    def test_skips_contigs_without_variants(self, tmp_path, monkeypatch):
+        """_annotate_snpeff uses TabixFile.contigs to skip empty contigs."""
+        from genechat.cli import _annotate_snpeff
+
+        # TabixFile.contigs returns only contigs with variants
+        mock_tf = MagicMock()
+        mock_tf.contigs = ("chr1", "chr22")
+        monkeypatch.setattr("pysam.TabixFile", lambda *a, **kw: mock_tf)
+
+        # Mock subprocess — need separate bcf_proc (bytes stdout) and
+        # snpeff_proc (text stdout) per iteration
+        def make_popen(cmd, **kw):
+            proc = MagicMock()
+            proc.wait.return_value = 0
+            if "snpEff" in cmd:
+                proc.stdout = iter([])  # empty text stream
+            else:
+                proc.stdout = MagicMock()  # bcf_proc: .close() must work
+            return proc
+
+        monkeypatch.setattr("genechat.cli.subprocess.Popen", make_popen)
+
+        # Mock patch object
+        mock_patch = MagicMock()
+        mock_patch.populate_from_snpeff_stream.return_value = 0
+
+        # Mock download._detect_snpeff_db
+        monkeypatch.setattr("genechat.download._detect_snpeff_db", lambda: "GRCh38.p14")
+
+        _annotate_snpeff(mock_patch, tmp_path / "test.vcf.gz", 1, 1, False)
+
+        # Should only process chr1 and chr22, not 195 header contigs
+        assert mock_patch.populate_from_snpeff_stream.call_count == 2
+
+
+# ---------------------------------------------------------------------------
 # _resolve_genome_label
 # ---------------------------------------------------------------------------
 
