@@ -176,11 +176,14 @@ class TestPatchDBReadWrite:
         assert ann["af_grpmax"] == pytest.approx(0.21)
 
     def test_normalize_chrom(self):
-        """normalize_chrom strips chr prefix consistently."""
+        """normalize_chrom strips chr prefix and canonicalizes mito."""
         assert normalize_chrom("chr1") == "1"
         assert normalize_chrom("chr22") == "22"
         assert normalize_chrom("chrX") == "X"
         assert normalize_chrom("chrMT") == "MT"
+        assert normalize_chrom("chrM") == "MT"  # M → MT canonical form
+        assert normalize_chrom("M") == "MT"
+        assert normalize_chrom("MT") == "MT"
         assert normalize_chrom("1") == "1"
         assert normalize_chrom("X") == "X"
 
