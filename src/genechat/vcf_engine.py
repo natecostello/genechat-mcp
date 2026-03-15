@@ -62,9 +62,11 @@ class VCFEngine:
             with pysam.VariantFile(str(self.vcf_path)) as vcf:
                 self._samples = list(vcf.header.samples)
                 # Detect whether VCF uses chr-prefixed contig names.
-                # Check canonical chr1 specifically to avoid false positives
-                # from non-standard contigs like chrEBV or chrUn_*.
-                self._vcf_uses_chr = "chr1" in vcf.header.contigs
+                # Check multiple canonical contigs to handle panel/subset
+                # VCFs that may not include chr1.
+                contigs = set(vcf.header.contigs)
+                _CANONICAL_CHR = ("chr1", "chr2", "chr22", "chrX")
+                self._vcf_uses_chr = any(c in contigs for c in _CANONICAL_CHR)
         except Exception as e:
             raise VCFEngineError(f"Cannot open VCF: {e}") from e
 
