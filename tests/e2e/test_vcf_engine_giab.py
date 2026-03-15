@@ -108,7 +108,12 @@ class TestEngineBasics:
         """At least some variants in a well-covered region should have AF data.
 
         Catches issue #60 where gnomAD annotation silently wrote 0 variants.
+        Only runs when a patch.db with gnomAD annotations is configured.
         """
+        versions = giab_engine.annotation_versions()
+        if not versions.get("gnomad"):
+            pytest.skip("gnomAD annotations not available in this setup")
+
         # BRCA1 region — well covered by gnomAD exomes
         variants = giab_engine.query_region("chr17:43044295-43170245")
         if not variants:
