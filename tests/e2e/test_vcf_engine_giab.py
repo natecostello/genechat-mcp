@@ -111,7 +111,7 @@ class TestEngineBasics:
         Only runs when a patch.db with gnomAD annotations is configured.
         """
         versions = giab_engine.annotation_versions()
-        if not versions.get("gnomad"):
+        if not versions.get("gnomAD"):
             pytest.skip("gnomAD annotations not available in this setup")
 
         # BRCA1 region — well covered by gnomAD exomes
