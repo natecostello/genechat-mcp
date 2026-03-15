@@ -20,14 +20,14 @@ using `ProcessPoolExecutor` and per-chromosome temp SQLite databases.
 ### Worker functions (must be top-level for pickling)
 
 **`annotate_gnomad_chromosome(chrom, vcf_path, gnomad_file, temp_db_path, chr_rename_map_path)`**
-- Creates lightweight temp SQLite DB with schema: `(chrom TEXT, pos INT, ref TEXT, alt TEXT, af REAL, af_grpmax REAL, PRIMARY KEY(chrom, pos, ref, alt))`
+- Creates lightweight temp SQLite DB with table `results`: `CREATE TABLE results (chrom TEXT, pos INT, ref TEXT, alt TEXT, af REAL, af_grpmax REAL, PRIMARY KEY(chrom, pos, ref, alt))`
 - Runs `bcftools annotate -a {gnomad_file} -c INFO/AF,INFO/AF_grpmax -r chr{chrom} {vcf_path}`
 - Pipes through `bcftools annotate --rename-chrs` if `chr_rename_map_path` is set
 - Parses VCF stream, inserts rows into temp DB
 - Returns `(chrom, row_count, temp_db_path)`
 
 **`annotate_dbsnp_chromosome(chrom, vcf_path, dbsnp_vcf, temp_db_path, chr_rename_map_path)`**
-- Creates temp DB with schema: `(chrom TEXT, pos INT, ref TEXT, alt TEXT, rsid TEXT, PRIMARY KEY(chrom, pos, ref, alt))`
+- Creates temp DB with table `results`: `CREATE TABLE results (chrom TEXT, pos INT, ref TEXT, alt TEXT, rsid TEXT, PRIMARY KEY(chrom, pos, ref, alt))`
 - Runs `bcftools annotate -a {dbsnp_vcf} -c ID -r chr{chrom} {vcf_path}`
 - Pipes through rename if needed
 - Returns `(chrom, row_count, temp_db_path)`
