@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 date: 2026-03-15
 related ADRs:
   - [0009-fast-annotation-mode.md](0009-fast-annotation-mode.md)

@@ -825,6 +825,8 @@ def _run_annotate(
                 not first_run,
                 incremental=gnomad_incremental,
                 chr_rename_map=chr_rename_map,
+                fast=fast,
+                patch_db_path=patch_db_path,
             )
 
         if run_dbsnp:
@@ -836,6 +838,8 @@ def _run_annotate(
                 total_steps,
                 not first_run,
                 chr_rename_map=chr_rename_map,
+                fast=fast,
+                patch_db_path=patch_db_path,
             )
 
         # Store VCF fingerprint
@@ -1143,8 +1147,13 @@ def _annotate_gnomad(
     is_update: bool,
     incremental: bool = False,
     chr_rename_map: Path | None = None,
+    fast: bool = False,
+    patch_db_path: Path | None = None,
 ):
     """Step 3: gnomAD population frequencies (per-chromosome).
+
+    When fast=True and not incremental, uses parallel per-chromosome
+    annotation via ProcessPoolExecutor.
 
     When incremental=True, downloads each chromosome before annotating it
     and deletes the file afterward to minimize peak disk usage (~17 GB
@@ -1163,7 +1172,11 @@ def _annotate_gnomad(
 
     from genechat.progress import ProgressLine, format_elapsed
 
-    mode = " (incremental)" if incremental else ""
+    mode = (
+        " (parallel)"
+        if (fast and not incremental)
+        else (" (incremental)" if incremental else "")
+    )
     print(f"  [{step}/{total}] gnomAD population frequencies{mode}...")
 
     if is_update:
@@ -1171,6 +1184,30 @@ def _annotate_gnomad(
 
     patch.set_metadata("gnomad", "v4.1", status="pending")
     step_start = time.monotonic()
+
+    if fast and not incremental and patch_db_path is not None:
+        from genechat.parallel import run_parallel_annotation
+
+        try:
+            total_rows = run_parallel_annotation(
+                vcf_path=vcf_path,
+                patch_db_path=patch_db_path,
+                chroms=list(GNOMAD_CHROMS),
+                source="gnomad",
+                reference_path_fn=gnomad_chr_path,
+                chr_rename_map=chr_rename_map,
+                progress_callback=lambda c, n, done, tot: print(
+                    f"    chr{c} complete: {n:,} variants [{done}/{tot}]"
+                ),
+            )
+        except Exception:
+            patch.set_metadata("gnomad", "v4.1", status="failed")
+            raise
+
+        elapsed = format_elapsed(time.monotonic() - step_start)
+        patch.set_metadata("gnomad", "v4.1", status="complete")
+        print(f"    gnomAD complete: {total_rows:,} variants ({elapsed})")
+        return
 
     try:
         import pysam
@@ -1305,8 +1342,13 @@ def _annotate_dbsnp(
     total: int,
     is_update: bool,
     chr_rename_map: Path | None = None,
+    fast: bool = False,
+    patch_db_path: Path | None = None,
 ):
     """Step 4: dbSNP rsID backfill.
+
+    When fast=True, uses parallel per-chromosome annotation via
+    ProcessPoolExecutor.
 
     Runs bcftools annotate with the chr-fixed dbSNP VCF to fill rsIDs
     for variants that lack them (rsid IS NULL in patch.db).
@@ -1319,13 +1361,46 @@ def _annotate_dbsnp(
     from genechat.progress import ProgressLine
 
     dbsnp_vcf = dbsnp_path()
-    print(f"  [{step}/{total}] dbSNP rsID backfill...")
+    mode = " (parallel)" if fast else ""
+    print(f"  [{step}/{total}] dbSNP rsID backfill{mode}...")
 
     if is_update:
         patch.clear_layer("dbsnp")
 
     version = _dbsnp_version(dbsnp_vcf)
     patch.set_metadata("dbsnp", version or "unknown", status="pending")
+
+    if fast and patch_db_path is not None:
+        import time
+
+        from genechat.download import DBSNP_CONTIGS
+        from genechat.parallel import run_parallel_annotation
+        from genechat.progress import format_elapsed
+
+        # dbSNP chroms in bare form
+        dbsnp_chroms = [chr_name.replace("chr", "") for _, chr_name in DBSNP_CONTIGS]
+
+        step_start = time.monotonic()
+        try:
+            total_rows = run_parallel_annotation(
+                vcf_path=vcf_path,
+                patch_db_path=patch_db_path,
+                chroms=dbsnp_chroms,
+                source="dbsnp",
+                reference_path_fn=lambda _chrom: dbsnp_vcf,
+                chr_rename_map=chr_rename_map,
+                progress_callback=lambda c, n, done, tot: print(
+                    f"    chr{c} complete: {n:,} variants [{done}/{tot}]"
+                ),
+            )
+        except Exception:
+            patch.set_metadata("dbsnp", version or "unknown", status="failed")
+            raise
+
+        elapsed = format_elapsed(time.monotonic() - step_start)
+        patch.set_metadata("dbsnp", version or "unknown", status="complete")
+        print(f"    dbSNP complete: {total_rows:,} variants updated ({elapsed})")
+        return
 
     import tempfile
 

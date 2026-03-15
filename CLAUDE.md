@@ -106,7 +106,7 @@ LLM Client (Claude Desktop / Claude Code)
 GeneChat MCP Server (Python)
     +-- CLI: init, add, annotate, install, status, licenses, serve
     |         Flags: --version, --no-color, --json (status), --stale (annotate),
-    |                --check-updates (status), --fast (init/annotate). Exit codes 0-6, 130.
+    |                --check-updates (status), --fast (init/annotate: parallel annotation). Exit codes 0-6, 130.
     +-- Tools: list_genomes, query_variant, query_variants, query_gene,
     |         query_genes, query_clinvar, query_gwas, query_pgx,
     |         calculate_prs, genome_summary
@@ -181,6 +181,7 @@ genechat-mcp/
       config.py                    # TOML config loader + write_config
       vcf_engine.py                # pysam VCF query engine (genotypes from VCF, annotations from patch.db)
       patch.py                     # SQLite patch database (annotation overlay)
+      parallel.py                  # Parallel per-chromosome annotation (--fast mode)
       lookup.py                    # SQLite query layer for seed data
       download.py                  # Reference database download functions
       gwas.py                      # GWAS Catalog DB builder + query
@@ -221,6 +222,7 @@ genechat-mcp/
     test_cli.py
     test_vcf_engine.py
     test_patch.py
+    test_parallel.py
     test_lookup.py
     test_config.py
     test_download.py

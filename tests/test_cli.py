@@ -817,6 +817,160 @@ class TestAnnotate:
 
 
 # ---------------------------------------------------------------------------
+# Parallel dispatch in --fast mode
+# ---------------------------------------------------------------------------
+
+
+class TestFastParallelDispatch:
+    """Tests that --fast dispatches to parallel annotation path."""
+
+    def test_annotate_gnomad_fast_calls_parallel(self, tmp_path, monkeypatch):
+        """_annotate_gnomad with fast=True dispatches to run_parallel_annotation."""
+        from genechat.cli import _annotate_gnomad
+        from genechat.patch import PatchDB
+
+        patch_path = tmp_path / "test.patch.db"
+        patch = PatchDB.create(patch_path)
+
+        vcf = tmp_path / "test.vcf.gz"
+        vcf.write_bytes(b"fake")
+
+        parallel_calls = []
+
+        def mock_run_parallel(**kw):
+            parallel_calls.append(kw)
+            return 42
+
+        monkeypatch.setattr(
+            "genechat.parallel.run_parallel_annotation", mock_run_parallel
+        )
+
+        _annotate_gnomad(
+            patch,
+            vcf,
+            step=3,
+            total=4,
+            is_update=False,
+            fast=True,
+            patch_db_path=patch_path,
+        )
+
+        assert len(parallel_calls) == 1
+        assert parallel_calls[0]["source"] == "gnomad"
+
+    def test_annotate_dbsnp_fast_calls_parallel(self, tmp_path, monkeypatch):
+        """_annotate_dbsnp with fast=True dispatches to run_parallel_annotation."""
+        from genechat.cli import _annotate_dbsnp
+        from genechat.patch import PatchDB
+
+        patch_path = tmp_path / "test.patch.db"
+        patch = PatchDB.create(patch_path)
+
+        vcf = tmp_path / "test.vcf.gz"
+        vcf.write_bytes(b"fake")
+
+        # dbsnp_path must return a real path for version detection
+        fake_dbsnp = tmp_path / "dbsnp.vcf.gz"
+        fake_dbsnp.write_bytes(b"fake")
+        monkeypatch.setattr("genechat.download.dbsnp_path", lambda: fake_dbsnp)
+        monkeypatch.setattr("genechat.cli._dbsnp_version", lambda _: "b156")
+
+        parallel_calls = []
+
+        def mock_run_parallel(**kw):
+            parallel_calls.append(kw)
+            return 99
+
+        monkeypatch.setattr(
+            "genechat.parallel.run_parallel_annotation", mock_run_parallel
+        )
+
+        _annotate_dbsnp(
+            patch,
+            vcf,
+            step=4,
+            total=4,
+            is_update=False,
+            fast=True,
+            patch_db_path=patch_path,
+        )
+
+        assert len(parallel_calls) == 1
+        assert parallel_calls[0]["source"] == "dbsnp"
+
+    def test_annotate_gnomad_non_fast_skips_parallel(self, tmp_path, monkeypatch):
+        """_annotate_gnomad without fast=True does not call run_parallel_annotation."""
+        from genechat.cli import _annotate_gnomad
+        from genechat.patch import PatchDB
+
+        patch_path = tmp_path / "test.patch.db"
+        patch = PatchDB.create(patch_path)
+
+        vcf = tmp_path / "test.vcf.gz"
+        vcf.write_bytes(b"fake")
+
+        parallel_calls = []
+        monkeypatch.setattr(
+            "genechat.parallel.run_parallel_annotation",
+            lambda **kw: parallel_calls.append(kw) or 0,
+        )
+
+        # Mock pysam so sequential path can discover contigs
+        fake_vf = type(
+            "FakeVF",
+            (),
+            {
+                "__enter__": lambda s: s,
+                "__exit__": lambda *a: None,
+                "header": type("H", (), {"contigs": ["chr1"]})(),
+            },
+        )()
+        monkeypatch.setattr("pysam.VariantFile", lambda *a, **kw: fake_vf)
+
+        # Mock subprocess so sequential bcftools doesn't fail
+        class FakeStdout:
+            def __iter__(self):
+                return iter([])
+
+            def close(self):
+                pass
+
+        class FakeStderr:
+            def read(self):
+                return ""
+
+        class FakeProc:
+            stdout = FakeStdout()
+            stderr = FakeStderr()
+
+            def wait(self, **kw):
+                return 0
+
+            def poll(self):
+                return 0
+
+            def terminate(self):
+                pass
+
+            def kill(self):
+                pass
+
+        monkeypatch.setattr("subprocess.Popen", lambda *a, **kw: FakeProc())
+
+        _annotate_gnomad(
+            patch,
+            vcf,
+            step=3,
+            total=4,
+            is_update=False,
+            fast=False,
+            patch_db_path=patch_path,
+        )
+
+        assert len(parallel_calls) == 0, "parallel should NOT be called without --fast"
+
+
+# ---------------------------------------------------------------------------
 # Bare contig rename in annotation pipeline
 # ---------------------------------------------------------------------------
 
