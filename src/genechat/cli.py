@@ -782,6 +782,15 @@ def _run_annotate(
     total_steps = sum([run_snpeff, run_clinvar, run_gnomad, run_dbsnp])
     overall_start = time.monotonic()
 
+    # Detect bare contigs — create rename map if annotation steps need it
+    chr_rename_map = None
+    if _detect_bare_contigs(vcf_path):
+        import tempfile as _tf
+
+        chr_rename_map = Path(_tf.mktemp(suffix=".txt", prefix="genechat_chr_"))
+        _write_bare_to_chr_map(chr_rename_map)
+        print("  VCF uses bare contig names — will rename to chr prefix for annotation")
+
     try:
         if run_snpeff:
             step += 1
@@ -789,7 +798,10 @@ def _run_annotate(
 
         if run_clinvar:
             step += 1
-            _annotate_clinvar(patch, vcf_path, step, total_steps, not first_run)
+            _annotate_clinvar(
+                patch, vcf_path, step, total_steps, not first_run,
+                chr_rename_map=chr_rename_map,
+            )
 
         if run_gnomad:
             step += 1
@@ -800,11 +812,15 @@ def _run_annotate(
                 total_steps,
                 not first_run,
                 incremental=gnomad_incremental,
+                chr_rename_map=chr_rename_map,
             )
 
         if run_dbsnp:
             step += 1
-            _annotate_dbsnp(patch, vcf_path, step, total_steps, not first_run)
+            _annotate_dbsnp(
+                patch, vcf_path, step, total_steps, not first_run,
+                chr_rename_map=chr_rename_map,
+            )
 
         # Store VCF fingerprint
         patch.store_vcf_fingerprint(vcf_path)
@@ -814,6 +830,8 @@ def _run_annotate(
 
     finally:
         patch.close()
+        if chr_rename_map:
+            chr_rename_map.unlink(missing_ok=True)
 
     elapsed = format_elapsed(time.monotonic() - overall_start)
     db_size = format_size(patch_db_path.stat().st_size)
@@ -830,6 +848,19 @@ def _patch_db_path_for(vcf_path: Path, genome_cfg) -> Path:
         return Path(genome_cfg.patch_db)
     # Convention: same directory as VCF, <stem>.patch.db
     return vcf_path.parent / f"{vcf_path.stem.replace('.vcf', '')}.patch.db"
+
+
+
+def _write_bare_to_chr_map(map_path: Path) -> Path:
+    """Write a contig rename map: bare names -> chr-prefixed.
+
+    Returns map_path for convenience.
+    """
+    with open(map_path, "w") as f:
+        for i in range(1, 23):
+            f.write(f"{i} chr{i}\n")
+        f.write("X chrX\nY chrY\nMT chrMT\nM chrM\n")
+    return map_path
 
 
 def _contig_rename_clinvar(clinvar_vcf: Path, work_dir: Path) -> Path:
@@ -952,7 +983,10 @@ def _annotate_snpeff(patch, vcf_path: Path, step: int, total: int, is_update: bo
     print(f"    SnpEff complete: {total_rows:,} variants ({elapsed})")
 
 
-def _annotate_clinvar(patch, vcf_path: Path, step: int, total: int, is_update: bool):
+def _annotate_clinvar(
+    patch, vcf_path: Path, step: int, total: int, is_update: bool,
+    chr_rename_map: Path | None = None,
+):
     """Step 2: ClinVar clinical significance."""
     from genechat.download import clinvar_path
     from genechat.progress import ProgressLine
@@ -972,35 +1006,62 @@ def _annotate_clinvar(patch, vcf_path: Path, step: int, total: int, is_update: b
 
     work_dir = Path(tempfile.mkdtemp(prefix="genechat_"))
 
+    rename_proc = None
     try:
         clinvar_use = _contig_rename_clinvar(clinvar_vcf, work_dir)
 
         progress = ProgressLine("    ClinVar")
-        proc = subprocess.Popen(
-            [
-                "bcftools",
-                "annotate",
-                "-a",
-                str(clinvar_use),
-                "-c",
-                "INFO/CLNSIG,INFO/CLNDN,INFO/CLNREVSTAT",
-                str(vcf_path),
-            ],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-        )
+        if chr_rename_map:
+            # User VCF has bare contigs — pipe through rename to match ClinVar
+            rename_proc = subprocess.Popen(
+                ["bcftools", "annotate", "--rename-chrs", str(chr_rename_map),
+                 str(vcf_path)],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+            )
+            proc = subprocess.Popen(
+                ["bcftools", "annotate", "-a", str(clinvar_use),
+                 "-c", "INFO/CLNSIG,INFO/CLNDN,INFO/CLNREVSTAT", "-"],
+                stdin=rename_proc.stdout,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+            rename_proc.stdout.close()
+        else:
+            proc = subprocess.Popen(
+                [
+                    "bcftools",
+                    "annotate",
+                    "-a",
+                    str(clinvar_use),
+                    "-c",
+                    "INFO/CLNSIG,INFO/CLNDN,INFO/CLNREVSTAT",
+                    str(vcf_path),
+                ],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
         rows = patch.update_clinvar_from_stream(
             iter(proc.stdout),
             progress_callback=lambda n: progress.update(n),
         )
         rc = proc.wait()
+        if rename_proc:
+            rename_rc = rename_proc.wait()
+            if rename_rc != 0:
+                raise RuntimeError(
+                    f"bcftools annotate --rename-chrs failed with exit code {rename_rc}"
+                )
         if rc != 0:
             stderr = proc.stderr.read() if proc.stderr else ""
             raise RuntimeError(
                 f"bcftools annotate (ClinVar) failed with exit code {rc}: {stderr}"
             )
     except Exception:
+        if rename_proc and rename_proc.poll() is None:
+            rename_proc.terminate()
         patch.set_metadata("clinvar", version or "unknown", status="failed")
         # Clean up work directory before re-raising
         import shutil as _shutil
@@ -1038,12 +1099,17 @@ def _annotate_gnomad(
     total: int,
     is_update: bool,
     incremental: bool = False,
+    chr_rename_map: Path | None = None,
 ):
     """Step 3: gnomAD population frequencies (per-chromosome).
 
     When incremental=True, downloads each chromosome before annotating it
     and deletes the file afterward to minimize peak disk usage (~17 GB
     instead of ~150 GB).
+
+    When chr_rename_map is provided, the user VCF has bare contigs and
+    needs to be piped through bcftools --rename-chrs to match gnomAD's
+    chr-prefixed contigs.
     """
     from genechat.download import GNOMAD_CHROMS, gnomad_chr_path
 
@@ -1072,7 +1138,9 @@ def _annotate_gnomad(
         total_rows = 0
         for i, chrom in enumerate(GNOMAD_CHROMS, 1):
             chr_name = f"chr{chrom}"
-            if chr_name not in vcf_chroms:
+            # For bare-contig VCFs, check the bare chrom name
+            vcf_chrom = chrom if chr_rename_map else chr_name
+            if vcf_chrom not in vcf_chroms:
                 continue
 
             pre_existed = gnomad_chr_path(chrom).exists()
@@ -1085,22 +1153,41 @@ def _annotate_gnomad(
                 continue
 
             progress = ProgressLine(f"    chr{chrom} ({i}/{len(GNOMAD_CHROMS)})")
-            proc = subprocess.Popen(
-                [
-                    "bcftools",
-                    "annotate",
-                    "-a",
-                    str(gnomad_file),
-                    "-c",
-                    "INFO/AF,INFO/AF_grpmax",
-                    "-r",
-                    chr_name,
-                    str(vcf_path),
-                ],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-            )
+            rename_proc = None
+            if chr_rename_map:
+                # Pipe user VCF through rename: bare -> chr-prefixed
+                rename_proc = subprocess.Popen(
+                    ["bcftools", "annotate", "--rename-chrs",
+                     str(chr_rename_map), "-r", chrom, str(vcf_path)],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.DEVNULL,
+                )
+                proc = subprocess.Popen(
+                    ["bcftools", "annotate", "-a", str(gnomad_file),
+                     "-c", "INFO/AF,INFO/AF_grpmax", "-"],
+                    stdin=rename_proc.stdout,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                )
+                rename_proc.stdout.close()
+            else:
+                proc = subprocess.Popen(
+                    [
+                        "bcftools",
+                        "annotate",
+                        "-a",
+                        str(gnomad_file),
+                        "-c",
+                        "INFO/AF,INFO/AF_grpmax",
+                        "-r",
+                        chr_name,
+                        str(vcf_path),
+                    ],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                )
             try:
                 rows = patch.update_gnomad_from_stream(
                     iter(proc.stdout),
@@ -1108,6 +1195,13 @@ def _annotate_gnomad(
                 )
                 total_rows += rows
                 rc = proc.wait()
+                if rename_proc:
+                    rename_rc = rename_proc.wait()
+                    if rename_rc != 0:
+                        raise RuntimeError(
+                            f"bcftools annotate --rename-chrs failed with "
+                            f"exit code {rename_rc} on chr{chrom}"
+                        )
                 progress.done(f"{rows:,} variants")
                 if rc != 0:
                     stderr = proc.stderr.read() if proc.stderr else ""
@@ -1123,6 +1217,8 @@ def _annotate_gnomad(
                     except subprocess.TimeoutExpired:
                         proc.kill()
                         proc.wait()
+                if rename_proc and rename_proc.poll() is None:
+                    rename_proc.terminate()
                 raise
             finally:
                 if proc.stdout is not None:
@@ -1138,11 +1234,18 @@ def _annotate_gnomad(
     print(f"    gnomAD complete: {total_rows:,} variants ({elapsed})")
 
 
-def _annotate_dbsnp(patch, vcf_path: Path, step: int, total: int, is_update: bool):
+def _annotate_dbsnp(
+    patch, vcf_path: Path, step: int, total: int, is_update: bool,
+    chr_rename_map: Path | None = None,
+):
     """Step 4: dbSNP rsID backfill.
 
     Runs bcftools annotate with the chr-fixed dbSNP VCF to fill rsIDs
     for variants that lack them (rsid IS NULL in patch.db).
+
+    When chr_rename_map is provided, the user VCF has bare contigs and
+    needs to be piped through bcftools --rename-chrs to match dbSNP's
+    chr-prefixed contigs.
     """
     from genechat.download import dbsnp_path
     from genechat.progress import ProgressLine
@@ -1160,30 +1263,56 @@ def _annotate_dbsnp(patch, vcf_path: Path, step: int, total: int, is_update: boo
 
     progress = ProgressLine("    dbSNP", report_interval=15.0)
     proc = None
+    rename_proc = None
     try:
         with tempfile.SpooledTemporaryFile(
             max_size=64 * 1024, mode="w+"
         ) as stderr_file:
-            proc = subprocess.Popen(
-                [
-                    "bcftools",
-                    "annotate",
-                    "-a",
-                    str(dbsnp_vcf),
-                    "-c",
-                    "ID",
-                    str(vcf_path),
-                ],
-                stdout=subprocess.PIPE,
-                stderr=stderr_file,
-                text=True,
-            )
+            if chr_rename_map:
+                # User VCF has bare contigs — pipe through rename to match dbSNP
+                rename_proc = subprocess.Popen(
+                    ["bcftools", "annotate", "--rename-chrs",
+                     str(chr_rename_map), str(vcf_path)],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.DEVNULL,
+                )
+                proc = subprocess.Popen(
+                    ["bcftools", "annotate", "-a", str(dbsnp_vcf),
+                     "-c", "ID", "-"],
+                    stdin=rename_proc.stdout,
+                    stdout=subprocess.PIPE,
+                    stderr=stderr_file,
+                    text=True,
+                )
+                rename_proc.stdout.close()
+            else:
+                proc = subprocess.Popen(
+                    [
+                        "bcftools",
+                        "annotate",
+                        "-a",
+                        str(dbsnp_vcf),
+                        "-c",
+                        "ID",
+                        str(vcf_path),
+                    ],
+                    stdout=subprocess.PIPE,
+                    stderr=stderr_file,
+                    text=True,
+                )
             try:
                 rows = patch.update_dbsnp_from_stream(
                     iter(proc.stdout),
                     progress_callback=lambda n: progress.update(n),
                 )
                 rc = proc.wait()
+                if rename_proc:
+                    rename_rc = rename_proc.wait()
+                    if rename_rc != 0:
+                        raise RuntimeError(
+                            f"bcftools annotate --rename-chrs failed with "
+                            f"exit code {rename_rc}"
+                        )
                 if rc != 0:
                     stderr_file.seek(0)
                     stderr_tail = stderr_file.read()[-500:]
@@ -1202,6 +1331,8 @@ def _annotate_dbsnp(patch, vcf_path: Path, step: int, total: int, is_update: boo
             except subprocess.TimeoutExpired:
                 proc.kill()
                 proc.wait()
+        if rename_proc is not None and rename_proc.poll() is None:
+            rename_proc.terminate()
         patch.set_metadata("dbsnp", version or "unknown", status="failed")
         raise
 

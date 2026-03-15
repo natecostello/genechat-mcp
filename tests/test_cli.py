@@ -561,7 +561,7 @@ class TestAnnotate:
         annotate_calls = []
 
         def mock_annotate_gnomad(
-            patch, vcf_path, step, total, is_update, incremental=False
+            patch, vcf_path, step, total, is_update, incremental=False, **kwargs
         ):
             annotate_calls.append({"incremental": incremental})
 
@@ -569,6 +569,7 @@ class TestAnnotate:
         # Skip snpeff and clinvar
         monkeypatch.setattr("genechat.cli._annotate_snpeff", lambda *a, **kw: None)
         monkeypatch.setattr("genechat.cli._annotate_clinvar", lambda *a, **kw: None)
+        monkeypatch.setattr("genechat.cli._detect_bare_contigs", lambda _: False)
 
         result = cli.invoke(app, ["annotate", "--gnomad"])
 
@@ -601,13 +602,14 @@ class TestAnnotate:
         annotate_calls = []
 
         def mock_annotate_gnomad(
-            patch, vcf_path, step, total, is_update, incremental=False
+            patch, vcf_path, step, total, is_update, incremental=False, **kwargs
         ):
             annotate_calls.append({"incremental": incremental})
 
         monkeypatch.setattr("genechat.cli._annotate_gnomad", mock_annotate_gnomad)
         monkeypatch.setattr("genechat.cli._annotate_snpeff", lambda *a, **kw: None)
         monkeypatch.setattr("genechat.cli._annotate_clinvar", lambda *a, **kw: None)
+        monkeypatch.setattr("genechat.cli._detect_bare_contigs", lambda _: False)
 
         result = cli.invoke(app, ["annotate", "--gnomad"])
 
@@ -649,11 +651,12 @@ class TestAnnotate:
 
         annotate_calls = []
 
-        def mock_annotate_clinvar(patch, vcf_path, step, total, is_update):
+        def mock_annotate_clinvar(patch, vcf_path, step, total, is_update, **kwargs):
             annotate_calls.append("clinvar")
 
         monkeypatch.setattr("genechat.cli._annotate_clinvar", mock_annotate_clinvar)
         monkeypatch.setattr("genechat.cli._annotate_snpeff", lambda *a, **kw: None)
+        monkeypatch.setattr("genechat.cli._detect_bare_contigs", lambda _: False)
 
         result = cli.invoke(app, ["annotate", "--stale"])
 
@@ -757,13 +760,14 @@ class TestAnnotate:
         annotate_gnomad_calls = []
 
         def mock_annotate_gnomad(
-            patch, vcf_path, step, total, is_update, incremental=False
+            patch, vcf_path, step, total, is_update, incremental=False, **kwargs
         ):
             annotate_gnomad_calls.append({"incremental": incremental})
 
         monkeypatch.setattr("genechat.cli._annotate_gnomad", mock_annotate_gnomad)
         monkeypatch.setattr("genechat.cli._annotate_snpeff", lambda *a, **kw: None)
         monkeypatch.setattr("genechat.cli._annotate_clinvar", lambda *a, **kw: None)
+        monkeypatch.setattr("genechat.cli._detect_bare_contigs", lambda _: False)
 
         result = cli.invoke(app, ["annotate", "--gnomad", "--fast"])
 
@@ -803,12 +807,226 @@ class TestAnnotate:
         monkeypatch.setattr("genechat.cli._annotate_snpeff", lambda *a, **kw: None)
         monkeypatch.setattr("genechat.cli._annotate_clinvar", lambda *a, **kw: None)
         monkeypatch.setattr("genechat.cli._annotate_dbsnp", lambda *a, **kw: None)
+        monkeypatch.setattr("genechat.cli._detect_bare_contigs", lambda _: False)
 
         result = cli.invoke(app, ["annotate", "--dbsnp", "--fast"])
 
         assert result.exit_code == 0
         assert len(download_dbsnp_calls) == 1
         assert download_dbsnp_calls[0]["fast"] is True
+
+
+# ---------------------------------------------------------------------------
+# Bare contig rename in annotation pipeline
+# ---------------------------------------------------------------------------
+
+
+class TestAnnotateBareContigs:
+    """Tests for bare-contig user VCFs piped through rename during annotation."""
+
+    def test_dbsnp_with_bare_contigs_pipes_rename(self, tmp_path, monkeypatch):
+        """_annotate_dbsnp pipes through bcftools --rename-chrs for bare-contig VCFs."""
+        from genechat.cli import _annotate_dbsnp
+        from genechat.patch import PatchDB
+
+        patch_path = tmp_path / "test.patch.db"
+        patch = PatchDB.create(patch_path)
+
+        # Populate a variant with bare contig (as SnpEff would store)
+        snpeff_lines = [
+            "12\t21178615\t.\tT\tC\t.\tPASS\t"
+            "ANN=C|missense_variant|MODERATE|SLCO1B1||\n"
+        ]
+        patch.populate_from_snpeff_stream(iter(snpeff_lines))
+
+        fake_dbsnp = tmp_path / "dbsnp_chrfixed.vcf.gz"
+        fake_dbsnp.write_bytes(b"fake")
+        monkeypatch.setattr("genechat.download.dbsnp_path", lambda: fake_dbsnp)
+        monkeypatch.setattr("genechat.cli._dbsnp_version", lambda _: "Build 156")
+
+        fake_vcf = tmp_path / "raw.vcf.gz"
+        fake_vcf.write_bytes(b"fake")
+
+        # Write rename map
+        chr_map = tmp_path / "bare_to_chr.txt"
+        from genechat.cli import _write_bare_to_chr_map
+
+        _write_bare_to_chr_map(chr_map)
+
+        popen_calls = []
+
+        class MockStdout:
+            def __init__(self, lines):
+                self._iter = iter(lines)
+
+            def __iter__(self):
+                return self._iter
+
+            def __next__(self):
+                return next(self._iter)
+
+            def close(self):
+                pass
+
+        class MockProc:
+            def __init__(self, cmd, **kw):
+                popen_calls.append(cmd)
+                # Only the second process (annotate) produces output
+                if "-c" in cmd and "ID" in cmd:
+                    self.stdout = MockStdout(
+                        ["chr12\t21178615\trs4149056\tT\tC\t.\tPASS\t.\tGT\t0/1\n"]
+                    )
+                else:
+                    self.stdout = MockStdout([])
+                self.returncode = 0
+
+            def wait(self):
+                return 0
+
+            def poll(self):
+                return 0
+
+        monkeypatch.setattr("genechat.cli.subprocess.Popen", MockProc)
+
+        _annotate_dbsnp(
+            patch, fake_vcf, step=1, total=1, is_update=False,
+            chr_rename_map=chr_map,
+        )
+
+        # Should have 2 Popen calls: rename pipe + annotate
+        assert len(popen_calls) == 2
+        rename_cmd = popen_calls[0]
+        assert "--rename-chrs" in rename_cmd
+        annotate_cmd = popen_calls[1]
+        assert "-c" in annotate_cmd
+        assert "ID" in annotate_cmd
+        # Second command reads from stdin (-)
+        assert annotate_cmd[-1] == "-"
+
+        # Verify rsID was written — _chrom_variants_fixed handles both forms
+        ann = patch.get_annotation("12", 21178615, "T", "C")
+        assert ann["rsid"] == "rs4149056"
+
+        patch.close()
+
+    def test_dbsnp_without_rename_map_uses_direct_command(
+        self, tmp_path, monkeypatch
+    ):
+        """_annotate_dbsnp uses direct bcftools command when no rename needed."""
+        from genechat.cli import _annotate_dbsnp
+        from genechat.patch import PatchDB
+
+        patch_path = tmp_path / "test.patch.db"
+        patch = PatchDB.create(patch_path)
+        snpeff_lines = [
+            "chr12\t21178615\t.\tT\tC\t.\tPASS\t"
+            "ANN=C|missense_variant|MODERATE|SLCO1B1||\n"
+        ]
+        patch.populate_from_snpeff_stream(iter(snpeff_lines))
+
+        fake_dbsnp = tmp_path / "dbsnp_chrfixed.vcf.gz"
+        fake_dbsnp.write_bytes(b"fake")
+        monkeypatch.setattr("genechat.download.dbsnp_path", lambda: fake_dbsnp)
+        monkeypatch.setattr("genechat.cli._dbsnp_version", lambda _: "Build 156")
+
+        fake_vcf = tmp_path / "raw.vcf.gz"
+        fake_vcf.write_bytes(b"fake")
+
+        popen_calls = []
+
+        class MockStdout:
+            def __init__(self, lines):
+                self._iter = iter(lines)
+
+            def __iter__(self):
+                return self._iter
+
+            def __next__(self):
+                return next(self._iter)
+
+            def close(self):
+                pass
+
+        class MockProc:
+            def __init__(self, cmd, **kw):
+                popen_calls.append(cmd)
+                self.stdout = MockStdout(
+                    ["chr12\t21178615\trs4149056\tT\tC\t.\tPASS\t.\tGT\t0/1\n"]
+                )
+                self.returncode = 0
+
+            def wait(self):
+                return 0
+
+            def poll(self):
+                return 0
+
+        monkeypatch.setattr("genechat.cli.subprocess.Popen", MockProc)
+
+        _annotate_dbsnp(patch, fake_vcf, step=1, total=1, is_update=False)
+
+        # Only 1 Popen call — no rename pipe
+        assert len(popen_calls) == 1
+        assert "--rename-chrs" not in popen_calls[0]
+        # VCF path is the last argument (not "-" for stdin)
+        assert popen_calls[0][-1] == str(fake_vcf)
+
+        patch.close()
+
+    def test_run_annotate_detects_bare_contigs(self, cli, tmp_path, monkeypatch):
+        """_run_annotate creates chr_rename_map when VCF has bare contigs."""
+        from genechat.patch import PatchDB
+
+        patch_path = tmp_path / "test.patch.db"
+        patch = PatchDB.create(patch_path)
+        patch.close()
+
+        vcf = tmp_path / "test.vcf.gz"
+        vcf.write_bytes(b"fake")
+
+        config = AppConfig(
+            genomes={"default": {"vcf_path": str(vcf), "patch_db": str(patch_path)}}
+        )
+        monkeypatch.setattr("genechat.cli.load_config", lambda: config)
+        monkeypatch.setattr("genechat.download.snpeff_installed", lambda: True)
+        monkeypatch.setattr("genechat.download.clinvar_installed", lambda: True)
+        monkeypatch.setattr("genechat.download.gnomad_installed", lambda: False)
+        monkeypatch.setattr("genechat.download.dbsnp_installed", lambda: True)
+        monkeypatch.setattr("shutil.which", lambda name: f"/usr/bin/{name}")
+
+        # Detect as bare contigs
+        monkeypatch.setattr("genechat.cli._detect_bare_contigs", lambda _: True)
+
+        dbsnp_kwargs = []
+
+        def mock_annotate_dbsnp(*args, **kwargs):
+            dbsnp_kwargs.append(kwargs)
+
+        monkeypatch.setattr("genechat.cli._annotate_snpeff", lambda *a, **kw: None)
+        monkeypatch.setattr("genechat.cli._annotate_clinvar", lambda *a, **kw: None)
+        monkeypatch.setattr("genechat.cli._annotate_dbsnp", mock_annotate_dbsnp)
+
+        result = cli.invoke(app, ["annotate", "--dbsnp"])
+
+        assert result.exit_code == 0
+        assert "bare contig names" in result.output
+        assert len(dbsnp_kwargs) == 1
+        assert dbsnp_kwargs[0].get("chr_rename_map") is not None
+
+    def test_write_bare_to_chr_map(self, tmp_path):
+        """_write_bare_to_chr_map writes correct rename entries."""
+        from genechat.cli import _write_bare_to_chr_map
+
+        map_path = tmp_path / "rename.txt"
+        _write_bare_to_chr_map(map_path)
+
+        content = map_path.read_text()
+        assert "1 chr1\n" in content
+        assert "22 chr22\n" in content
+        assert "X chrX\n" in content
+        assert "Y chrY\n" in content
+        assert "MT chrMT\n" in content
+        assert "M chrM\n" in content
 
 
 # ---------------------------------------------------------------------------
