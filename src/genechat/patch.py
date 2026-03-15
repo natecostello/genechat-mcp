@@ -353,10 +353,14 @@ class PatchDB:
                     progress_callback(records_seen)
                     last_report = records_seen
                 continue
+            parsed_af = self._parse_af(af)
+            parsed_af_grpmax = self._parse_af(af_grpmax)
+            if parsed_af is None and parsed_af_grpmax is None:
+                continue
             batch.append(
                 (
-                    self._parse_af(af),
-                    self._parse_af(af_grpmax),
+                    parsed_af,
+                    parsed_af_grpmax,
                     record["chrom"],
                     record["pos"],
                     record["ref"],
