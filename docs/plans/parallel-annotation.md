@@ -19,17 +19,17 @@ using `ProcessPoolExecutor` and per-chromosome temp SQLite databases.
 
 ### Worker functions (must be top-level for pickling)
 
-**`annotate_gnomad_chromosome(chrom, vcf_path, gnomad_file, temp_db_path, chr_rename_map_path)`**
+**`annotate_gnomad_chromosome(chrom, vcf_contig, vcf_path, gnomad_file, temp_db_path, chr_rename_map_path)`**
 - Creates lightweight temp SQLite DB with table `results`: `CREATE TABLE results (chrom TEXT, pos INT, ref TEXT, alt TEXT, af REAL, af_grpmax REAL, PRIMARY KEY(chrom, pos, ref, alt))`
-- Region arg must use the actual contig name from the input VCF header (not derived via string concatenation). The orchestrator inspects the VCF header to build a `chrom → vcf_contig_name` map — this handles `chrM` vs `chrMT` correctly (e.g., gnomAD skips MT; dbSNP uses `chrMT` but many user VCFs use `chrM`). For bare-contig VCFs, region uses bare names (`-r 1`, `-r MT`).
+- Region arg uses `vcf_contig` (the resolved contig name from the input VCF header, passed by the orchestrator) for `-r {vcf_contig}`. This handles `chrM` vs `chrMT` correctly — the orchestrator inspects the VCF header once and passes the exact contig name to each worker.
 - If `chr_rename_map_path` is set (bare-contig VCF), pipes through `bcftools annotate --rename-chrs` **before** the annotation step so contigs match the reference (which uses chr-prefixed names)
 - For dbSNP MT: if user VCF has `chrM` but dbSNP uses `chrMT`, the rename map must handle this mismatch (rename `chrM` → `chrMT` for matching, or skip MT if contigs are irreconcilable)
 - Parses VCF stream, normalizes chrom to bare form via `normalize_chrom()` before inserting into temp DB (matching PatchDB convention)
 - Returns `(chrom, row_count, temp_db_path)`
 
-**`annotate_dbsnp_chromosome(chrom, vcf_path, dbsnp_vcf, temp_db_path, chr_rename_map_path)`**
+**`annotate_dbsnp_chromosome(chrom, vcf_contig, vcf_path, dbsnp_vcf, temp_db_path, chr_rename_map_path)`**
 - Creates temp DB with table `results`: `CREATE TABLE results (chrom TEXT, pos INT, ref TEXT, alt TEXT, rsid TEXT, PRIMARY KEY(chrom, pos, ref, alt))`
-- Region arg uses actual VCF header contig name (same header-based lookup as gnomAD worker)
+- Region arg uses `vcf_contig` passed by orchestrator (same as gnomAD worker)
 - If `chr_rename_map_path` is set, pipes through rename before annotation
 - MT contig: must detect `chrM` vs `chrMT` in input VCF header and align with dbSNP's `chrMT` convention via rename map
 - Normalizes chrom to bare form before inserting into temp DB
@@ -44,14 +44,14 @@ using `ProcessPoolExecutor` and per-chromosome temp SQLite databases.
   - gnomAD: `UPDATE annotations SET af = ..., af_grpmax = ... FROM temp.results WHERE annotations.chrom = temp.results.chrom AND ...` (both sides use bare chrom names)
   - dbSNP: `UPDATE annotations SET rsid = ..., rsid_source = 'dbsnp' FROM temp.results WHERE ... AND annotations.rsid IS NULL`
   - `DETACH temp`
-- Requires SQLite >= 3.33 for `UPDATE...FROM` syntax. CPython bundles its own SQLite (>= 3.39 for Python 3.11+), but Linux distro packages may link against system SQLite which can be older. The merge function must check `sqlite3.sqlite_version_info >= (3, 33, 0)` at runtime and fall back to correlated subqueries if the version is too old
+- Requires SQLite >= 3.33 for `UPDATE...FROM` syntax. Linux distro Python packages often link against the system SQLite, which may be older than 3.33. The merge function must check `sqlite3.sqlite_version_info >= (3, 33, 0)` at runtime and fall back to correlated subqueries if the version is too old. Do not assume Python version implies SQLite version
 - Deletes temp files after merge
 - Returns total rows merged
 
 ### Orchestrator
 
 **`run_parallel_annotation(vcf_path, patch_db_path, chroms, source, fast_args, chr_rename_map, progress_callback)`**
-- Determines worker count: `min(cpu_count, len(chroms), MAX_WORKERS)` where `MAX_WORKERS = 8`
+- Determines worker count: `min(os.cpu_count() or 1, len(chroms), MAX_WORKERS)` where `MAX_WORKERS = 8` (`os.cpu_count()` can return `None` on some platforms)
 - Creates temp directory for per-chromosome DBs
 - Submits tasks via `ProcessPoolExecutor`
 - Uses `as_completed()` for progress reporting: `"chr1 complete: 45,231 variants [4/N]"` (N varies: gnomAD=24, dbSNP=25)
@@ -71,7 +71,8 @@ using `ProcessPoolExecutor` and per-chromosome temp SQLite databases.
 - When `fast=True`: call `run_parallel_annotation(source="dbsnp", ...)`
 - When `fast=False`: existing sequential code (unchanged)
 - Note: dbSNP currently processes the entire file in one pass. The parallel
-  path splits into per-chromosome runs using `bcftools annotate -r chrN`
+  path splits into per-chromosome runs using `bcftools annotate -r {vcf_contig}`
+  (using the actual contig name from the VCF header, not a hard-coded prefix)
 
 ### `_run_annotate()`
 - Pass `fast=fast` to `_annotate_gnomad()` and `_annotate_dbsnp()`
