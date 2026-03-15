@@ -872,7 +872,7 @@ def _write_bare_to_chr_map(map_path: Path) -> Path:
     with open(map_path, "w") as f:
         for i in range(1, 23):
             f.write(f"{i} chr{i}\n")
-        f.write("X chrX\nY chrY\nMT chrMT\nM chrM\n")
+        f.write("X chrX\nY chrY\nMT chrMT\n")
     return map_path
 
 
@@ -1088,6 +1088,13 @@ def _annotate_clinvar(
                     f"bcftools annotate --rename-chrs failed with exit code {rename_rc}"
                 )
     except Exception:
+        if proc.poll() is None:
+            proc.terminate()
+            try:
+                proc.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+                proc.wait()
         if rename_proc and rename_proc.poll() is None:
             rename_proc.terminate()
             rename_proc.wait()

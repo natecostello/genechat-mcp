@@ -1028,7 +1028,7 @@ class TestAnnotateBareContigs:
         assert "X chrX\n" in content
         assert "Y chrY\n" in content
         assert "MT chrMT\n" in content
-        assert "M chrM\n" in content
+        assert "M chrM" not in content  # M is non-standard; only MT is mapped
 
 
 # ---------------------------------------------------------------------------
