@@ -34,7 +34,8 @@ def ensure_test_patch_db(ensure_test_vcf):
         from genechat.patch import PatchDB
 
         existing = PatchDB(patch_path, readonly=True)
-        fingerprint_ok = existing.check_vcf_fingerprint(vcf_path)
+        has_fingerprint = existing.get_vcf_fingerprint() is not None
+        fingerprint_ok = has_fingerprint and existing.check_vcf_fingerprint(vcf_path)
         existing.close()
         if fingerprint_ok:
             return
