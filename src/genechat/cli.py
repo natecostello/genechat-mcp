@@ -945,11 +945,11 @@ def _annotate_snpeff(patch, vcf_path: Path, step: int, total: int, is_update: bo
     step_start = time.monotonic()
 
     try:
-        # Get chromosome list from VCF
+        # Get only contigs that have variants (reads tabix index, O(1))
         import pysam
 
-        with pysam.VariantFile(str(vcf_path)) as vf:
-            chroms = list(vf.header.contigs)
+        with pysam.TabixFile(str(vcf_path)) as tf:
+            chroms = list(tf.contigs)
 
         total_rows = 0
         print(
