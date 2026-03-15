@@ -945,7 +945,7 @@ def _annotate_snpeff(patch, vcf_path: Path, step: int, total: int, is_update: bo
     step_start = time.monotonic()
 
     try:
-        # Get only contigs that have variants (reads TBI index, O(1))
+        # Get only contigs that have variants (reads tabix index, O(1))
         import pysam
 
         with pysam.TabixFile(str(vcf_path)) as tf:
