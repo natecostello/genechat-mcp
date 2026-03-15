@@ -80,7 +80,7 @@ def annotate_gnomad_chromosome(
             ],
             stdin=rename_proc.stdout,
             stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
             text=True,
         )
         rename_proc.stdout.close()
@@ -182,7 +182,7 @@ def annotate_dbsnp_chromosome(
             ["bcftools", "annotate", "-a", dbsnp_vcf, "-c", "ID", "-"],
             stdin=rename_proc.stdout,
             stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
             text=True,
         )
         rename_proc.stdout.close()
@@ -312,16 +312,22 @@ def _parse_dbsnp_to_db(conn: sqlite3.Connection, proc: subprocess.Popen) -> int:
 
 
 def _parse_af(value: str | None) -> float | None:
-    """Parse an AF value, handling '.' and multi-allelic comma-separated."""
-    if value is None or value == ".":
+    """Parse an AF value, handling '.' and multi-allelic comma-separated.
+
+    gnomAD Number=A fields at multi-allelic sites may be like ``.,0.02``
+    where the first entry is missing. Scans all parts and returns the
+    first valid float (matching PatchDB._parse_af behavior).
+    """
+    if not value:
         return None
-    try:
-        # Multi-allelic: take first value
-        if "," in value:
-            value = value.split(",")[0]
-        return float(value)
-    except (ValueError, IndexError):
-        return None
+    for part in value.split(","):
+        part = part.strip()
+        if part and part != ".":
+            try:
+                return float(part)
+            except ValueError:
+                continue
+    return None
 
 
 def _cleanup_procs(*procs: subprocess.Popen | None) -> None:

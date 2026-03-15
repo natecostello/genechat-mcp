@@ -127,6 +127,13 @@ class TestParseAf:
     def test_multi_allelic_takes_first(self):
         assert _parse_af("0.01,0.02") == 0.01
 
+    def test_multi_allelic_leading_dot(self):
+        """Leading '.' in multi-allelic should skip to next valid value."""
+        assert _parse_af(".,0.02") == 0.02
+
+    def test_multi_allelic_all_dots(self):
+        assert _parse_af(".,.,.") is None
+
     def test_invalid_returns_none(self):
         assert _parse_af("abc") is None
 
