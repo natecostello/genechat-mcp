@@ -80,7 +80,7 @@ def annotate_gnomad_chromosome(
             ],
             stdin=rename_proc.stdout,
             stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
             text=True,
         )
         rename_proc.stdout.close()
@@ -114,9 +114,18 @@ def annotate_gnomad_chromosome(
                 f"bcftools annotate (gnomAD) failed on chr{chrom}: {stderr}"
             )
         if rename_proc:
-            rename_proc.wait()
+            rename_rc = rename_proc.wait()
+            if rename_rc != 0:
+                raise RuntimeError(
+                    f"bcftools annotate --rename-chrs failed with "
+                    f"exit code {rename_rc} on chr{chrom}"
+                )
         if view_proc:
-            view_proc.wait()
+            view_rc = view_proc.wait()
+            if view_rc != 0:
+                raise RuntimeError(
+                    f"bcftools view failed with exit code {view_rc} on chr{chrom}"
+                )
     except Exception:
         _cleanup_procs(proc, rename_proc, view_proc)
         conn.close()
@@ -173,7 +182,7 @@ def annotate_dbsnp_chromosome(
             ["bcftools", "annotate", "-a", dbsnp_vcf, "-c", "ID", "-"],
             stdin=rename_proc.stdout,
             stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
             text=True,
         )
         rename_proc.stdout.close()
@@ -206,9 +215,18 @@ def annotate_dbsnp_chromosome(
                 f"bcftools annotate (dbSNP) failed on chr{chrom}: {stderr}"
             )
         if rename_proc:
-            rename_proc.wait()
+            rename_rc = rename_proc.wait()
+            if rename_rc != 0:
+                raise RuntimeError(
+                    f"bcftools annotate --rename-chrs failed with "
+                    f"exit code {rename_rc} on chr{chrom}"
+                )
         if view_proc:
-            view_proc.wait()
+            view_rc = view_proc.wait()
+            if view_rc != 0:
+                raise RuntimeError(
+                    f"bcftools view failed with exit code {view_rc} on chr{chrom}"
+                )
     except Exception:
         _cleanup_procs(proc, rename_proc, view_proc)
         conn.close()
@@ -337,6 +355,9 @@ def merge_temp_databases(
 
     Returns total rows merged.
     """
+    if layer not in ("gnomad", "dbsnp"):
+        raise ValueError(f"Invalid layer {layer!r}, expected 'gnomad' or 'dbsnp'")
+
     conn = sqlite3.connect(patch_db_path)
     total = 0
 
@@ -431,11 +452,12 @@ def _resolve_vcf_contigs(
     mapping = {}
     for chrom in chroms:
         if bare:
-            # Bare contig: check exact match, also try MT→M
+            # Bare contig: check exact match only.
+            # Do NOT map MT→M: the rename map only covers MT→chrMT,
+            # so using "M" here would leave the contig un-renamed and
+            # silently miss mitochondrial annotations.
             if chrom in header_contigs:
                 mapping[chrom] = chrom
-            elif chrom == "MT" and "M" in header_contigs:
-                mapping[chrom] = "M"
         else:
             # Chr-prefixed: try chrN, also chrM vs chrMT
             chr_name = f"chr{chrom}"
@@ -472,6 +494,9 @@ def run_parallel_annotation(
 
     Returns total rows merged into patch.db.
     """
+    if source not in ("gnomad", "dbsnp"):
+        raise ValueError(f"Invalid source {source!r}, expected 'gnomad' or 'dbsnp'")
+
     bare = chr_rename_map is not None
     contig_map = _resolve_vcf_contigs(str(vcf_path), chroms, bare)
 
@@ -481,7 +506,6 @@ def run_parallel_annotation(
         return 0
 
     worker_count = min(os.cpu_count() or 1, len(available_chroms), MAX_WORKERS)
-    total_chroms = len(available_chroms)
 
     tmp_dir = tempfile.mkdtemp(prefix="genechat_parallel_")
 
@@ -510,6 +534,8 @@ def run_parallel_annotation(
                 )
                 futures[future] = chrom
 
+            # total_chroms from actually submitted futures, not available_chroms
+            total_chroms = len(futures)
             completed = 0
             results = []
             for future in as_completed(futures):
