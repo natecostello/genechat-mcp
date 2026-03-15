@@ -49,7 +49,7 @@ Parallelizing across chromosomes could reduce this to ~1-2 hours total.
 Chosen option: **1 — Per-chromosome temp databases**, because it eliminates all
 write contention during the parallel phase and produces deterministic results.
 
-Plan: `docs/plans/parallel-annotation.md` (created at PENDING)
+Plan: `docs/plans/parallel-annotation.md` (created at 45b2ed1)
 
 ### Consequences
 

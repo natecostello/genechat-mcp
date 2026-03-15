@@ -47,7 +47,7 @@ using `ProcessPoolExecutor` and per-chromosome temp SQLite databases.
 ### Orchestrator
 
 **`run_parallel_annotation(vcf_path, patch_db_path, chroms, source, fast_args, chr_rename_map, progress_callback)`**
-- Determines worker count: `min(cpu_count, len(chroms), 8)`
+- Determines worker count: `min(cpu_count, len(chroms), MAX_WORKERS)` where `MAX_WORKERS = 8`
 - Creates temp directory for per-chromosome DBs
 - Submits tasks via `ProcessPoolExecutor`
 - Uses `as_completed()` for progress reporting: `"chr1 complete: 45,231 variants [4/24]"`
