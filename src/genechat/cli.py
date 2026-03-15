@@ -784,7 +784,9 @@ def _run_annotate(
 
     # Detect bare contigs — create rename map if bcftools-based steps need it
     chr_rename_map = None
-    needs_bcftools_rename = (run_clinvar or run_gnomad or run_dbsnp) and _detect_bare_contigs(vcf_path)
+    needs_bcftools_rename = (
+        run_clinvar or run_gnomad or run_dbsnp
+    ) and _detect_bare_contigs(vcf_path)
     if needs_bcftools_rename:
         import os
         import tempfile as _tf
@@ -803,7 +805,11 @@ def _run_annotate(
         if run_clinvar:
             step += 1
             _annotate_clinvar(
-                patch, vcf_path, step, total_steps, not first_run,
+                patch,
+                vcf_path,
+                step,
+                total_steps,
+                not first_run,
                 chr_rename_map=chr_rename_map,
             )
 
@@ -822,7 +828,11 @@ def _run_annotate(
         if run_dbsnp:
             step += 1
             _annotate_dbsnp(
-                patch, vcf_path, step, total_steps, not first_run,
+                patch,
+                vcf_path,
+                step,
+                total_steps,
+                not first_run,
                 chr_rename_map=chr_rename_map,
             )
 
@@ -852,7 +862,6 @@ def _patch_db_path_for(vcf_path: Path, genome_cfg) -> Path:
         return Path(genome_cfg.patch_db)
     # Convention: same directory as VCF, <stem>.patch.db
     return vcf_path.parent / f"{vcf_path.stem.replace('.vcf', '')}.patch.db"
-
 
 
 def _write_bare_to_chr_map(map_path: Path) -> Path:
@@ -985,7 +994,11 @@ def _annotate_snpeff(patch, vcf_path: Path, step: int, total: int, is_update: bo
 
 
 def _annotate_clinvar(
-    patch, vcf_path: Path, step: int, total: int, is_update: bool,
+    patch,
+    vcf_path: Path,
+    step: int,
+    total: int,
+    is_update: bool,
     chr_rename_map: Path | None = None,
 ):
     """Step 2: ClinVar clinical significance."""
@@ -1015,14 +1028,26 @@ def _annotate_clinvar(
         if chr_rename_map:
             # User VCF has bare contigs — pipe through rename to match ClinVar
             rename_proc = subprocess.Popen(
-                ["bcftools", "annotate", "--rename-chrs", str(chr_rename_map),
-                 str(vcf_path)],
+                [
+                    "bcftools",
+                    "annotate",
+                    "--rename-chrs",
+                    str(chr_rename_map),
+                    str(vcf_path),
+                ],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.DEVNULL,
             )
             proc = subprocess.Popen(
-                ["bcftools", "annotate", "-a", str(clinvar_use),
-                 "-c", "INFO/CLNSIG,INFO/CLNDN,INFO/CLNREVSTAT", "-"],
+                [
+                    "bcftools",
+                    "annotate",
+                    "-a",
+                    str(clinvar_use),
+                    "-c",
+                    "INFO/CLNSIG,INFO/CLNDN,INFO/CLNREVSTAT",
+                    "-",
+                ],
                 stdin=rename_proc.stdout,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
@@ -1161,14 +1186,28 @@ def _annotate_gnomad(
             if chr_rename_map:
                 # Pipe user VCF through rename: bare -> chr-prefixed
                 rename_proc = subprocess.Popen(
-                    ["bcftools", "annotate", "--rename-chrs",
-                     str(chr_rename_map), "-r", chrom, str(vcf_path)],
+                    [
+                        "bcftools",
+                        "annotate",
+                        "--rename-chrs",
+                        str(chr_rename_map),
+                        "-r",
+                        chrom,
+                        str(vcf_path),
+                    ],
                     stdout=subprocess.PIPE,
                     stderr=subprocess.DEVNULL,
                 )
                 proc = subprocess.Popen(
-                    ["bcftools", "annotate", "-a", str(gnomad_file),
-                     "-c", "INFO/AF,INFO/AF_grpmax", "-"],
+                    [
+                        "bcftools",
+                        "annotate",
+                        "-a",
+                        str(gnomad_file),
+                        "-c",
+                        "INFO/AF,INFO/AF_grpmax",
+                        "-",
+                    ],
                     stdin=rename_proc.stdout,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
@@ -1242,7 +1281,11 @@ def _annotate_gnomad(
 
 
 def _annotate_dbsnp(
-    patch, vcf_path: Path, step: int, total: int, is_update: bool,
+    patch,
+    vcf_path: Path,
+    step: int,
+    total: int,
+    is_update: bool,
     chr_rename_map: Path | None = None,
 ):
     """Step 4: dbSNP rsID backfill.
@@ -1278,14 +1321,18 @@ def _annotate_dbsnp(
             if chr_rename_map:
                 # User VCF has bare contigs — pipe through rename to match dbSNP
                 rename_proc = subprocess.Popen(
-                    ["bcftools", "annotate", "--rename-chrs",
-                     str(chr_rename_map), str(vcf_path)],
+                    [
+                        "bcftools",
+                        "annotate",
+                        "--rename-chrs",
+                        str(chr_rename_map),
+                        str(vcf_path),
+                    ],
                     stdout=subprocess.PIPE,
                     stderr=subprocess.DEVNULL,
                 )
                 proc = subprocess.Popen(
-                    ["bcftools", "annotate", "-a", str(dbsnp_vcf),
-                     "-c", "ID", "-"],
+                    ["bcftools", "annotate", "-a", str(dbsnp_vcf), "-c", "ID", "-"],
                     stdin=rename_proc.stdout,
                     stdout=subprocess.PIPE,
                     stderr=stderr_file,

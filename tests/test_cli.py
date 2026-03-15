@@ -889,7 +889,11 @@ class TestAnnotateBareContigs:
         monkeypatch.setattr("genechat.cli.subprocess.Popen", MockProc)
 
         _annotate_dbsnp(
-            patch, fake_vcf, step=1, total=1, is_update=False,
+            patch,
+            fake_vcf,
+            step=1,
+            total=1,
+            is_update=False,
             chr_rename_map=chr_map,
         )
 
@@ -909,9 +913,7 @@ class TestAnnotateBareContigs:
 
         patch.close()
 
-    def test_dbsnp_without_rename_map_uses_direct_command(
-        self, tmp_path, monkeypatch
-    ):
+    def test_dbsnp_without_rename_map_uses_direct_command(self, tmp_path, monkeypatch):
         """_annotate_dbsnp uses direct bcftools command when no rename needed."""
         from genechat.cli import _annotate_dbsnp
         from genechat.patch import PatchDB
