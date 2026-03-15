@@ -371,6 +371,89 @@ class TestPatchDBLookup:
         assert len(results) == 0
 
 
+class TestPatchDBLegacyCompat:
+    """Regression tests for legacy patch.db files with chr-prefixed chrom values."""
+
+    def test_legacy_chr_prefixed_rows_readable(self, tmp_path):
+        """Existing patch.db with chr-prefixed chrom values is still readable."""
+        db = PatchDB.create(tmp_path / "legacy.db")
+        # Manually insert a row with chr-prefixed chrom (simulating old behavior)
+        db._conn.execute(
+            "INSERT INTO annotations "
+            "(chrom, pos, ref, alt, rsid, gene, effect, impact) "
+            "VALUES ('chr12', 21178615, 'T', 'C', 'rs4149056', "
+            "'SLCO1B1', 'missense_variant', 'MODERATE')"
+        )
+        db._conn.commit()
+
+        # Read with chr-prefixed query — should find the row
+        ann = db.get_annotation("chr12", 21178615, "T", "C")
+        assert ann is not None
+        assert ann["gene"] == "SLCO1B1"
+
+        # Read with bare query — should also find it (backward compat)
+        ann2 = db.get_annotation("12", 21178615, "T", "C")
+        assert ann2 is not None
+        assert ann2["gene"] == "SLCO1B1"
+        db.close()
+
+    def test_legacy_chr_prefixed_region_query(self, tmp_path):
+        """get_annotations_in_region works with legacy chr-prefixed rows."""
+        db = PatchDB.create(tmp_path / "legacy.db")
+        db._conn.execute(
+            "INSERT INTO annotations "
+            "(chrom, pos, ref, alt, gene) "
+            "VALUES ('chr7', 117559590, 'ATCT', 'A', 'CFTR')"
+        )
+        db._conn.commit()
+
+        results = db.get_annotations_in_region("chr7", 117559580, 117559600)
+        assert len(results) == 1
+        results2 = db.get_annotations_in_region("7", 117559580, 117559600)
+        assert len(results2) == 1
+        db.close()
+
+    def test_legacy_chr_prefixed_clinvar_query(self, tmp_path):
+        """query_clinvar with region works on legacy chr-prefixed rows."""
+        db = PatchDB.create(tmp_path / "legacy.db")
+        db._conn.execute(
+            "INSERT INTO annotations "
+            "(chrom, pos, ref, alt, clnsig, clndn) "
+            "VALUES ('chr12', 21178615, 'T', 'C', 'drug_response', 'Simvastatin')"
+        )
+        db._conn.commit()
+
+        results = db.query_clinvar("drug_response", "chr12", 21178600, 21178700)
+        assert len(results) == 1
+        results2 = db.query_clinvar("drug_response", "12", 21178600, 21178700)
+        assert len(results2) == 1
+        db.close()
+
+    def test_gnomad_updates_legacy_chr_prefixed_rows(self, tmp_path):
+        """gnomAD update matches legacy chr-prefixed rows in patch.db."""
+        db = PatchDB.create(tmp_path / "legacy.db")
+        # Insert legacy chr-prefixed row
+        db._conn.execute(
+            "INSERT INTO annotations "
+            "(chrom, pos, ref, alt, gene) "
+            "VALUES ('chr1', 500, 'A', 'G', 'GENE1')"
+        )
+        db._conn.commit()
+
+        # gnomAD stream outputs chr-prefixed — parse_vcf_stream normalizes
+        # to bare '1', but UPDATE uses IN (bare, prefixed) to match both
+        gnomad_lines = [
+            "chr1\t500\t.\tA\tG\t.\tPASS\tAF=0.05;AF_grpmax=0.08\tGT\t0/1\n"
+        ]
+        count = db.update_gnomad_from_stream(iter(gnomad_lines))
+        assert count == 1
+
+        ann = db.get_annotation("chr1", 500, "A", "G")
+        assert ann is not None
+        assert ann["af"] == pytest.approx(0.05)
+        db.close()
+
+
 class TestPatchDBMetadata:
     def test_set_and_get_metadata(self, tmp_path):
         db = PatchDB.create(tmp_path / "test.db")
