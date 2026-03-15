@@ -1741,6 +1741,8 @@ class TestAnnotateSnpeffSkipsEmpty:
 
         # TabixFile.contigs returns only contigs with variants
         mock_tf = MagicMock()
+        mock_tf.__enter__ = lambda s: s
+        mock_tf.__exit__ = lambda s, *a: None
         mock_tf.contigs = ("chr1", "chr22")
         monkeypatch.setattr("pysam.TabixFile", lambda *a, **kw: mock_tf)
 

@@ -948,9 +948,8 @@ def _annotate_snpeff(patch, vcf_path: Path, step: int, total: int, is_update: bo
         # Get only contigs that have variants (reads TBI index, O(1))
         import pysam
 
-        tf = pysam.TabixFile(str(vcf_path))
-        chroms = list(tf.contigs)
-        tf.close()
+        with pysam.TabixFile(str(vcf_path)) as tf:
+            chroms = list(tf.contigs)
 
         total_rows = 0
         print(
