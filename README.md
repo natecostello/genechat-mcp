@@ -1,8 +1,21 @@
 # GeneChat MCP Server
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://python.org)
+[![MCP](https://img.shields.io/badge/MCP-compatible-green.svg)](https://modelcontextprotocol.io/)
+
+**Talk to your genome.**
+
+GeneChat is a local-first MCP server that annotates your whole-genome VCF once, then serves it as tools so you can ask questions about pharmacogenomics, disease risk, carrier status, and more — with your raw file never leaving your machine.
+
 **[Try the live demo →](https://genechat-demo.fly.dev/)**
 
-A local-first MCP server that lets you have detailed conversations with AI about your genome. Query your whole-genome sequencing data through Claude (or any MCP-compatible LLM) for pharmacogenomics, disease risk, nutrition, exercise genetics, carrier screening, and more — with your raw VCF file never leaving your machine.
+![GeneChat example conversation](docs/images/genechat-giab-example.gif)
+
+**Things you can ask:**
+- "I was just prescribed simvastatin — any genetic concerns?"
+- "I have surgery next month. What should I tell my anesthesiologist?"
+- "Am I a carrier for anything concerning?"
 
 > **Privacy Notice:** GeneChat reads your VCF locally, but tool responses — containing your genotypes, rsIDs, and clinical interpretations — are sent to your LLM provider (e.g. Anthropic, OpenAI) as part of the conversation. Your raw VCF file is never uploaded, but the LLM does see the specific variants and findings returned by each tool call. See [Security Recommendations](#security-recommendations) below.
 
@@ -10,12 +23,9 @@ A local-first MCP server that lets you have detailed conversations with AI about
 
 You get your genome sequenced ($250–$900 from providers like Nucleus Genomics or Nebula Genomics). You download the raw VCF file. GeneChat annotates it once with open-source tools, then serves it locally via MCP so you can ask questions like:
 
-- "I was just prescribed simvastatin — any genetic concerns?"
 - "What does my genome say about cardiovascular risk?"
 - "I do heavy lifting and kiteboarding — any genetic injury risk factors?"
 - "How should I think about my diet based on my genetics?"
-- "I have surgery next month. What should I tell my anesthesiologist?"
-- "Am I a carrier for anything concerning?"
 
 The LLM calls GeneChat's tools behind the scenes, gets your specific genotypes and annotations, and interprets the results in context.
 
@@ -170,9 +180,51 @@ uv run genechat init HG001_GRCh38_1_22_v4.2.1_benchmark.vcf.gz --label giab
 
 Then ask Claude questions just like you would with your own genome.
 
-### Start asking questions
+### Connect to Claude
 
-Open Claude and ask about your genetics. GeneChat's tools will appear automatically.
+`genechat init` prints the MCP config JSON at the end. How you use it depends on your client:
+
+**Claude Desktop (local genome):**
+
+Copy the JSON from `genechat init` into your `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "genechat": {
+      "command": "genechat",
+      "env": { "GENECHAT_CONFIG": "/path/to/config.toml" }
+    }
+  }
+}
+```
+
+**Claude Code (local genome):**
+
+```bash
+claude mcp add genechat -- genechat
+```
+
+**Try the remote demo (no installation needed):**
+
+Claude Desktop: Go to Settings > Connectors and add `https://genechat-demo.fly.dev/sse` (requires Pro/Max/Team/Enterprise), or use the [mcp-remote](https://www.npmjs.com/package/mcp-remote) bridge:
+
+```json
+{
+  "mcpServers": {
+    "genechat-demo": {
+      "command": "npx",
+      "args": ["mcp-remote", "https://genechat-demo.fly.dev/sse"]
+    }
+  }
+}
+```
+
+Claude Code:
+
+```bash
+claude mcp add genechat-demo --transport sse https://genechat-demo.fly.dev/sse
+```
 
 ### Multiple genomes
 
