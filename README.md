@@ -24,20 +24,14 @@ GeneChat is a local-first MCP server that annotates your whole-genome VCF once, 
 You get your genome sequenced ($250–$900 from providers like Nucleus Genomics or Nebula Genomics). You download the raw VCF file. GeneChat annotates it once with open-source tools, then serves it locally via MCP so you can ask questions like:
 
 - "What does my genome say about cardiovascular risk?"
-- "I do heavy lifting and kiteboarding — any genetic injury risk factors?"
+- "I play soccer — any genetic injury risk factors?"
 - "How should I think about my diet based on my genetics?"
 
 The LLM calls GeneChat's tools behind the scenes, gets your specific genotypes and annotations, and interprets the results in context.
 
 ## How It Works
 
-```
-You ask a question in Claude
-    → Claude picks the right GeneChat tool
-    → GeneChat queries your local VCF with pysam
-    → Returns your genotype + clinical annotations
-    → Claude interprets the results for you
-```
+You ask a question in your LLM → it picks the right GeneChat tool → GeneChat queries your local VCF with pysam → returns your genotype + clinical annotations → the LLM interprets the results for you.
 
 GeneChat reads only local files and makes no network calls at runtime. However, tool responses — containing your genotypes and clinical findings — are sent to your LLM provider as part of the conversation. See [Security Recommendations](#security-recommendations) for details on cloud vs local LLM options.
 
