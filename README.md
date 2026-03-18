@@ -1,6 +1,6 @@
 # GeneChat MCP Server
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/natecostello/genechat-mcp/blob/main/LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://python.org)
 [![MCP](https://img.shields.io/badge/MCP-compatible-green.svg)](https://modelcontextprotocol.io/)
 
@@ -200,9 +200,11 @@ Add GeneChat as a stdio MCP server in your client's settings. The command is `ge
 
 ```json
 {
-  "genechat": {
-    "command": "genechat",
-    "env": { "GENECHAT_CONFIG": "/path/to/genechat/config.toml" }
+  "mcpServers": {
+    "genechat": {
+      "command": "genechat",
+      "env": { "GENECHAT_CONFIG": "/path/to/genechat/config.toml" }
+    }
   }
 }
 ```
