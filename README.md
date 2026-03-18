@@ -172,25 +172,40 @@ curl -L -O https://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/NA12878_HG001/NIS
 uv run genechat init HG001_GRCh38_1_22_v4.2.1_benchmark.vcf.gz --label giab
 ```
 
-Then ask Claude questions just like you would with your own genome.
+Then ask questions just like you would with your own genome.
 
-### Connect to Claude
+### Connect to your LLM
 
-`genechat init` prints the MCP config JSON at the end. How you use it depends on your client:
+`genechat init` prints MCP config JSON at the end. GeneChat works with any MCP-compatible client — here are common setups:
 
-**Claude Desktop (local genome):**
+**Claude Desktop:**
 
 Copy the JSON printed by `genechat init` into your `claude_desktop_config.json`. The output varies by install method (source checkout uses `uv run`, tool install uses `genechat` directly) — paste it as-is.
 
-**Claude Code (local genome):**
+**Claude Code:**
 
 ```bash
 claude mcp add genechat -- genechat
 ```
 
+**Cursor / Windsurf / other MCP clients:**
+
+Add GeneChat as a stdio MCP server in your client's settings. The command is `genechat` (or `uv run --directory /path/to/genechat-mcp genechat` for source installs). Set the `GENECHAT_CONFIG` environment variable to your config.toml path.
+
+**Any client with an MCP config file** (`mcp.json`, `mcp_servers.json`, etc.):
+
+```json
+{
+  "genechat": {
+    "command": "genechat",
+    "env": { "GENECHAT_CONFIG": "/path/to/genechat/config.toml" }
+  }
+}
+```
+
 **Try the remote demo (no installation needed):**
 
-Claude Desktop: Go to Settings > Connectors and add `https://genechat-demo.fly.dev/sse` (requires Pro/Max/Team/Enterprise), or use the [mcp-remote](https://www.npmjs.com/package/mcp-remote) bridge:
+For clients that support remote MCP servers, connect to `https://genechat-demo.fly.dev/sse`. In Claude Desktop, go to Settings > Connectors (requires Pro/Max/Team/Enterprise), or use the [mcp-remote](https://www.npmjs.com/package/mcp-remote) bridge:
 
 ```json
 {
