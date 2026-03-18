@@ -185,7 +185,11 @@ Copy the JSON printed by `genechat init` into your `claude_desktop_config.json`.
 **Claude Code:**
 
 ```bash
+# Tool install (genechat on PATH):
 claude mcp add genechat -- genechat
+
+# Source install (use the command/args from genechat init output):
+claude mcp add genechat -- uv run --directory /path/to/genechat-mcp genechat
 ```
 
 **Cursor / Windsurf / other MCP clients:**
@@ -212,7 +216,7 @@ For clients that support remote MCP servers, connect to `https://genechat-demo.f
   "mcpServers": {
     "genechat-demo": {
       "command": "npx",
-      "args": ["mcp-remote", "https://genechat-demo.fly.dev/sse"]
+      "args": ["-y", "mcp-remote", "https://genechat-demo.fly.dev/sse"]
     }
   }
 }
