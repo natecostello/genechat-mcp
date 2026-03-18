@@ -196,7 +196,7 @@ claude mcp add genechat -- uv run --directory /path/to/genechat-mcp genechat
 
 Add GeneChat as a stdio MCP server in your client's settings. The command is `genechat` (or `uv run --directory /path/to/genechat-mcp genechat` for source installs). Set the `GENECHAT_CONFIG` environment variable to your config.toml path.
 
-**Any client with an MCP config file** (`mcp.json`, `mcp_servers.json`, etc.):
+**Any client with an MCP config file** (`mcp.json`, `mcp_servers.json`, etc.) — for source installs, paste the JSON from `genechat init` instead:
 
 ```json
 {
