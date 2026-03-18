@@ -10,7 +10,7 @@ GeneChat is a local-first MCP server that annotates your whole-genome VCF once, 
 
 **[Try the live demo →](https://genechat-demo.fly.dev/)**
 
-![GeneChat example conversation](docs/images/genechat-giab-example.gif)
+![GeneChat example conversation](https://raw.githubusercontent.com/natecostello/genechat-mcp/main/docs/images/genechat-giab-example.gif)
 
 **Things you can ask:**
 - "I was just prescribed simvastatin — any genetic concerns?"
@@ -180,18 +180,7 @@ Then ask Claude questions just like you would with your own genome.
 
 **Claude Desktop (local genome):**
 
-Copy the JSON from `genechat init` into your `claude_desktop_config.json`:
-
-```json
-{
-  "mcpServers": {
-    "genechat": {
-      "command": "genechat",
-      "env": { "GENECHAT_CONFIG": "/path/to/config.toml" }
-    }
-  }
-}
-```
+Copy the JSON printed by `genechat init` into your `claude_desktop_config.json`. The output varies by install method (source checkout uses `uv run`, tool install uses `genechat` directly) — paste it as-is.
 
 **Claude Code (local genome):**
 
