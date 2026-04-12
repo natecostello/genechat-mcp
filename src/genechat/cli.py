@@ -1848,7 +1848,7 @@ def _run_status(json_output: bool = False, check_updates: bool = False):
         print("  GWAS:           installed (CC0)")
     else:
         print("  GWAS:           not installed — genechat install --gwas")
-    print("  Lookup tables:  installed")
+    print("  Seeds:          installed")
     print()
 
     # Section 2: Per-genome annotation state
