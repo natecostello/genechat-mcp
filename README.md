@@ -154,11 +154,19 @@ uv run genechat init /path/to/your/raw.vcf.gz --gnomad --gwas
 
 gnomAD is optional; without it, `query_gene` falls back to ClinVar-only filtering. GWAS enables `query_gwas` for trait association lookups. Both can be added after init via `genechat annotate --gnomad` / `genechat install --gwas`.
 
-> **Disk usage:** `--gnomad` downloads each gnomAD chromosome, annotates from it, then deletes the file — peak disk usage is ~17 GB (one chromosome) rather than ~150 GB for all files at once.
+#### What to expect
 
-> **Time estimate:** Default init takes ~10–15 minutes (SnpEff + ClinVar). With `--gnomad`, expect several hours — it downloads and processes ~150 GB of per-chromosome data. Consider running `genechat init --gnomad` overnight.
+Benchmarked on the GIAB NA12878 genome (~3.9M variants) on an 8-vCPU machine:
 
-> **Fast mode:** Add `--fast` to bulk-download references and parallelize annotation across chromosomes — ~20x faster but requires ~180 GB peak disk. Useful on machines with ample storage (e.g. `genechat init --gnomad --dbsnp --fast`).
+| Mode | Time | Peak disk | Best for |
+|------|------|-----------|----------|
+| Default (`genechat init`) | ~15 min | ~3 GB | Quick start (SnpEff + ClinVar only) |
+| Default + `--gnomad` | several hours | ~17 GB | Low-disk machines (streams one chromosome at a time) |
+| `--fast --gnomad --dbsnp` | **~1h 45m** | **~213 GB** | Fast full annotation (bulk downloads, parallel workers) |
+
+After annotation, only ~1 GB persists (VCF + patch.db). Reference databases can be deleted.
+
+**Where the time goes** (`--fast` mode): SnpEff ~60 min (single-threaded bottleneck), gnomAD ~34 min (8 workers), dbSNP ~6 min (8 workers), ClinVar ~38s.
 
 ### Don't have your genome sequenced?
 
