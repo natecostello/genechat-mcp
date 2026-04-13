@@ -1,7 +1,8 @@
 """Download reference databases for GeneChat annotation.
 
-Downloads to a shared cache directory (~/.local/share/genechat/references/
-via platformdirs). References are genome-build-specific, not sample-specific.
+Downloads to a shared cache directory under the configurable data dir
+(see ``genechat.config.get_data_dir``). References are genome-build-specific,
+not sample-specific.
 """
 
 import json

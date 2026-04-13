@@ -62,9 +62,9 @@ class AppConfig(BaseModel):
 def get_data_dir() -> Path:
     """Base directory for user data (references, GWAS, lookup tables).
 
-    Resolution order: GENECHAT_DATA_DIR env var → platformdirs default.
-    The config.toml ``data_dir`` setting is propagated to the env var
-    in ``load_config()`` so all modules pick it up.
+    Resolution order: GENECHAT_DATA_DIR env var → config.toml
+    ``[databases].data_dir`` (propagated to the env var by
+    ``load_config()``) → platformdirs default.
     """
     env = os.environ.get("GENECHAT_DATA_DIR")
     if env:
