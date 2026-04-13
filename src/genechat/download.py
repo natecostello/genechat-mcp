@@ -1,7 +1,8 @@
 """Download reference databases for GeneChat annotation.
 
-Downloads to a shared cache directory (~/.local/share/genechat/references/
-via platformdirs). References are genome-build-specific, not sample-specific.
+Downloads to a shared cache directory under the configurable data dir
+(see ``genechat.config.get_data_dir``). References are genome-build-specific,
+not sample-specific.
 """
 
 import json
@@ -13,11 +14,8 @@ import time
 from pathlib import Path
 from urllib.request import Request, urlopen
 
-from platformdirs import user_data_dir
-
+from genechat.config import get_data_dir
 from genechat.progress import ProgressLine, format_size, format_speed
-
-REFERENCES_DIR = Path(user_data_dir("genechat")) / "references"
 
 CLINVAR_URL = "https://ftp.ncbi.nlm.nih.gov/pub/clinvar/vcf_GRCh38/clinvar.vcf.gz"
 CLINVAR_TBI_URL = (
@@ -66,8 +64,9 @@ DBSNP_CONTIGS = [
 
 def references_dir() -> Path:
     """Return the shared references directory, creating it if needed."""
-    REFERENCES_DIR.mkdir(parents=True, exist_ok=True)
-    return REFERENCES_DIR
+    d = get_data_dir() / "references"
+    d.mkdir(parents=True, exist_ok=True)
+    return d
 
 
 def clinvar_path() -> Path:

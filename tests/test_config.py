@@ -3,7 +3,13 @@
 import importlib.resources as _real_resources
 from pathlib import Path
 
-from genechat.config import AppConfig, _default_db_path, load_config, write_config
+from genechat.config import (
+    AppConfig,
+    _default_db_path,
+    get_data_dir,
+    load_config,
+    write_config,
+)
 
 
 class TestAppConfig:
@@ -148,3 +154,49 @@ class TestLoadConfig:
         assert len(config.genomes) == 2
         assert config.genomes["nate"].vcf_path == "/nate.vcf.gz"
         assert config.genomes["partner"].vcf_path == "/partner.vcf.gz"
+
+    def test_data_dir_propagated_to_env(self, tmp_path, monkeypatch):
+        """data_dir from config.toml is propagated to GENECHAT_DATA_DIR env var."""
+        monkeypatch.delenv("GENECHAT_DATA_DIR", raising=False)
+        config_file = tmp_path / "config.toml"
+        config_file.write_text(
+            '[databases]\ndata_dir = "/data/genechat"\n\n'
+            '[genomes.test]\nvcf_path = "/test.vcf.gz"\n'
+        )
+        load_config(str(config_file))
+        import os
+
+        assert os.environ.get("GENECHAT_DATA_DIR") == "/data/genechat"
+
+    def test_env_var_takes_precedence_over_config_data_dir(self, tmp_path, monkeypatch):
+        """GENECHAT_DATA_DIR env var takes precedence over config.toml data_dir."""
+        monkeypatch.setenv("GENECHAT_DATA_DIR", "/env/override")
+        config_file = tmp_path / "config.toml"
+        config_file.write_text(
+            '[databases]\ndata_dir = "/config/path"\n\n'
+            '[genomes.test]\nvcf_path = "/test.vcf.gz"\n'
+        )
+        load_config(str(config_file))
+        import os
+
+        # Env var should NOT be overwritten by config
+        assert os.environ.get("GENECHAT_DATA_DIR") == "/env/override"
+
+
+class TestGetDataDir:
+    def test_env_var_override(self, monkeypatch):
+        monkeypatch.setenv("GENECHAT_DATA_DIR", "/custom/data")
+        assert get_data_dir() == Path("/custom/data")
+
+    def test_tilde_expanded(self, monkeypatch):
+        monkeypatch.setenv("GENECHAT_DATA_DIR", "~/genechat-data")
+        result = get_data_dir()
+        assert "~" not in str(result)
+        assert str(result).endswith("genechat-data")
+
+    def test_falls_back_to_platformdirs(self, monkeypatch):
+        monkeypatch.delenv("GENECHAT_DATA_DIR", raising=False)
+        result = get_data_dir()
+        # Should return the platformdirs default (varies by OS)
+        assert isinstance(result, Path)
+        assert "genechat" in str(result)

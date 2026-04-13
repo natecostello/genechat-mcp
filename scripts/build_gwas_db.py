@@ -7,9 +7,9 @@ Thin wrapper around genechat.gwas module. For direct use:
 import sys
 from pathlib import Path
 
-from genechat.gwas import DEFAULT_GWAS_DB, DEFAULT_GWAS_ZIP, build_gwas_db
+from genechat.gwas import default_gwas_db, default_gwas_zip, build_gwas_db
 
 if __name__ == "__main__":
-    zip_path = Path(sys.argv[1]) if len(sys.argv) > 1 else DEFAULT_GWAS_ZIP
-    db_path = Path(sys.argv[2]) if len(sys.argv) > 2 else DEFAULT_GWAS_DB
+    zip_path = Path(sys.argv[1]) if len(sys.argv) > 1 else default_gwas_zip()
+    db_path = Path(sys.argv[2]) if len(sys.argv) > 2 else default_gwas_db()
     build_gwas_db(zip_path, db_path)
