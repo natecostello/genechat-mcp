@@ -13,17 +13,12 @@ import sqlite3
 import zipfile
 from pathlib import Path
 
-from platformdirs import user_data_dir
+from genechat.config import get_data_dir
 
 GWAS_URL = (
     "https://ftp.ebi.ac.uk/pub/databases/gwas/releases/latest/"
     "gwas-catalog-associations_ontology-annotated-full.zip"
 )
-
-# Default paths
-GWAS_DATA_DIR = Path(user_data_dir("genechat"))
-DEFAULT_GWAS_DB = GWAS_DATA_DIR / "gwas.db"
-DEFAULT_GWAS_ZIP = GWAS_DATA_DIR / "gwas-catalog-associations.zip"
 
 # Columns we extract (index in GWAS catalog TSV)
 COL_TRAIT = 7  # DISEASE/TRAIT
@@ -124,11 +119,19 @@ def _normalize_chrom(chrom: str) -> str | None:
     return None
 
 
+def _default_gwas_db() -> Path:
+    return get_data_dir() / "gwas.db"
+
+
+def _default_gwas_zip() -> Path:
+    return get_data_dir() / "gwas-catalog-associations.zip"
+
+
 def download_gwas_catalog(dest_path: Path | None = None) -> Path:
     """Download the GWAS Catalog associations zip. Returns path to the zip."""
     from genechat.download import download_file
 
-    zip_path = dest_path or DEFAULT_GWAS_ZIP
+    zip_path = dest_path or _default_gwas_zip()
     zip_path.parent.mkdir(parents=True, exist_ok=True)
     download_file(GWAS_URL, zip_path, "GWAS Catalog")
     return zip_path
@@ -141,8 +144,8 @@ def build_gwas_db(zip_path: Path | None = None, db_path: Path | None = None) -> 
     Deletes the zip after a successful build when using the default cache path.
     """
     using_default_zip = zip_path is None
-    zip_path = zip_path or DEFAULT_GWAS_ZIP
-    db_path = db_path or DEFAULT_GWAS_DB
+    zip_path = zip_path or _default_gwas_zip()
+    db_path = db_path or _default_gwas_db()
 
     if not zip_path.exists():
         download_gwas_catalog(zip_path)
@@ -243,9 +246,9 @@ def build_gwas_db(zip_path: Path | None = None, db_path: Path | None = None) -> 
 
 def gwas_db_path() -> Path:
     """Return the default GWAS DB path."""
-    return DEFAULT_GWAS_DB
+    return _default_gwas_db()
 
 
 def gwas_installed() -> bool:
     """Check if the GWAS DB has been downloaded and built."""
-    return DEFAULT_GWAS_DB.exists()
+    return _default_gwas_db().exists()

@@ -57,10 +57,8 @@ class TestGwasDbPath:
         assert isinstance(p, Path)
         assert p.name == "gwas.db"
 
-    def test_gwas_installed_false_when_no_db(self, monkeypatch):
-        monkeypatch.setattr(
-            "genechat.gwas.DEFAULT_GWAS_DB", Path("/nonexistent/gwas.db")
-        )
+    def test_gwas_installed_false_when_no_db(self, monkeypatch, tmp_path):
+        monkeypatch.setenv("GENECHAT_DATA_DIR", str(tmp_path / "empty"))
         assert gwas_installed() is False
 
 
@@ -84,12 +82,11 @@ class TestGwasZipCleanup:
 
     def test_default_zip_deleted_after_build(self, tmp_path, monkeypatch, capsys):
         """Verify default cache zip is deleted after successful DB build."""
-        zip_path = tmp_path / "gwas.zip"
+        # Point data dir to tmp_path so default zip lands there
+        monkeypatch.setenv("GENECHAT_DATA_DIR", str(tmp_path))
+        zip_path = tmp_path / "gwas-catalog-associations.zip"
         with zipfile.ZipFile(str(zip_path), "w") as zf:
             zf.writestr("gwas-catalog.tsv", self._GWAS_TSV)
-
-        # Point DEFAULT_GWAS_ZIP to our test zip so it's treated as default
-        monkeypatch.setattr("genechat.gwas.DEFAULT_GWAS_ZIP", zip_path)
 
         db_path = tmp_path / "gwas.db"
         build_gwas_db(db_path=db_path)  # zip_path=None → uses default

@@ -29,57 +29,55 @@ from genechat.download import (
 
 class TestPaths:
     def test_references_dir_creates_directory(self, monkeypatch, tmp_path):
-        monkeypatch.setattr("genechat.download.REFERENCES_DIR", tmp_path / "refs")
+        monkeypatch.setenv("GENECHAT_DATA_DIR", str(tmp_path))
         result = references_dir()
         assert result.exists()
-        assert result == tmp_path / "refs"
+        assert result == tmp_path / "references"
 
     def test_clinvar_path(self, monkeypatch, tmp_path):
-        monkeypatch.setattr("genechat.download.REFERENCES_DIR", tmp_path / "refs")
+        monkeypatch.setenv("GENECHAT_DATA_DIR", str(tmp_path))
         assert clinvar_path().name == "clinvar.vcf.gz"
 
     def test_clinvar_tbi_path(self, monkeypatch, tmp_path):
-        monkeypatch.setattr("genechat.download.REFERENCES_DIR", tmp_path / "refs")
+        monkeypatch.setenv("GENECHAT_DATA_DIR", str(tmp_path))
         assert clinvar_tbi_path().name == "clinvar.vcf.gz.tbi"
 
 
 class TestInstalled:
     def test_clinvar_installed_true(self, monkeypatch, tmp_path):
-        refs = tmp_path / "refs"
+        monkeypatch.setenv("GENECHAT_DATA_DIR", str(tmp_path))
+        refs = tmp_path / "references"
         refs.mkdir()
         (refs / "clinvar.vcf.gz").write_bytes(b"fake")
         (refs / "clinvar.vcf.gz.tbi").write_bytes(b"fake")
-        monkeypatch.setattr("genechat.download.REFERENCES_DIR", refs)
         assert clinvar_installed() is True
 
     def test_clinvar_installed_false(self, monkeypatch, tmp_path):
-        refs = tmp_path / "refs"
+        monkeypatch.setenv("GENECHAT_DATA_DIR", str(tmp_path))
+        refs = tmp_path / "references"
         refs.mkdir()
-        monkeypatch.setattr("genechat.download.REFERENCES_DIR", refs)
         assert clinvar_installed() is False
 
     def test_gnomad_installed_false(self, monkeypatch, tmp_path):
-        monkeypatch.setattr("genechat.download.REFERENCES_DIR", tmp_path / "refs")
+        monkeypatch.setenv("GENECHAT_DATA_DIR", str(tmp_path))
         assert gnomad_installed() is False
 
     def test_gnomad_installed_true(self, monkeypatch, tmp_path):
-        refs = tmp_path / "refs"
-        gdir = refs / "gnomad_exomes_v4"
+        monkeypatch.setenv("GENECHAT_DATA_DIR", str(tmp_path))
+        gdir = tmp_path / "references" / "gnomad_exomes_v4"
         gdir.mkdir(parents=True)
         for c in GNOMAD_CHROMS:
             (gdir / f"gnomad.exomes.v4.1.sites.chr{c}.vcf.bgz").write_bytes(b"x")
             (gdir / f"gnomad.exomes.v4.1.sites.chr{c}.vcf.bgz.tbi").write_bytes(b"x")
-        monkeypatch.setattr("genechat.download.REFERENCES_DIR", refs)
         assert gnomad_installed() is True
 
     def test_gnomad_installed_missing_tbi(self, monkeypatch, tmp_path):
-        refs = tmp_path / "refs"
-        gdir = refs / "gnomad_exomes_v4"
+        monkeypatch.setenv("GENECHAT_DATA_DIR", str(tmp_path))
+        gdir = tmp_path / "references" / "gnomad_exomes_v4"
         gdir.mkdir(parents=True)
         for c in GNOMAD_CHROMS:
             (gdir / f"gnomad.exomes.v4.1.sites.chr{c}.vcf.bgz").write_bytes(b"x")
         # No .tbi files
-        monkeypatch.setattr("genechat.download.REFERENCES_DIR", refs)
         assert gnomad_installed() is False
 
     def test_snpeff_installed(self, monkeypatch):
@@ -93,11 +91,11 @@ class TestInstalled:
 
 class TestDownloadClinvar:
     def test_skips_when_existing(self, monkeypatch, tmp_path, capsys):
-        refs = tmp_path / "refs"
+        monkeypatch.setenv("GENECHAT_DATA_DIR", str(tmp_path))
+        refs = tmp_path / "references"
         refs.mkdir()
         (refs / "clinvar.vcf.gz").write_bytes(b"fake")
         (refs / "clinvar.vcf.gz.tbi").write_bytes(b"fake")
-        monkeypatch.setattr("genechat.download.REFERENCES_DIR", refs)
 
         result = download_clinvar()
         assert result == refs / "clinvar.vcf.gz"
@@ -139,52 +137,49 @@ class TestDetectSnpeffDb:
 
 class TestDbsnpPaths:
     def test_dbsnp_dir(self, monkeypatch, tmp_path):
-        monkeypatch.setattr("genechat.download.REFERENCES_DIR", tmp_path / "refs")
+        monkeypatch.setenv("GENECHAT_DATA_DIR", str(tmp_path))
         d = dbsnp_dir()
-        assert d == tmp_path / "refs" / "dbsnp"
+        assert d == tmp_path / "references" / "dbsnp"
 
     def test_dbsnp_raw_path(self, monkeypatch, tmp_path):
-        monkeypatch.setattr("genechat.download.REFERENCES_DIR", tmp_path / "refs")
+        monkeypatch.setenv("GENECHAT_DATA_DIR", str(tmp_path))
         assert dbsnp_raw_path().name == "GCF_000001405.40.gz"
 
     def test_dbsnp_path(self, monkeypatch, tmp_path):
-        monkeypatch.setattr("genechat.download.REFERENCES_DIR", tmp_path / "refs")
+        monkeypatch.setenv("GENECHAT_DATA_DIR", str(tmp_path))
         assert dbsnp_path().name == "dbsnp_chrfixed.vcf.gz"
 
 
 class TestDbsnpInstalled:
     def test_false_when_missing(self, monkeypatch, tmp_path):
-        monkeypatch.setattr("genechat.download.REFERENCES_DIR", tmp_path / "refs")
+        monkeypatch.setenv("GENECHAT_DATA_DIR", str(tmp_path))
         assert dbsnp_installed() is False
 
     def test_false_when_no_tbi(self, monkeypatch, tmp_path):
-        refs = tmp_path / "refs"
-        ddir = refs / "dbsnp"
+        monkeypatch.setenv("GENECHAT_DATA_DIR", str(tmp_path))
+        ddir = tmp_path / "references" / "dbsnp"
         ddir.mkdir(parents=True)
         (ddir / "dbsnp_chrfixed.vcf.gz").write_bytes(b"fake")
-        monkeypatch.setattr("genechat.download.REFERENCES_DIR", refs)
         assert dbsnp_installed() is False
 
     def test_true_when_both_exist(self, monkeypatch, tmp_path):
-        refs = tmp_path / "refs"
-        ddir = refs / "dbsnp"
+        monkeypatch.setenv("GENECHAT_DATA_DIR", str(tmp_path))
+        ddir = tmp_path / "references" / "dbsnp"
         ddir.mkdir(parents=True)
         (ddir / "dbsnp_chrfixed.vcf.gz").write_bytes(b"fake")
         (ddir / "dbsnp_chrfixed.vcf.gz.tbi").write_bytes(b"fake")
-        monkeypatch.setattr("genechat.download.REFERENCES_DIR", refs)
         assert dbsnp_installed() is True
 
 
 class TestDbsnpState:
     def test_load_empty_when_no_file(self, monkeypatch, tmp_path):
-        monkeypatch.setattr("genechat.download.REFERENCES_DIR", tmp_path / "refs")
-        (tmp_path / "refs" / "dbsnp").mkdir(parents=True)
+        monkeypatch.setenv("GENECHAT_DATA_DIR", str(tmp_path))
+        (tmp_path / "references" / "dbsnp").mkdir(parents=True)
         assert _load_dbsnp_state() == {}
 
     def test_save_and_load_roundtrip(self, monkeypatch, tmp_path):
-        refs = tmp_path / "refs"
-        (refs / "dbsnp").mkdir(parents=True)
-        monkeypatch.setattr("genechat.download.REFERENCES_DIR", refs)
+        monkeypatch.setenv("GENECHAT_DATA_DIR", str(tmp_path))
+        (tmp_path / "references" / "dbsnp").mkdir(parents=True)
 
         state = {"completed_contigs": ["NC_000001.11", "NC_000002.12"]}
         _save_dbsnp_state(state)
@@ -192,10 +187,9 @@ class TestDbsnpState:
         assert loaded == state
 
     def test_load_returns_empty_on_corrupt_json(self, monkeypatch, tmp_path):
-        refs = tmp_path / "refs"
-        ddir = refs / "dbsnp"
+        monkeypatch.setenv("GENECHAT_DATA_DIR", str(tmp_path))
+        ddir = tmp_path / "references" / "dbsnp"
         ddir.mkdir(parents=True)
-        monkeypatch.setattr("genechat.download.REFERENCES_DIR", refs)
 
         (ddir / "dbsnp_progress.json").write_text("not valid json{{{")
         assert _load_dbsnp_state() == {}
@@ -203,12 +197,11 @@ class TestDbsnpState:
 
 class TestDbsnpDownload:
     def test_skips_when_existing(self, monkeypatch, tmp_path, capsys):
-        refs = tmp_path / "refs"
-        ddir = refs / "dbsnp"
+        monkeypatch.setenv("GENECHAT_DATA_DIR", str(tmp_path))
+        ddir = tmp_path / "references" / "dbsnp"
         ddir.mkdir(parents=True)
         (ddir / "dbsnp_chrfixed.vcf.gz").write_bytes(b"fake")
         (ddir / "dbsnp_chrfixed.vcf.gz.tbi").write_bytes(b"fake")
-        monkeypatch.setattr("genechat.download.REFERENCES_DIR", refs)
         # Ensure test is hermetic even without bcftools/tabix on PATH
         monkeypatch.setattr("shutil.which", lambda name: None)
 
@@ -217,7 +210,7 @@ class TestDbsnpDownload:
         assert "already downloaded" in capsys.readouterr().out
 
     def test_fails_without_bcftools(self, monkeypatch, tmp_path, capsys):
-        monkeypatch.setattr("genechat.download.REFERENCES_DIR", tmp_path / "refs")
+        monkeypatch.setenv("GENECHAT_DATA_DIR", str(tmp_path))
         monkeypatch.setattr("shutil.which", lambda name: None)
 
         result = download_dbsnp()
@@ -225,7 +218,7 @@ class TestDbsnpDownload:
         assert "bcftools not found" in capsys.readouterr().err
 
     def test_fails_without_tabix(self, monkeypatch, tmp_path, capsys):
-        monkeypatch.setattr("genechat.download.REFERENCES_DIR", tmp_path / "refs")
+        monkeypatch.setenv("GENECHAT_DATA_DIR", str(tmp_path))
         monkeypatch.setattr(
             "shutil.which",
             lambda name: "/usr/bin/bcftools" if name == "bcftools" else None,
@@ -237,8 +230,7 @@ class TestDbsnpDownload:
 
     def test_per_chromosome_pipeline(self, monkeypatch, tmp_path, capsys):
         """Verify per-chromosome download, concat, and cleanup."""
-        refs = tmp_path / "refs"
-        monkeypatch.setattr("genechat.download.REFERENCES_DIR", refs)
+        monkeypatch.setenv("GENECHAT_DATA_DIR", str(tmp_path))
         monkeypatch.setattr("shutil.which", lambda name: f"/usr/bin/{name}")
 
         # Use only 2 contigs for speed
@@ -268,14 +260,14 @@ class TestDbsnpDownload:
         # State file should be cleaned up
         assert not _dbsnp_state_path().exists()
         # Per-chromosome dir should be cleaned up
+        refs = tmp_path / "references"
         assert not (refs / "dbsnp" / "per_chrom").exists()
 
     def test_resume_skips_completed(self, monkeypatch, tmp_path, capsys):
         """Verify completed chromosomes are skipped on resume."""
-        refs = tmp_path / "refs"
-        ddir = refs / "dbsnp"
+        monkeypatch.setenv("GENECHAT_DATA_DIR", str(tmp_path))
+        ddir = tmp_path / "references" / "dbsnp"
         ddir.mkdir(parents=True)
-        monkeypatch.setattr("genechat.download.REFERENCES_DIR", refs)
         monkeypatch.setattr("shutil.which", lambda name: f"/usr/bin/{name}")
 
         monkeypatch.setattr(
@@ -315,10 +307,9 @@ class TestDbsnpDownload:
 
     def test_force_ignores_state(self, monkeypatch, tmp_path, capsys):
         """Verify --force re-downloads all chromosomes."""
-        refs = tmp_path / "refs"
-        ddir = refs / "dbsnp"
+        monkeypatch.setenv("GENECHAT_DATA_DIR", str(tmp_path))
+        ddir = tmp_path / "references" / "dbsnp"
         ddir.mkdir(parents=True)
-        monkeypatch.setattr("genechat.download.REFERENCES_DIR", refs)
         monkeypatch.setattr("shutil.which", lambda name: f"/usr/bin/{name}")
 
         monkeypatch.setattr(
@@ -355,11 +346,10 @@ class TestDbsnpDownload:
         """Verify legacy raw file triggers file-based rename path."""
         import subprocess
 
-        refs = tmp_path / "refs"
-        monkeypatch.setattr("genechat.download.REFERENCES_DIR", refs)
+        monkeypatch.setenv("GENECHAT_DATA_DIR", str(tmp_path))
         monkeypatch.setattr("shutil.which", lambda name: f"/usr/bin/{name}")
 
-        ddir = refs / "dbsnp"
+        ddir = tmp_path / "references" / "dbsnp"
         ddir.mkdir(parents=True)
         raw = ddir / "GCF_000001405.40.gz"
         raw.write_bytes(b"fake-vcf-data")
@@ -389,8 +379,7 @@ class TestDbsnpDownload:
         """Verify state is preserved when a chromosome fails mid-way."""
         import subprocess
 
-        refs = tmp_path / "refs"
-        monkeypatch.setattr("genechat.download.REFERENCES_DIR", refs)
+        monkeypatch.setenv("GENECHAT_DATA_DIR", str(tmp_path))
         monkeypatch.setattr("shutil.which", lambda name: f"/usr/bin/{name}")
 
         monkeypatch.setattr(
@@ -420,14 +409,14 @@ class TestDbsnpDownload:
 
         # State should show chr21 as complete
         state = _load_dbsnp_state()
+        assert "NC_000001.11" not in state.get("completed_contigs", [])
         assert "NC_000021.9" in state.get("completed_contigs", [])
         # chr22 failed, so should not be in completed
         assert "NC_000022.11" not in state.get("completed_contigs", [])
 
     def test_fast_downloads_raw_and_renames(self, monkeypatch, tmp_path, capsys):
         """fast=True downloads full file then uses file-based rename."""
-        refs = tmp_path / "refs"
-        monkeypatch.setattr("genechat.download.REFERENCES_DIR", refs)
+        monkeypatch.setenv("GENECHAT_DATA_DIR", str(tmp_path))
         monkeypatch.setattr("shutil.which", lambda name: f"/usr/bin/{name}")
 
         downloaded = []
@@ -480,12 +469,11 @@ class TestDbsnpDownload:
 
     def test_fast_skips_when_existing(self, monkeypatch, tmp_path, capsys):
         """fast=True still skips when chrfixed already exists."""
-        refs = tmp_path / "refs"
-        ddir = refs / "dbsnp"
+        monkeypatch.setenv("GENECHAT_DATA_DIR", str(tmp_path))
+        ddir = tmp_path / "references" / "dbsnp"
         ddir.mkdir(parents=True)
         (ddir / "dbsnp_chrfixed.vcf.gz").write_bytes(b"fake")
         (ddir / "dbsnp_chrfixed.vcf.gz.tbi").write_bytes(b"fake")
-        monkeypatch.setattr("genechat.download.REFERENCES_DIR", refs)
         monkeypatch.setattr("shutil.which", lambda name: None)
 
         result = download_dbsnp(fast=True)
@@ -654,8 +642,7 @@ class TestConcatDbsnpChromosomes:
 
 class TestDownloadGnomadChr:
     def test_downloads_vcf_and_tbi(self, monkeypatch, tmp_path, capsys):
-        refs = tmp_path / "refs"
-        monkeypatch.setattr("genechat.download.REFERENCES_DIR", refs)
+        monkeypatch.setenv("GENECHAT_DATA_DIR", str(tmp_path))
 
         downloaded = []
 
@@ -672,12 +659,11 @@ class TestDownloadGnomadChr:
         assert "gnomad.exomes.v4.1.sites.chr1.vcf.bgz.tbi" in downloaded
 
     def test_skips_existing(self, monkeypatch, tmp_path, capsys):
-        refs = tmp_path / "refs"
-        gdir = refs / "gnomad_exomes_v4"
+        monkeypatch.setenv("GENECHAT_DATA_DIR", str(tmp_path))
+        gdir = tmp_path / "references" / "gnomad_exomes_v4"
         gdir.mkdir(parents=True)
         (gdir / "gnomad.exomes.v4.1.sites.chr1.vcf.bgz").write_bytes(b"x")
         (gdir / "gnomad.exomes.v4.1.sites.chr1.vcf.bgz.tbi").write_bytes(b"x")
-        monkeypatch.setattr("genechat.download.REFERENCES_DIR", refs)
 
         downloaded = []
         monkeypatch.setattr(
@@ -691,12 +677,11 @@ class TestDownloadGnomadChr:
 
     def test_redownloads_when_tbi_missing(self, monkeypatch, tmp_path):
         """VCF+TBI are an atomic pair; missing TBI triggers re-download of both."""
-        refs = tmp_path / "refs"
-        gdir = refs / "gnomad_exomes_v4"
+        monkeypatch.setenv("GENECHAT_DATA_DIR", str(tmp_path))
+        gdir = tmp_path / "references" / "gnomad_exomes_v4"
         gdir.mkdir(parents=True)
         (gdir / "gnomad.exomes.v4.1.sites.chr1.vcf.bgz").write_bytes(b"x")
         # No .tbi file
-        monkeypatch.setattr("genechat.download.REFERENCES_DIR", refs)
 
         downloaded = []
 
@@ -714,23 +699,21 @@ class TestDownloadGnomadChr:
 
 class TestDeleteGnomadChr:
     def test_deletes_vcf_and_tbi(self, monkeypatch, tmp_path):
-        refs = tmp_path / "refs"
-        gdir = refs / "gnomad_exomes_v4"
+        monkeypatch.setenv("GENECHAT_DATA_DIR", str(tmp_path))
+        gdir = tmp_path / "references" / "gnomad_exomes_v4"
         gdir.mkdir(parents=True)
         vcf = gdir / "gnomad.exomes.v4.1.sites.chr1.vcf.bgz"
         tbi = gdir / "gnomad.exomes.v4.1.sites.chr1.vcf.bgz.tbi"
         vcf.write_bytes(b"x")
         tbi.write_bytes(b"x")
-        monkeypatch.setattr("genechat.download.REFERENCES_DIR", refs)
 
         delete_gnomad_chr("1")
         assert not vcf.exists()
         assert not tbi.exists()
 
     def test_no_error_when_missing(self, monkeypatch, tmp_path):
-        refs = tmp_path / "refs"
-        refs.mkdir(parents=True)
-        monkeypatch.setattr("genechat.download.REFERENCES_DIR", refs)
+        monkeypatch.setenv("GENECHAT_DATA_DIR", str(tmp_path))
+        (tmp_path / "references").mkdir(parents=True)
 
         # Should not raise
         delete_gnomad_chr("1")

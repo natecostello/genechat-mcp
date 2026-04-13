@@ -17,6 +17,7 @@ class GenomeConfig(BaseModel):
 
 
 class DatabasesConfig(BaseModel):
+    data_dir: str = ""
     lookup_db: str = ""
     gwas_db: str = ""
 
@@ -58,9 +59,19 @@ class AppConfig(BaseModel):
         return str(gwas_db_path())
 
 
+def get_data_dir() -> Path:
+    """Base directory for user data (references, GWAS, lookup tables).
+
+    Resolution order: GENECHAT_DATA_DIR env var → platformdirs default.
+    The config.toml ``data_dir`` setting is applied by the CLI at startup
+    by setting the env var before any module reads it.
+    """
+    return Path(os.environ.get("GENECHAT_DATA_DIR") or user_data_dir("genechat"))
+
+
 def _user_db_path() -> Path:
     """User-writable lookup_tables.db location (rebuilt by genechat install --seeds)."""
-    return Path(user_data_dir("genechat")) / "lookup_tables.db"
+    return get_data_dir() / "lookup_tables.db"
 
 
 def _default_db_path() -> Path:
@@ -242,5 +253,10 @@ def load_config(path: str | None = None) -> AppConfig:
         config = AppConfig(**data)
     else:
         config = AppConfig()
+
+    # Propagate data_dir from config to env var so all modules
+    # (download.py, gwas.py) pick it up via get_data_dir().
+    if config.databases.data_dir and not os.environ.get("GENECHAT_DATA_DIR"):
+        os.environ["GENECHAT_DATA_DIR"] = config.databases.data_dir
 
     return config
