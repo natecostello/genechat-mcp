@@ -167,8 +167,6 @@ class TestLoadConfig:
         import os
 
         assert os.environ.get("GENECHAT_DATA_DIR") == "/data/genechat"
-        # Clean up
-        monkeypatch.delenv("GENECHAT_DATA_DIR")
 
     def test_env_var_takes_precedence_over_config_data_dir(self, tmp_path, monkeypatch):
         """GENECHAT_DATA_DIR env var takes precedence over config.toml data_dir."""
