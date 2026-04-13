@@ -190,6 +190,12 @@ class TestGetDataDir:
         monkeypatch.setenv("GENECHAT_DATA_DIR", "/custom/data")
         assert get_data_dir() == Path("/custom/data")
 
+    def test_tilde_expanded(self, monkeypatch):
+        monkeypatch.setenv("GENECHAT_DATA_DIR", "~/genechat-data")
+        result = get_data_dir()
+        assert "~" not in str(result)
+        assert str(result).endswith("genechat-data")
+
     def test_falls_back_to_platformdirs(self, monkeypatch):
         monkeypatch.delenv("GENECHAT_DATA_DIR", raising=False)
         result = get_data_dir()

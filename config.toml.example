@@ -18,9 +18,9 @@ genome_build = "GRCh38"
 
 # --- Databases ---
 [databases]
-data_dir = ""   # Override base data directory (default: ~/.local/share/genechat)
-                # Also settable via GENECHAT_DATA_DIR env var.
-                # Useful for containers/cloud where home is ephemeral.
+data_dir = ""   # Override base data directory (default: OS-specific, e.g.
+                # ~/.local/share/genechat on Linux/macOS). Also settable via
+                # GENECHAT_DATA_DIR env var. Useful for containers/cloud.
 lookup_db = ""  # Leave empty to use built-in package data
 gwas_db = ""    # Leave empty to use <data_dir>/gwas.db
 

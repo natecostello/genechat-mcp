@@ -63,10 +63,13 @@ def get_data_dir() -> Path:
     """Base directory for user data (references, GWAS, lookup tables).
 
     Resolution order: GENECHAT_DATA_DIR env var → platformdirs default.
-    The config.toml ``data_dir`` setting is applied by the CLI at startup
-    by setting the env var before any module reads it.
+    The config.toml ``data_dir`` setting is propagated to the env var
+    in ``load_config()`` so all modules pick it up.
     """
-    return Path(os.environ.get("GENECHAT_DATA_DIR") or user_data_dir("genechat"))
+    env = os.environ.get("GENECHAT_DATA_DIR")
+    if env:
+        return Path(env).expanduser()
+    return Path(user_data_dir("genechat"))
 
 
 def _user_db_path() -> Path:
@@ -257,6 +260,8 @@ def load_config(path: str | None = None) -> AppConfig:
     # Propagate data_dir from config to env var so all modules
     # (download.py, gwas.py) pick it up via get_data_dir().
     if config.databases.data_dir and not os.environ.get("GENECHAT_DATA_DIR"):
-        os.environ["GENECHAT_DATA_DIR"] = config.databases.data_dir
+        os.environ["GENECHAT_DATA_DIR"] = str(
+            Path(config.databases.data_dir).expanduser()
+        )
 
     return config
